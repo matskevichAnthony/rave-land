@@ -8,6 +8,48 @@
 </head>
 <body>
   <h1 class="chars-title">Персонажи</h1>
+
+  <details class="guide">
+    <summary class="guide__summary">Как добавить нового персонажа (инструкция)</summary>
+    <div class="guide__body">
+      <section class="guide__step">
+        <h2>1. Какая нужна картинка</h2>
+        <ul>
+          <li><strong>T-поза или A-поза</strong> — руки в стороны, ноги прямо.</li>
+          <li><strong>Весь персонаж в кадре</strong>, вид спереди, один персонаж.</li>
+          <li><strong>Светлый однотонный фон</strong>, ровный свет без резких теней.</li>
+          <li>Стиль — в текстуре, не в позе: low-poly хоррор (FEAR, Cry of Fear, старые Resident Evil).</li>
+        </ul>
+        <p>Готовый промпт для любого генератора картинок:</p>
+        <pre class="guide__prompt">full body game character in T-pose, arms straight out to the sides,
+facing camera, standing straight, low-poly PS2 survival horror style
+(FEAR, Cry of Fear, classic Resident Evil), muted colors, gritty textures,
+plain light gray background, even studio lighting, no shadows on background,
+single character, full figure visible head to toe</pre>
+        <p class="guide__hint">К промпту добавь описание самого персонажа (одежда, лицо, атмосфера).</p>
+      </section>
+
+      <section class="guide__step">
+        <h2>2. Что сделать с картинкой</h2>
+        <ol>
+          <li>Сохранить в <code>_other/incoming/&lt;имя&gt;.png</code> (или просто приложить в чат).</li>
+          <li>Сказать агенту: <em>«Реализуй персонажа &lt;имя&gt; из этой картинки»</em>.</li>
+          <li>Агент идёт по раннбуку <code>tools/README.md</code>: меш → авториг → mocap-анимации → постобработка → в игру.</li>
+        </ol>
+      </section>
+
+      <section class="guide__step">
+        <h2>3. Первые генерации — с чего начать</h2>
+        <ol>
+          <li>Сгенерируй 2–3 картинки разных персонажей по промпту выше.</li>
+          <li>Начни с одной: дай агенту и попроси провести по <strong>маршруту A</strong> (бесплатно, проверен дважды).</li>
+          <li>Проверь результат на этой странице (клик по карточке — вьюер с клипами) и в игре.</li>
+          <li>В карточке NPC в игре смотри «Происхождение ассета» — там записано, кто сделал модель, риг и анимации, чтобы сравнивать провайдеров.</li>
+        </ol>
+      </section>
+    </div>
+  </details>
+
   <div class="chars-grid" data-js-cards></div>
 
   <div class="viewer" data-js-viewer hidden>
