@@ -1,0 +1,8 @@
+14:31:08 rss=9M avail=2488M swapfree=13M
+14:31:10 rss=392M avail=2268M swapfree=13M
+14:31:12 rss=436M avail=2219M swapfree=13M
+14:31:14 rss=1039M avail=1629M swapfree=13M
+14:31:16 rss=2312M avail=261M swapfree=0M
+14:31:19 rss=2479M avail=140M swapfree=0M
+!!! MemAvailable 140M < 250M — убиваю PID 110675 (пик rss 2479M)
+PEAK_RSS_MB=2479

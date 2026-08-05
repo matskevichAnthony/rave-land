@@ -1,6 +1,9 @@
 venv*/
 weights/
 models/
+out/
+TripoSR/
+torchmcubes-src/
 *.ckpt
 *.safetensors
 *.bin

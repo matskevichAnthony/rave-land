@@ -24,6 +24,14 @@ python3 tools/gen/image2mesh.py _other/incoming/<имя>.png _other/<имя>-rig
 (agent-browser), потом Tripo API (маршрут B). Провайдера ЗАПИСАТЬ — он пойдёт
 в `provenance.model`.
 
+Совсем без облака (маршрут L1, проверено запуском, F-001): TripoSR на CPU,
+около 45 секунд и пик 2.2 ГБ RAM на модель, перед запуском закрыть браузер.
+
+```bash
+cd _other/local-gen
+HF_HOME=$PWD/weights ./venv/bin/python ../../tools/gen/triposr_local.py <картинка> out/<имя>.glb --mc-resolution 256
+```
+
 ## Шаг 2. Авториг (17 костей, Blender headless)
 
 Скопировать свежие версии скриптов из последнего рига (`_other/bold-raver-rig/`
@@ -69,6 +77,22 @@ node tools/postprocess.mjs <вход.glb> public/models/<имя>-final.glb
 2. Проверить в браузере: `/characters.html` (вьюер клипов) и спавн в игре.
    В браузере сбросить `localStorage['rave-land-world']`, иначе старый мир.
 3. Отдельный коммит на персонажа. Скриншоты — в `_other/<имя>-rig/`.
+
+## Пропы (мимо всего пайплайна выше)
+
+Проп это не персонаж: ни рига, ни анимаций, ни картинки на входе. Коробки и цилиндры
+рейв-сцены собирает скрипт, за секунды и сразу в бюджете полигонов.
+
+```bash
+BLENDER=_other/auto-rig/blender-4.2.9-linux-x64/blender
+$BLENDER --background --python tools/gen/props.py -- --prop all --out-dir public/assets/models/props
+$BLENDER --background --python tools/gen/props.py -- --prop barrel \
+    --out public/assets/models/props/barrel.glb --seed 7 --render barrel.png
+```
+
+Пропы: `speaker-stack`, `crate`, `barrel`, `barrier`. Сид меняет пропорции и оттенки.
+В мир кладутся записью `type: model` в `public/world.json`, коллайдер считается по bbox.
+Подробности и когда вместо скрипта звать генератор мешей: `docs/PIPELINE.md` §4.6, F-020.
 
 ## Известные ловушки
 

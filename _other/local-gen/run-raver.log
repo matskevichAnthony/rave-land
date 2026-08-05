@@ -1,0 +1,10 @@
+[    0.0s | RSS 0.40 ГБ] старт
+[    1.3s | RSS 0.46 ГБ] картинка подготовлена (rembg)
+/home/anton-matzkaim/rave-land/_other/local-gen/venv/lib/python3.12/site-packages/transformers/utils/generic.py:441: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+/home/anton-matzkaim/rave-land/_other/local-gen/venv/lib/python3.12/site-packages/transformers/utils/generic.py:309: FutureWarning: `torch.utils._pytree._register_pytree_node` is deprecated. Please use `torch.utils._pytree.register_pytree_node` instead.
+  _torch_pytree._register_pytree_node(
+[    5.1s | RSS 0.79 ГБ] модель загружена (mmap)
+[   25.4s | RSS 2.10 ГБ] инференс: triplane-код готов
+[   44.9s | RSS 1.53 ГБ] меш извлечён: 20265 вершин, 40492 треугольников
+[   44.9s | RSS 1.53 ГБ] сохранено: out/raver.glb (792 КБ)
