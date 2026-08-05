@@ -51,10 +51,10 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
 
   function update(dt) {
     for (const npc of npcs.values()) {
-      const { x, z, yaw, speed } = npc.wanderer.update(dt);
+      const { x, z, yaw, speed, state } = npc.wanderer.update(dt);
       npc.object.position.set(x, terrain.heightAt(x, z), z);
       npc.object.rotation.y = yaw;
-      npc.animate(dt, { speed });
+      npc.animate(dt, { speed, dancing: state === 'dance' });
     }
   }
 

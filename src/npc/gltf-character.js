@@ -52,6 +52,7 @@ export async function buildGltfCharacter(src) {
   const walkClip = pickClip(animations, [/walk/i]) ?? idleClip;
   const runClip = pickClip(animations, [/run|sprint|jog/i]) ?? walkClip;
   const aimClip = pickClip(animations, [/aim/i]);
+  const danceClip = pickClip(animations, [/^dance$/i, /dance/i]);
   const actions = new Map();
   let currentAction = null;
 
@@ -65,8 +66,12 @@ export async function buildGltfCharacter(src) {
     return speed > RUN_THRESHOLD ? runClip : speed > WALK_THRESHOLD ? walkClip : idleClip;
   }
 
-  function update(dt, { speed, aiming = false }) {
-    const clip = aiming && aimClip ? aimClip : locomotionClip(speed);
+  function update(dt, { speed, aiming = false, dancing = false }) {
+    const clip = aiming && aimClip
+      ? aimClip
+      : dancing && danceClip && speed <= WALK_THRESHOLD
+        ? danceClip
+        : locomotionClip(speed);
     const action = actionFor(clip);
     if (action && action !== currentAction) {
       action.reset().fadeIn(FADE_SECONDS).play();

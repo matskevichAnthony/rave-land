@@ -1,6 +1,8 @@
 import { mulberry32 } from '../terrain/heightfield.js';
 
 const IDLE_DURATION = { min: 2, max: 6 };
+const DANCE_DURATION = { min: 7, max: 16 };
+const DANCE_CHANCE = 0.25;
 const TRIP_RADIUS = { min: 6, max: 25 };
 const TRIPS_PER_RUN = { min: 4, max: 5 };
 const WALK_SPEED = 1.4;
@@ -61,10 +63,15 @@ export function createWanderer({ seed, home: rawHome, worldRadius }) {
   }
 
   function startIdle() {
-    state = 'idle';
     speed = 0;
     target = null;
-    idleLeft = rangeFrom(random, IDLE_DURATION);
+    if (random() < DANCE_CHANCE) {
+      state = 'dance';
+      idleLeft = rangeFrom(random, DANCE_DURATION);
+    } else {
+      state = 'idle';
+      idleLeft = rangeFrom(random, IDLE_DURATION);
+    }
   }
 
   function snapshot() {
@@ -72,7 +79,7 @@ export function createWanderer({ seed, home: rawHome, worldRadius }) {
   }
 
   function update(dt) {
-    if (state === 'idle') {
+    if (state === 'idle' || state === 'dance') {
       idleLeft -= dt;
       if (idleLeft <= 0) startTrip();
       return snapshot();
