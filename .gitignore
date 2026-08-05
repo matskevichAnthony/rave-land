@@ -13,3 +13,9 @@ _other/local-gen/models/
 
 # Сырой высокополигональный исходник до децимации
 _other/bold-raver-rig/character-animated.glb
+
+# Python-кеш
+__pycache__/
+
+# Логи и исходники попыток локальной генерации
+_other/local-gen/

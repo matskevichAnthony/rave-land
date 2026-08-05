@@ -5,9 +5,10 @@
     pip install gradio_client            # один раз
     python3 tools/gen/image2mesh.py input.png output.glb [--space trellis|hunyuan]
 
-Провайдеры (в порядке приоритета, см. docs/PIPELINE.md):
-    trellis  -> JeffreyXiang/TRELLIS      (проверен вручную дважды: Берлинец, Bold Raver)
-    hunyuan  -> tencent/Hunyuan3D-2       (качественная альтернатива)
+Провайдеры (см. docs/PIPELINE.md):
+    hunyuan  -> tencent/Hunyuan3D-2   по умолчанию. Space живой, сигнатура сверена 05.08.2026
+    trellis  -> JeffreyXiang/TRELLIS  им сделаны оба персонажа вручную, но 05.08.2026 Space
+                                      отвечает CONFIG_ERROR. Пробовать, когда починят
 
 Это бесплатные публичные очереди: генерация может занять минуты и Space может
 быть перегружен/спать. Скрипт честно печатает прогресс и падает с понятной
@@ -18,9 +19,16 @@ view_api(), чтобы агент сразу увидел новые эндпо�
 анимации (tools/anim/bvh2clip), постобработка (tools/postprocess.mjs).
 """
 import argparse
+import os
 import shutil
 import sys
+import time
 from pathlib import Path
+
+# httpx внутри gradio_client не понимает схему socks:// и падает ещё до запроса,
+# а в системе прописан SOCKS-прокси. HTTP-прокси из остальных переменных остаётся.
+for socks_var in ('ALL_PROXY', 'all_proxy'):
+    os.environ.pop(socks_var, None)
 
 try:
     from gradio_client import Client, handle_file
@@ -103,12 +111,28 @@ def pick_glb(result):
 
 RUNNERS = {'trellis': run_trellis, 'hunyuan': run_hunyuan}
 
+# Через здешний прокси примерно каждое третье рукопожатие с HF отваливается по таймауту.
+CONNECT_ATTEMPTS = 4
+
+
+def connect(space, space_key):
+    for attempt in range(1, CONNECT_ATTEMPTS + 1):
+        try:
+            return Client(space)
+        except Exception as exc:  # noqa: BLE001
+            print(f'  попытка {attempt}/{CONNECT_ATTEMPTS} не удалась: {exc}', file=sys.stderr)
+            if attempt == CONNECT_ATTEMPTS:
+                others = ' | '.join(key for key in SPACES if key != space_key)
+                sys.exit(f'Space {space} недоступен. Он спит, перегружен или сломан. '
+                         f'Попробуй другой: --space {others}')
+            time.sleep(5)
+
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('image', help='картинка персонажа (T-поза, светлый фон — см. PIPELINE.md §0)')
     p.add_argument('output', help='куда положить GLB')
-    p.add_argument('--space', choices=SPACES, default='trellis')
+    p.add_argument('--space', choices=SPACES, default='hunyuan')
     args = p.parse_args()
 
     image_path = Path(args.image).resolve()
@@ -117,7 +141,7 @@ def main():
 
     space = SPACES[args.space]
     print(f'[1/3] Подключаюсь к {space} (публичная очередь, может ждать)...')
-    client = Client(space)
+    client = connect(space, args.space)
 
     print('[2/3] Генерация (минуты; очередь бесплатного Space)...')
     try:
