@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Retarget a mocap BVH onto the character rig and splice the clip into the game GLB.
-# Usage: bvh2clip <input.bvh> <ClipName> [--start sec] [--end sec] [--fps N] [--out file.glb]
+# Usage: bvh2clip <input.bvh> <ClipName> [--start sec] [--end sec] [--fps N] [--out file.glb] [--rig-dir dir]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -19,13 +19,14 @@ BVH="$1"; NAME="$2"; shift 2
 [ -f "$BVH" ] || { echo "bvh2clip: no such file: $BVH" >&2; exit 1; }
 BVH="$(readlink -f "$BVH")"
 
-START=0; END=""; FPS=30; OUT="$DEFAULT_OUT"
+START=0; END=""; FPS=30; OUT="$DEFAULT_OUT"; RIG_DIR=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --start) START="$2"; shift 2 ;;
-    --end)   END="$2";   shift 2 ;;
-    --fps)   FPS="$2";   shift 2 ;;
-    --out)   OUT="$2";   shift 2 ;;
+    --start)   START="$2";   shift 2 ;;
+    --end)     END="$2";     shift 2 ;;
+    --fps)     FPS="$2";     shift 2 ;;
+    --out)     OUT="$2";     shift 2 ;;
+    --rig-dir) RIG_DIR="$2"; shift 2 ;;
     *) usage ;;
   esac
 done
@@ -33,6 +34,7 @@ done
 mkdir -p "$BUILD"
 RETARGET_ARGS=(--bvh "$BVH" --name "$NAME" --start "$START" --fps "$FPS" --raw "$BUILD/raw.glb")
 [ -n "$END" ] && RETARGET_ARGS+=(--end "$END")
+[ -n "$RIG_DIR" ] && RETARGET_ARGS+=(--rig-dir "$(readlink -f "$RIG_DIR")")
 
 "$BLENDER" -b --python "$ROOT/tools/anim/retarget.py" -- "${RETARGET_ARGS[@]}"
 node "$POSTPROCESS" "$BUILD/raw.glb" "$BUILD/final.glb"

@@ -19,12 +19,28 @@ import bpy
 import numpy as np
 from mathutils import Matrix, Vector
 
-RIG_DIR = Path('/home/anton-matzkaim/rave-land/_other/auto-rig')
+TOOLS_DIR = Path(__file__).resolve().parent
+REPO_ROOT = TOOLS_DIR.parent.parent
+DEFAULT_RIG_DIR = REPO_ROOT / '_other' / 'auto-rig'
+
+
+def resolve_rig_dir():
+    """--rig-dir <path> перед '--' у Blender: каталог с rig.blend, landmarks.json,
+    anim_lib.py, rig_lib.py. По умолчанию — риг Берлинца (_other/auto-rig);
+    для Bold Raver: --rig-dir _other/bold-raver-rig."""
+    argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
+    if '--rig-dir' in argv:
+        return Path(argv[argv.index('--rig-dir') + 1]).resolve()
+    return DEFAULT_RIG_DIR
+
+
+RIG_DIR = resolve_rig_dir()
+if not (RIG_DIR / 'rig.blend').exists():
+    raise SystemExit(f'rig.blend not found in {RIG_DIR} — воспроизведите риг '
+                     f'скриптами step1_rig.py/step2_weights.py или укажите --rig-dir')
 sys.path.insert(0, str(RIG_DIR))
 import anim_lib
 import rig_lib
-
-TOOLS_DIR = Path(__file__).resolve().parent
 CLIP_STORE = TOOLS_DIR / 'clips.blend'
 SCENE_FPS = 30
 TARGET_TRIS = 32000
@@ -78,6 +94,8 @@ def parse_args():
     p.add_argument('--end', type=float, default=None)
     p.add_argument('--fps', type=float, default=30.0)
     p.add_argument('--raw', required=True, help='raw GLB output path (pre-postprocess)')
+    p.add_argument('--rig-dir', default=str(DEFAULT_RIG_DIR),
+                   help='каталог рига: rig.blend, landmarks.json, anim_lib.py, rig_lib.py')
     return p.parse_args(argv)
 
 
