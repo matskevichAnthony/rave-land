@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Персонажи Rave Land</title>
+  <link rel="stylesheet" href="./styles/characters.css" />
+</head>
+<body>
+  <h1 class="chars-title">Персонажи</h1>
+  <div class="chars-grid" data-js-cards></div>
+
+  <div class="viewer" data-js-viewer hidden>
+    <div class="viewer__canvas" data-js-canvas></div>
+    <aside class="viewer__panel">
+      <button data-js-close>Закрыть (Esc)</button>
+      <h2 data-js-name></h2>
+      <div class="viewer__clips" data-js-clips></div>
+    </aside>
+  </div>
+
+  <script type="module" src="./src/characters-viewer/main.js"></script>
+</body>
+</html>

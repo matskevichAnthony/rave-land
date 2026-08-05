@@ -1,0 +1,51 @@
+.npc-card {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 260px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  backdrop-filter: blur(6px);
+}
+
+.npc-card__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  line-height: 1;
+}
+
+.npc-card__name {
+  font-size: 18px;
+  color: var(--accent);
+  margin-bottom: 2px;
+  padding-right: 32px;
+}
+
+.npc-card__archetype {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.npc-card__data {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+}
+
+.npc-card__key {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.npc-card__value {
+  font-size: 13px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}

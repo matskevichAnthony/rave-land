@@ -1,0 +1,14 @@
+{
+  "name": "auto-rig-postprocess",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postprocess": "node postprocess.mjs character-animated.glb character-final.glb"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^4.4.2",
+    "@gltf-transform/extensions": "^4.4.2",
+    "@gltf-transform/functions": "^4.4.2",
+    "sharp": "^0.35.3"
+  }
+}

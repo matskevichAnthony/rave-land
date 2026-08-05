@@ -1,0 +1,54 @@
+Using Python 3.12.3 environment at: venv
+Resolved 13 packages in 3.34s
+Downloading networkx (2.0MiB)
+Downloading sympy (6.0MiB)
+Downloading torchvision (1.8MiB)
+Downloading setuptools (1.2MiB)
+Downloading pillow (6.8MiB)
+Downloading numpy (15.9MiB)
+Downloading torch (182.9MiB)
+ Downloaded setuptools
+ Downloaded torchvision
+ Downloaded networkx
+ Downloaded pillow
+ Downloaded sympy
+ Downloaded numpy
+ Downloaded torch
+Prepared 13 packages in 13.21s
+Installed 13 packages in 562ms
+ + filelock==3.29.0
+ + fsspec==2026.4.0
+ + jinja2==3.1.6
+ + markupsafe==3.0.3
+ + mpmath==1.3.0
+ + networkx==3.6.1
+ + numpy==2.4.4
+ + pillow==12.2.0
+ + setuptools==78.1.0
+ + sympy==1.14.0
+ + torch==2.13.0+cpu
+ + torchvision==0.28.0+cpu
+ + typing-extensions==4.15.0
+	Command being timed: "/snap/bin/uv pip install --python /home/anton-matzkaim/rave-land/_other/local-gen/venv/bin/python torch torchvision --index-url https://download.pytorch.org/whl/cpu"
+	User time (seconds): 6.36
+	System time (seconds): 5.90
+	Percent of CPU this job got: 67%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:18.21
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 66024
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 269
+	Minor (reclaiming a frame) page faults: 21708
+	Voluntary context switches: 65038
+	Involuntary context switches: 7457
+	Swaps: 0
+	File system inputs: 77786
+	File system outputs: 1702768
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

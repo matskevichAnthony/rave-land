@@ -1,0 +1,22 @@
+.hud {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.hud__mode {
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.hud__hints {
+  color: var(--muted);
+}
+
+.hud__weapon {
+  color: var(--accent-2);
+  margin-bottom: 4px;
+}

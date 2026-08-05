@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rave Land</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+<body>
+  <div id="app"></div>
+
+  <div class="crosshair" data-crosshair hidden></div>
+
+  <div class="hud">
+    <div class="hud__mode" data-mode>Прогулка</div>
+    <div class="hud__weapon" data-weapon hidden>Пистолет в руках, клик стреляет</div>
+    <div class="hud__hints">
+      Клик захватывает мышь, WASD ходьба, Shift бег, Space прыжок,
+      1 оружие, колесо зум, Tab открывает редактор
+    </div>
+  </div>
+
+  <aside class="panel" data-panel hidden>
+    <h2 class="panel__title">Редактор</h2>
+
+    <section class="panel__section">
+      <h3>Добавить объект</h3>
+      <div class="panel__grid">
+        <button data-spawn="house">Домик</button>
+        <button data-spawn="tree">Дерево</button>
+        <button data-spawn="speaker">Колонки</button>
+        <button data-spawn="dancefloor">Танцпол</button>
+        <button data-spawn="lamp">Фонарь</button>
+        <button data-spawn="rock">Камень</button>
+        <button data-spawn-npc>Персонаж</button>
+      </div>
+      <p class="panel__hint">Объект появится в точке, куда смотрит камера.
+        GLB-модель можно просто перетащить в окно.</p>
+    </section>
+
+    <section class="panel__section">
+      <h3>Выбранный объект</h3>
+      <p class="panel__selected" data-selected>ничего не выбрано</p>
+      <p class="panel__hint">Клик выбирает объект. Клавиши 1/2/3 переключают
+        двигать/вращать/масштаб, G прижимает к земле, X удаляет.</p>
+    </section>
+
+    <section class="panel__section">
+      <h3>Время суток</h3>
+      <div class="panel__grid">
+        <button data-time="morning">Утро</button>
+        <button data-time="day">День</button>
+        <button data-time="night">Ночь</button>
+      </div>
+    </section>
+
+    <section class="panel__section">
+      <h3>Рельеф</h3>
+      <label class="panel__field">Сид
+        <input type="number" data-terrain-seed value="7" />
+      </label>
+      <label class="panel__field">Высота гор
+        <input
+          type="range"
+          data-terrain-amplitude
+          min="4"
+          max="24"
+          step="1"
+          value="12"
+        />
+      </label>
+      <label class="panel__field">Радиус поляны
+        <input
+          type="range"
+          data-terrain-plateau
+          min="8"
+          max="40"
+          step="1"
+          value="18"
+        />
+      </label>
+      <button data-terrain-rebuild>Пересоздать рельеф</button>
+    </section>
+
+    <section class="panel__section">
+      <h3>Мир</h3>
+      <div class="panel__grid">
+        <button data-save>Сохранить</button>
+        <button data-export>Экспорт world.json</button>
+        <button data-reset>Сбросить</button>
+      </div>
+      <p class="panel__hint">Сохранение кладёт мир в браузер (localStorage).
+        Экспорт скачивает world.json, его место в public/.</p>
+    </section>
+  </aside>
+
+  <div class="toast" data-toast hidden></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+.panel {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 260px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  backdrop-filter: blur(6px);
+}
+
+.panel__title {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: var(--accent-2);
+}
+
+.panel__section {
+  margin-bottom: 14px;
+}
+
+.panel__section h3 {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.panel__grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.panel__hint {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.panel__selected {
+  color: var(--accent);
+}
+
+.panel__field {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+}

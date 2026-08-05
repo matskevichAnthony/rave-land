@@ -1,0 +1,42 @@
+{
+  "meshes": [
+    {
+      "name": "geometry_0",
+      "vertices": 195327,
+      "triangles": 279197,
+      "non_manifold_edges": 102041,
+      "boundary_edges": 102041,
+      "components": 6070,
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "transforms_applied": true,
+  "bbox_min_m": [
+    -0.7064,
+    -0.1842,
+    0.0
+  ],
+  "bbox_max_m": [
+    0.7064,
+    0.1842,
+    1.75
+  ],
+  "dimensions_m": [
+    1.4129,
+    0.3683,
+    1.75
+  ],
+  "removed_helpers": [
+    "EMPTY:world"
+  ],
+  "scale_factor_applied": 1.7435
+}

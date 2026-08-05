@@ -1,0 +1,53 @@
+:root {
+  --bg: #14102b;
+  --panel-bg: rgba(20, 14, 40, 0.92);
+  --text: #e8e4ff;
+  --muted: #9a92c4;
+  --accent: #00ffd0;
+  --accent-2: #ff2fd6;
+  --border: rgba(155, 140, 220, 0.25);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+}
+
+#app canvas {
+  display: block;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--accent);
+}
+
+input {
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  width: 100%;
+}

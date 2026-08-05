@@ -1,0 +1,15 @@
+node_modules/
+dist/
+
+# Портативный Blender и веса моделей: качаются заново, в историю не нужны
+_other/**/blender-*-linux-x64/
+_other/**/venv/
+_other/local-gen/weights/
+_other/local-gen/models/
+
+# Промежуточные .blend воспроизводятся скриптами пайплайна из исходных GLB
+*.blend
+*.blend1
+
+# Сырой высокополигональный исходник до децимации
+_other/bold-raver-rig/character-animated.glb

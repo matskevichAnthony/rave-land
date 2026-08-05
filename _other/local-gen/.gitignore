@@ -1,0 +1,7 @@
+venv*/
+weights/
+models/
+*.ckpt
+*.safetensors
+*.bin
+__pycache__/
