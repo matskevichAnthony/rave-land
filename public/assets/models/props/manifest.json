@@ -1,0 +1,172 @@
+{
+  "props": [
+    {
+      "name": "speaker-stack",
+      "title": "Стек колонок",
+      "file": "speaker-stack.glb",
+      "triangles": 444,
+      "kilobytes": 30,
+      "size": [
+        2.0,
+        3.15,
+        1.35
+      ]
+    },
+    {
+      "name": "crate",
+      "title": "Ящик",
+      "file": "crate.glb",
+      "triangles": 108,
+      "kilobytes": 9,
+      "size": [
+        1.06,
+        1.01,
+        1.06
+      ]
+    },
+    {
+      "name": "barrel",
+      "title": "Бочка",
+      "file": "barrel.glb",
+      "triangles": 160,
+      "kilobytes": 11,
+      "size": [
+        0.72,
+        0.95,
+        0.72
+      ]
+    },
+    {
+      "name": "barrier",
+      "title": "Ограждение",
+      "file": "barrier.glb",
+      "triangles": 156,
+      "kilobytes": 12,
+      "size": [
+        2.0,
+        1.1,
+        0.16
+      ]
+    },
+    {
+      "name": "bar-counter",
+      "title": "Барная стойка",
+      "file": "bar-counter.glb",
+      "triangles": 148,
+      "kilobytes": 13,
+      "size": [
+        3.12,
+        1.4,
+        0.86
+      ]
+    },
+    {
+      "name": "truss-tower",
+      "title": "Ферма со светом",
+      "file": "truss-tower.glb",
+      "triangles": 600,
+      "kilobytes": 43,
+      "size": [
+        0.86,
+        3.38,
+        0.56
+      ]
+    },
+    {
+      "name": "stage-light",
+      "title": "Прожектор на стойке",
+      "file": "stage-light.glb",
+      "triangles": 160,
+      "kilobytes": 13,
+      "size": [
+        0.74,
+        1.83,
+        0.84
+      ]
+    },
+    {
+      "name": "trash-pile",
+      "title": "Куча мусора",
+      "file": "trash-pile.glb",
+      "triangles": 324,
+      "kilobytes": 26,
+      "size": [
+        1.32,
+        0.65,
+        1.32
+      ]
+    },
+    {
+      "name": "road-sign",
+      "title": "Указатель",
+      "file": "road-sign.glb",
+      "triangles": 120,
+      "kilobytes": 11,
+      "size": [
+        2.12,
+        2.35,
+        0.34
+      ]
+    },
+    {
+      "name": "pallet",
+      "title": "Поддон",
+      "file": "pallet.glb",
+      "triangles": 204,
+      "kilobytes": 15,
+      "size": [
+        1.2,
+        0.12,
+        0.8
+      ]
+    },
+    {
+      "name": "trash-bin",
+      "title": "Урна",
+      "file": "trash-bin.glb",
+      "triangles": 120,
+      "kilobytes": 10,
+      "size": [
+        0.55,
+        0.82,
+        0.58
+      ]
+    },
+    {
+      "name": "graffiti-board",
+      "title": "Граффити-щит",
+      "file": "graffiti-board.glb",
+      "triangles": 132,
+      "kilobytes": 14,
+      "size": [
+        2.4,
+        1.92,
+        1.2
+      ]
+    },
+    {
+      "name": "cable-spool",
+      "title": "Катушка кабеля",
+      "file": "cable-spool.glb",
+      "triangles": 168,
+      "kilobytes": 12,
+      "size": [
+        1.24,
+        0.76,
+        1.24
+      ]
+    },
+    {
+      "name": "porta-toilet",
+      "title": "Биотуалет",
+      "file": "porta-toilet.glb",
+      "triangles": 96,
+      "kilobytes": 10,
+      "size": [
+        1.22,
+        2.34,
+        1.26
+      ]
+    }
+  ]
+}

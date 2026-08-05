@@ -12,9 +12,12 @@
   border-radius: 6px;
   display: flex;
   font-size: 13px;
+  gap: 10px;
   justify-content: space-between;
   padding: 8px 10px;
 }
+
+.stat b { text-align: right; }
 
 .stat span { color: #9a9aac; }
 
