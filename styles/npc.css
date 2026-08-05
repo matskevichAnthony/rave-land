@@ -49,3 +49,19 @@
   color: var(--text);
   overflow-wrap: anywhere;
 }
+
+.npc-card__provenance-title {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.npc-card__provenance .npc-card__value {
+  font-size: 12px;
+}

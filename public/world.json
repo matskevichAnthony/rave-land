@@ -208,8 +208,12 @@
       "position": [8, null, 14],
       "data": {
         "роль": "первый полностью заригованный",
-        "происхождение": "T-pose картинка, TRELLIS, локальный авториг без Mixamo",
-        "скелет": "17 костей; Idle/Aim самописные, Walk×4/Run/Dance×2 — mocap Bandai Namco (CC BY-NC)"
+        "скелет": "17 костей"
+      },
+      "provenance": {
+        "model": "TRELLIS (HF Space, бесплатная очередь)",
+        "rig": "локальный авториг (Blender headless, без Mixamo)",
+        "animations": "Idle/Aim самописные; Walk×4/Run/Dance×2 — mocap Bandai Namco (CC BY-NC)"
       }
     },
     {
@@ -219,8 +223,12 @@
       "seed": 101,
       "position": [-4, null, 12],
       "data": {
-        "роль": "первый гость из TRELLIS",
-        "происхождение": "нарисован и сгенерирован, риг ещё впереди"
+        "роль": "первый гость из TRELLIS"
+      },
+      "provenance": {
+        "model": "TRELLIS (HF Space, бесплатная очередь)",
+        "rig": "нет (статичная модель, риг впереди)",
+        "animations": "нет"
       }
     },
     {
