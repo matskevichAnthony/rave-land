@@ -217,6 +217,23 @@
       }
     },
     {
+      "id": "npc-techno-raver",
+      "name": "Техно-рейвер",
+      "src": "assets/models/techno-raver.glb",
+      "seed": 303,
+      "position": [5, null, -3],
+      "data": {
+        "роль": "первый персонаж целиком из облачного маршрута",
+        "скелет": "17 костей",
+        "полигоны": "12 000 треугольников"
+      },
+      "provenance": {
+        "model": "Hunyuan3D-2 (HF Space, ручка /shape_generation), картинка FLUX.1-schnell (HF Space), текстура проекцией концепта в Blender",
+        "rig": "локальный авториг (Blender headless, веса через voxel-прокси)",
+        "animations": "Idle и Aim самописные, Walk/Run/Dance это mocap Bandai Namco (CC BY-NC)"
+      }
+    },
+    {
       "id": "npc-trellis",
       "name": "Пришелец",
       "src": "assets/models/trellis-npc.glb",

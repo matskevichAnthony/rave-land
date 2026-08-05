@@ -6,7 +6,10 @@
     python3 tools/gen/image2mesh.py input.png output.glb [--space trellis|hunyuan]
 
 Провайдеры (см. docs/PIPELINE.md):
-    hunyuan  -> tencent/Hunyuan3D-2   по умолчанию. Space живой, сигнатура сверена 05.08.2026
+    hunyuan  -> tencent/Hunyuan3D-2   по умолчанию. Space живой, сигнатура сверена 05.08.2026.
+                                      Ветка с текстурой (/generation_all) в этот день падала
+                                      серверным NameError, поэтому есть откат на /shape_generation:
+                                      геометрия без текстуры
     trellis  -> JeffreyXiang/TRELLIS  им сделаны оба персонажа вручную, но 05.08.2026 Space
                                       отвечает CONFIG_ERROR. Пробовать, когда починят
 
@@ -22,7 +25,9 @@ import argparse
 import os
 import shutil
 import sys
+import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 # httpx внутри gradio_client не понимает схему socks:// и падает ещё до запроса,
@@ -38,7 +43,22 @@ except ImportError:
 SPACES = {
     'trellis': 'JeffreyXiang/TRELLIS',
     'hunyuan': 'tencent/Hunyuan3D-2',
+    'hunyuan21': 'tencent/Hunyuan3D-2.1',
 }
+
+HUNYUAN_PARAMS = dict(
+    mv_image_front=None,
+    mv_image_back=None,
+    mv_image_left=None,
+    mv_image_right=None,
+    steps=30,
+    guidance_scale=5.5,
+    seed=1234,
+    octree_resolution=256,
+    check_box_rembg=True,
+    num_chunks=8000,
+    randomize_seed=False,
+)
 
 
 def dump_api(client):
@@ -65,54 +85,77 @@ def run_trellis(client, image_path):
         multiimage_algo='stochastic',
         api_name='/image_to_3d',
     )
-    result = client.predict(
+    return client.predict(
         mesh_simplify=0.95,
         texture_size=1024,
         api_name='/extract_glb',
     )
-    # result: (model_path_dict, download_path) — берём последний str/датафайл
-    return pick_glb(result)
 
 
 def run_hunyuan(client, image_path):
-    """Hunyuan3D-2: shape+texture одной ручкой /generation_all."""
-    image = handle_file(image_path)
-    result = client.predict(
-        caption='',
-        image=image,
-        steps=30,
-        guidance_scale=5.5,
-        seed=1234,
-        octree_resolution='256',
-        check_box_rembg=True,
-        api_name='/generation_all',
-    )
-    return pick_glb(result)
+    """Hunyuan3D-2: shape+texture одной ручкой /generation_all.
+
+    Сигнатура сверена с живым Space 05.08.2026. Два расхождения с прежним кодом:
+    octree_resolution стал числовым слайдером и строку '256' не принимает, а
+    randomize_seed по умолчанию True, то есть переданный seed молча игнорируется
+    и прогон невоспроизводим.
+    """
+    return hunyuan_generate(client, image_path, caption='')
 
 
-def pick_glb(result):
-    """Ищет путь к .glb в ответе gradio (может быть str, dict или tuple)."""
-    def candidates(node):
-        if isinstance(node, str):
+def run_hunyuan21(client, image_path):
+    """Hunyuan3D-2.1: те же ручки, но без caption и с PBR-текстурой."""
+    return hunyuan_generate(client, image_path)
+
+
+def hunyuan_generate(client, image_path, **extra):
+    params = HUNYUAN_PARAMS | {'image': handle_file(image_path)} | extra
+    try:
+        return client.predict(**params, api_name='/generation_all')
+    except Exception as exc:  # noqa: BLE001
+        print(f'  /generation_all упал ({exc}), беру только форму через /shape_generation. '
+              f'Текстуры не будет, красить придётся проекцией картинки в Blender.',
+              file=sys.stderr)
+        return client.predict(**params, api_name='/shape_generation')
+
+
+def glb_paths(node):
+    """Все пути к .glb внутри ответа gradio (str, dict или tuple)."""
+    if isinstance(node, str):
+        if node.endswith('.glb'):
             yield node
-        elif isinstance(node, dict):
-            yield from candidates(node.get('value'))
-            yield from candidates(node.get('path'))
-            yield from candidates(node.get('name'))
-        elif isinstance(node, (list, tuple)):
-            for item in node:
-                yield from candidates(item)
+    elif isinstance(node, dict):
+        for key in ('value', 'path', 'name'):
+            yield from glb_paths(node.get(key))
+    elif isinstance(node, (list, tuple)):
+        for item in node:
+            yield from glb_paths(item)
 
-    for path in candidates(result):
-        if path and path.endswith('.glb') and Path(path).exists():
+
+def fetch_glb(client, result):
+    """Локальный путь к GLB из ответа Space, при необходимости скачивая файл.
+
+    Hunyuan отдаёт не FileData, а gr.update со ссылкой на файл внутри контейнера
+    Space, поэтому gradio_client такой файл не выкачивает и локально его нет.
+    Достаём его штатным файловым маршрутом gradio.
+    """
+    for path in glb_paths(result):
+        if Path(path).exists():
             return path
+        url = f'{client.src.rstrip("/")}/file={path}'
+        local = Path(tempfile.mkdtemp()) / Path(path).name
+        print(f'  файл остался в Space, скачиваю {url}')
+        with urllib.request.urlopen(url, timeout=DOWNLOAD_TIMEOUT) as response:
+            local.write_bytes(response.read())
+        return str(local)
     raise RuntimeError(f'GLB не найден в ответе Space: {result!r}')
 
 
-RUNNERS = {'trellis': run_trellis, 'hunyuan': run_hunyuan}
+RUNNERS = {'trellis': run_trellis, 'hunyuan': run_hunyuan, 'hunyuan21': run_hunyuan21}
 
 # Через здешний прокси примерно каждое третье рукопожатие с HF отваливается по таймауту.
 CONNECT_ATTEMPTS = 4
+DOWNLOAD_TIMEOUT = 300
 
 
 def connect(space, space_key):
@@ -145,7 +188,7 @@ def main():
 
     print('[2/3] Генерация (минуты; очередь бесплатного Space)...')
     try:
-        glb = RUNNERS[args.space](client, str(image_path))
+        glb = fetch_glb(client, RUNNERS[args.space](client, str(image_path)))
     except Exception as exc:  # noqa: BLE001
         print(f'Генерация упала: {exc}', file=sys.stderr)
         dump_api(client)

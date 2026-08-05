@@ -1,0 +1,125 @@
+Генерация упала: 'NameError'
+
+--- Актуальное API этого Space (эндпоинты сменились?) ---
+[1/3] Подключаюсь к tencent/Hunyuan3D-2 (публичная очередь, может ждать)...
+Loaded as API: https://tencent-hunyuan3d-2.hf.space
+[2/3] Генерация (минуты; очередь бесплатного Space)...
+Client.predict() Usage Info
+---------------------------
+Named API endpoints: 12
+
+ - predict(api_name="/lambda") -> 
+    Parameters:
+     - None
+    Returns:
+     - None
+
+ - predict(api_name="/lambda_1") -> 
+    Parameters:
+     - None
+    Returns:
+     - None
+
+ - predict(caption, image, mv_image_front, mv_image_back, mv_image_left, mv_image_right, steps, guidance_scale, seed, octree_resolution, check_box_rembg, num_chunks, randomize_seed, api_name="/shape_generation") -> (file, output, mesh_stats, seed)
+    Parameters:
+     - [Textbox] caption: str | None (not required, defaults to:   None)  
+     - [Image] image: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_front: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_back: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_left: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_right: filepath | None (not required, defaults to:   None)  
+     - [Slider] steps: float (not required, defaults to:   30)  (numeric value between 1 and 100) 
+     - [Number] guidance_scale: float (not required, defaults to:   5.0)  
+     - [Slider] seed: float (not required, defaults to:   1234)  (numeric value between 0 and 10000000.0) 
+     - [Slider] octree_resolution: float (not required, defaults to:   256)  (numeric value between 16 and 512) 
+     - [Checkbox] check_box_rembg: bool (not required, defaults to:   True)  
+     - [Slider] num_chunks: float (not required, defaults to:   8000)  (numeric value between 1000 and 5000000) 
+     - [Checkbox] randomize_seed: bool (not required, defaults to:   True)  
+    Returns:
+     - [File] file: filepath 
+     - [Html] output: str 
+     - [Json] mesh_stats: Dict[Any, Any] (any valid json) 
+     - [Slider] seed: float (numeric value between 0 and 10000000.0) 
+
+ - predict(api_name="/lambda_2") -> (include_texture, simplify_mesh, download)
+    Parameters:
+     - None
+    Returns:
+     - [Checkbox] include_texture: bool 
+     - [Checkbox] simplify_mesh: bool 
+     - [Downloadbutton] download: filepath 
+
+ - predict(api_name="/lambda_3") -> 
+    Parameters:
+     - None
+    Returns:
+     - None
+
+ - predict(caption, image, mv_image_front, mv_image_back, mv_image_left, mv_image_right, steps, guidance_scale, seed, octree_resolution, check_box_rembg, num_chunks, randomize_seed, api_name="/generation_all") -> (file, file, output, mesh_stats, seed)
+    Parameters:
+     - [Textbox] caption: str | None (not required, defaults to:   None)  
+     - [Image] image: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_front: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_back: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_left: filepath | None (not required, defaults to:   None)  
+     - [Image] mv_image_right: filepath | None (not required, defaults to:   None)  
+     - [Slider] steps: float (not required, defaults to:   30)  (numeric value between 1 and 100) 
+     - [Number] guidance_scale: float (not required, defaults to:   5.0)  
+     - [Slider] seed: float (not required, defaults to:   1234)  (numeric value between 0 and 10000000.0) 
+     - [Slider] octree_resolution: float (not required, defaults to:   256)  (numeric value between 16 and 512) 
+     - [Checkbox] check_box_rembg: bool (not required, defaults to:   True)  
+     - [Slider] num_chunks: float (not required, defaults to:   8000)  (numeric value between 1000 and 5000000) 
+     - [Checkbox] randomize_seed: bool (not required, defaults to:   True)  
+    Returns:
+     - [File] file: filepath 
+     - [File] file: filepath 
+     - [Html] output: str 
+     - [Json] mesh_stats: Dict[Any, Any] (any valid json) 
+     - [Slider] seed: float (numeric value between 0 and 10000000.0) 
+
+ - predict(api_name="/lambda_4") -> (include_texture, simplify_mesh, download)
+    Parameters:
+     - None
+    Returns:
+     - [Checkbox] include_texture: bool 
+     - [Checkbox] simplify_mesh: bool 
+     - [Downloadbutton] download: filepath 
+
+ - predict(api_name="/lambda_5") -> 
+    Parameters:
+     - None
+    Returns:
+     - None
+
+ - predict(value, api_name="/on_gen_mode_change") -> inference_steps
+    Parameters:
+     - [Radio] value: Literal['Turbo', 'Fast', 'Standard'] (not required, defaults to:   Turbo)  
+    Returns:
+     - [Slider] inference_steps: float (numeric value between 1 and 100) 
+
+ - predict(value, api_name="/on_decode_mode_change") -> octree_resolution
+    Parameters:
+     - [Radio] value: Literal['Low', 'Standard', 'High'] (not required, defaults to:   Standard)  
+    Returns:
+     - [Slider] octree_resolution: float (numeric value between 16 and 512) 
+
+ - predict(api_name="/lambda_6") -> 
+    Parameters:
+     - None
+    Returns:
+     - None
+
+ - predict(file_out, file_out2, file_type, reduce_face, export_texture, target_face_num, api_name="/on_export_click") -> (output, download)
+    Parameters:
+     - [File] file_out: filepath (required)  
+     - [File] file_out2: filepath (required)  
+     - [Dropdown] file_type: Literal['glb', 'obj', 'ply', 'stl'] (not required, defaults to:   glb)  
+     - [Checkbox] reduce_face: bool (not required, defaults to:   False)  
+     - [Checkbox] export_texture: bool (not required, defaults to:   False)  
+     - [Slider] target_face_num: float (not required, defaults to:   10000)  (numeric value between 100 and 1000000) 
+    Returns:
+     - [Html] output: str 
+     - [Downloadbutton] download: filepath 
+
+Unnamed API endpoints: 0
+

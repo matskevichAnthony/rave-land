@@ -7,6 +7,7 @@ const CHARACTERS = [
   { name: 'Танцы (mocap-ретаргет)', src: 'assets/models/dance-preview.glb' },
   { name: 'TRELLIS NPC (сырой)', src: 'assets/models/trellis-npc.glb' },
   { name: 'Bold Raver', src: 'assets/models/bold-raver.glb' },
+  { name: 'Техно-рейвер (облачный маршрут)', src: 'assets/models/techno-raver.glb' },
 ];
 
 const cardsRoot = document.querySelector('[data-js-cards]');

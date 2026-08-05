@@ -1,0 +1,6 @@
+  /generation_all упал ('The requested GPU duration (270s) is larger than the maximum allowed'), беру только форму через /shape_generation. Текстуры не будет, красить придётся проекцией картинки в Blender.
+[1/3] Подключаюсь к tencent/Hunyuan3D-2.1 (публичная очередь, может ждать)...
+Loaded as API: https://tencent-hunyuan3d-2-1.hf.space
+[2/3] Генерация (минуты; очередь бесплатного Space)...
+[3/3] Готово: /home/anton-matzkaim/rave-land/_other/cloud-route/techno-raver-textured.glb
+Дальше: авториг -> анимации -> постобработка (tools/README.md).

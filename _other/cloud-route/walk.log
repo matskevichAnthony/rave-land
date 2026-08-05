@@ -1,0 +1,33 @@
+BVH 195 frames @ 30.00 fps, segment 0.00..6.47s
+	parsing bvh '/home/anton-matzkaim/rave-land/_other/mocap/bandai/dataset-1_walk_normal_001.bvh'...	zero length node found: Head
+	zero length node found: Hand_L
+	zero length node found: Hand_R
+	zero length node found: Toes_L
+	zero length node found: Toes_R
+0.0198
+	importing to blender...	zero length bone found: Head
+	zero length bone found: Hand_L
+	zero length bone found: Hand_R
+	zero length bone found: Toes_L
+Done in 0.0406
+
+BONE MAP: bandai
+T0 frame 54 (hips z 0.925m)
+YAW correction -4.7 deg
+RETARGETED Walk: 195 keys, 6.47s
+CLIPS: ['Idle', 'Walk', 'Run', 'Aim', 'Dance']
+STORE saved: /home/anton-matzkaim/rave-land/_other/cloud-route/techno-raver-rig/clips.blend
+INFO Draco mesh compression is available, use library at /home/anton-matzkaim/rave-land/_other/auto-rig/blender-4.2.9-linux-x64/4.2/python/lib/python3.11/site-packages/libextern_draco.so
+17:45:38 | INFO: Starting glTF 2.0 export
+17:45:38 | INFO: Extracting primitive: geometry_0
+17:45:38 | INFO: Primitives created: 2
+17:45:39 | INFO: Finished glTF 2.0 export in 0.8736433982849121 s
+
+EXPORTED /home/anton-matzkaim/rave-land/tools/anim/build/raw.glb
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Read blend: "/home/anton-matzkaim/rave-land/_other/cloud-route/techno-raver-rig/rig.blend"
+
+Blender quit
+prune: Removed types... Skin (1), Accessor (9)
+written /home/anton-matzkaim/rave-land/tools/anim/build/final.glb
+bvh2clip: Walk -> _other/cloud-route/techno-raver-animated.glb (1.1M)

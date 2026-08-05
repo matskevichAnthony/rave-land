@@ -41,7 +41,9 @@ if not (RIG_DIR / 'rig.blend').exists():
 sys.path.insert(0, str(RIG_DIR))
 import anim_lib
 import rig_lib
-CLIP_STORE = TOOLS_DIR / 'clips.blend'
+# Хранилище клипов лежит рядом с ригом: локальные кватернионы считаются от rest-позы
+# конкретного скелета, и общий на всех персонажей файл подмешивал бы чужие позы.
+CLIP_STORE = RIG_DIR / 'clips.blend'
 SCENE_FPS = 30
 TARGET_TRIS = 32000
 BVH_SCALE = 0.01
