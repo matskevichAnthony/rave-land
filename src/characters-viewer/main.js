@@ -10,11 +10,47 @@ const CHARACTERS = [
   { name: 'Техно-рейвер (облачный маршрут)', src: 'assets/models/techno-raver.glb' },
 ];
 
+// Модели, которых нет в мире: у остальных происхождение берётся из world.json,
+// чтобы карточка NPC в игре и эта страница не разъезжались.
+const EXTRA_PROVENANCE = {
+  'assets/models/bold-raver.glb': {
+    model: 'TRELLIS, бесплатная очередь HF Space: https://huggingface.co/spaces/JeffreyXiang/TRELLIS',
+    rig: 'локальный авториг, Blender headless, 17 костей, веса через voxel-прокси',
+    animations: 'Idle и Aim самописные; Walk, Run, Dance это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset',
+  },
+  'assets/models/dance-preview.glb': {
+    model: 'меш Берлинца из TRELLIS: https://huggingface.co/spaces/JeffreyXiang/TRELLIS',
+    rig: 'локальный авториг, Blender headless, 17 костей',
+    animations: 'превью ретаргета танцев, mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset',
+  },
+};
+
+const PROVENANCE_LABELS = {
+  model: '3D-модель',
+  rig: 'Риг',
+  animations: 'Анимации',
+};
+
 const cardsRoot = document.querySelector('[data-js-cards]');
 const viewerRoot = document.querySelector('[data-js-viewer]');
 const canvasRoot = document.querySelector('[data-js-canvas]');
 const clipsRoot = document.querySelector('[data-js-clips]');
+const provenanceRoot = document.querySelector('[data-js-provenance]');
 const nameLabel = document.querySelector('[data-js-name]');
+
+const provenanceBySrc = { ...EXTRA_PROVENANCE, ...await loadWorldProvenance() };
+
+async function loadWorldProvenance() {
+  try {
+    const world = await (await fetch('world.json')).json();
+    return Object.fromEntries(world.npcs
+      .filter((npc) => npc.src && npc.provenance)
+      .map((npc) => [npc.src, npc.provenance]));
+  } catch (error) {
+    console.warn('world.json не прочитан, происхождение только для внеигровых моделей', error);
+    return {};
+  }
+}
 
 let renderer, scene, camera, controls, mixer, model;
 const clock = new THREE.Clock();
@@ -72,9 +108,36 @@ function resize() {
 function openViewer(character) {
   viewerRoot.hidden = false;
   nameLabel.textContent = character.name;
+  showProvenance(character.src);
   initScene();
   resize();
   loadCharacter(character.src);
+}
+
+function showProvenance(src) {
+  const provenance = provenanceBySrc[src];
+  provenanceRoot.replaceChildren(...Object.entries(provenance ?? {}).flatMap(([key, value]) => {
+    const term = document.createElement('dt');
+    term.textContent = PROVENANCE_LABELS[key] ?? key;
+    const detail = document.createElement('dd');
+    detail.append(...withLinks(String(value)));
+    return [term, detail];
+  }));
+  if (!provenance) provenanceRoot.textContent = 'Происхождение не записано';
+}
+
+function withLinks(text) {
+  return text.split(/(\s+)/).map((token) => {
+    if (!token.startsWith('http')) return token;
+    const link = document.createElement('a');
+    link.href = token;
+    link.target = '_blank';
+    link.rel = 'noreferrer';
+    const { hostname, pathname } = new URL(token);
+    const tail = pathname.split('/').filter(Boolean).at(-1);
+    link.textContent = tail ? `${hostname}/${tail}` : hostname;
+    return link;
+  });
 }
 
 function closeViewer() {

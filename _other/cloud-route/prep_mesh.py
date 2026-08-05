@@ -7,6 +7,7 @@ Hunyuan отдал только форму (текстурная ветка Spac
 
 Запуск: blender -b --python prep_mesh.py -- <вход.glb> <концепт.png> <выход.glb> <треугольников>
 """
+import math
 import sys
 from pathlib import Path
 
@@ -20,9 +21,15 @@ import rig_lib
 BACKGROUND_TOLERANCE = 0.08
 INPAINT_STEPS = 24
 ERODE_STEPS = 3
-HEAD_BAND = 0.11
 SCALP_BAND = 0.03
 FRONT_AXIS_SIGN = -1.0
+SIDE_COLUMN_WIDTH = 8
+SIDE_SMOOTH = 0.08
+SIDE_MARGIN = 1.25
+HEAD_COLUMN_MARGIN = 0.015
+HEAD_START = 0.86
+HEAD_DECIMATE_SHARE = 0.25
+SMOOTH_ANGLE = math.radians(38)
 
 
 def neighbours(array):
@@ -70,14 +77,22 @@ def inpaint_background(pixels, subject):
 
 
 def make_back(pixels, subject):
-    """Зеркало концепта, где лицо заменено цветом макушки: затылок, а не второе лицо."""
+    """Зеркало концепта, где лицо заменено цветом макушки: затылок, а не второе лицо.
+
+    Заливка держится в колонках самой головы: если брать всю ширину силуэта, на
+    капюшон и плечи ложится светлое пятно и сзади читается как поля шляпы.
+    """
     back = np.fliplr(pixels).copy()
     mask = np.fliplr(subject)
-    height = back.shape[0]
-    scalp = back[int(height * (1 - SCALP_BAND)):][mask[int(height * (1 - SCALP_BAND)):]]
+    height, width = mask.shape
+    crown = mask[int(height * (1 - SCALP_BAND)):]
+    scalp = back[int(height * (1 - SCALP_BAND)):][crown]
+    columns = np.flatnonzero(crown.any(axis=0))
+    margin = int(width * HEAD_COLUMN_MARGIN)
     head = np.zeros_like(mask)
-    head[int(height * (1 - HEAD_BAND)):] = mask[int(height * (1 - HEAD_BAND)):]
-    back[head] = scalp.mean(axis=0)
+    head[int(height * HEAD_START):,
+         max(columns[0] - margin, 0):columns[-1] + margin] = True
+    back[head & mask] = scalp.mean(axis=0)
     return back
 
 
@@ -99,24 +114,59 @@ def make_material(name, image):
     shader.inputs['Metallic'].default_value = 0.0
     texture = tree.nodes.new('ShaderNodeTexImage')
     texture.image = image
-    texture.interpolation = 'Closest'
+    texture.interpolation = 'Linear'
     tree.links.new(texture.outputs['Color'], shader.inputs['Base Color'])
     return material
 
 
-def decimate(obj, target_tris):
-    tris = sum(len(p.vertices) - 2 for p in obj.data.polygons)
-    if tris <= target_tris:
-        print(f'DECIMATE skipped: {tris} tris already within budget')
-        return
+def count_tris(obj):
+    return sum(len(p.vertices) - 2 for p in obj.data.polygons)
+
+
+def head_vertex_group(obj):
+    """Группа-щит для головы: равномерная децимация съедает лицо раньше всего,
+    потому что оно занимает малую долю площади, а деталей требует больше всех."""
+    coords = rig_lib.get_verts(obj)
+    height = coords[:, 2].max()
+    group = obj.vertex_groups.new(name='decimate_shield')
+    for index, co in enumerate(coords):
+        above = (co[2] - HEAD_START * height) / ((1 - HEAD_START) * height)
+        shield = min(max(above, 0.0), 1.0)
+        group.add([index], 1.0 - shield * (1.0 - HEAD_DECIMATE_SHARE), 'REPLACE')
+    return group
+
+
+def apply_decimate(obj, ratio, vertex_group=None):
     modifier = obj.modifiers.new('Decimate', 'DECIMATE')
-    modifier.ratio = target_tris / tris
+    modifier.ratio = ratio
     modifier.use_collapse_triangulate = True
+    if vertex_group:
+        modifier.vertex_group = vertex_group.name
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.modifier_apply(modifier=modifier.name)
-    print(f'DECIMATED {tris} -> {sum(len(p.vertices) - 2 for p in obj.data.polygons)} tris')
+
+
+def decimate(obj, target_tris):
+    tris = count_tris(obj)
+    if tris <= target_tris:
+        print(f'DECIMATE skipped: {tris} tris already within budget')
+        return
+    apply_decimate(obj, target_tris / tris, head_vertex_group(obj))
+    shielded = count_tris(obj)
+    if shielded > target_tris:
+        apply_decimate(obj, target_tris / shielded)
+    print(f'DECIMATED {tris} -> {shielded} -> {count_tris(obj)} tris')
+
+
+def smooth_shading(obj):
+    """Сглаженные нормали на плавных участках: гранёный череп читается как мутант,
+    а рёбра одежды остаются жёсткими и держат low-poly вид."""
+    bpy.ops.object.select_all(action='DESELECT')
+    obj.select_set(True)
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.shade_smooth_by_angle(angle=SMOOTH_ANGLE)
 
 
 def project_uv(obj):
@@ -131,17 +181,41 @@ def project_uv(obj):
                                         (co[2] - low[2]) / (high[2] - low[2]))
 
 
-def assign_sides(obj, front_material, back_material):
+def side_column(pixels, subject):
+    """Ровный тон по высоте для бортовых полигонов: фронтальная проекция на них
+    растягивает пиксели в полосы. Медиана строки берётся с сильным вертикальным
+    сглаживанием, иначе брови, уши и рот дают на черепе поперечные ленты."""
+    height = pixels.shape[0]
+    medians = np.zeros((height, 4), dtype=np.float32)
+    for row in range(height):
+        visible = pixels[row][subject[row]]
+        if len(visible):
+            medians[row] = np.median(visible, axis=0)
+    window = max(int(height * SIDE_SMOOTH), 1)
+    kernel = np.ones(window) / window
+    padded = np.pad(medians, ((window, window), (0, 0)), mode='edge')
+    smoothed = np.stack([np.convolve(padded[:, channel], kernel, mode='same')[window:window + height]
+                         for channel in range(4)], axis=1)
+    smoothed[:, 3] = 1.0
+    return np.repeat(smoothed[:, None, :], SIDE_COLUMN_WIDTH, axis=1)
+
+
+def assign_sides(obj, materials):
+    """Полигон читает концепт только пока смотрит вперёд или назад: у бортовых
+    граней фронтальная проекция растягивает пиксели в полосы."""
     mesh = obj.data
     mesh.materials.clear()
-    mesh.materials.append(front_material)
-    mesh.materials.append(back_material)
-    back = 0
+    for material in materials:
+        mesh.materials.append(material)
+    counts = [0, 0, 0]
     for polygon in mesh.polygons:
-        facing_front = polygon.normal.y * FRONT_AXIS_SIGN > 0
-        polygon.material_index = 0 if facing_front else 1
-        back += not facing_front
-    print(f'SIDES front {len(mesh.polygons) - back}, back {back}')
+        normal = polygon.normal
+        facing = normal.y * FRONT_AXIS_SIGN
+        sideways = max(abs(normal.x), abs(normal.z))
+        index = 2 if abs(normal.y) * SIDE_MARGIN < sideways else 0 if facing > 0 else 1
+        polygon.material_index = index
+        counts[index] += 1
+    print(f'SIDES front {counts[0]}, back {counts[1]}, side {counts[2]}')
 
 
 def main():
@@ -150,13 +224,16 @@ def main():
 
     obj = rig_lib.import_and_normalize(source)
     decimate(obj, target_tris)
+    smooth_shading(obj)
     project_uv(obj)
 
     cropped, subject = crop_to_subject(load_pixels(concept))
     front_pixels = inpaint_background(cropped, subject)
-    front = save_image('texture-front', front_pixels)
-    back = save_image('texture-back', make_back(front_pixels, subject))
-    assign_sides(obj, make_material('raver_front', front), make_material('raver_back', back))
+    images = (save_image('texture-front', front_pixels),
+              save_image('texture-back', make_back(front_pixels, subject)),
+              save_image('texture-side', side_column(front_pixels, subject)))
+    assign_sides(obj, [make_material(f'raver_{name}', image) for name, image
+                       in zip(('front', 'back', 'side'), images)])
 
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)

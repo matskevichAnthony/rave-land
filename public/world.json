@@ -491,9 +491,9 @@
         "скелет": "17 костей"
       },
       "provenance": {
-        "model": "TRELLIS (HF Space, бесплатная очередь)",
-        "rig": "локальный авториг (Blender headless, без Mixamo)",
-        "animations": "Idle/Aim самописные; Walk×4/Run/Dance×2 — mocap Bandai Namco (CC BY-NC)"
+        "model": "TRELLIS, бесплатная очередь HF Space: https://huggingface.co/spaces/JeffreyXiang/TRELLIS",
+        "rig": "локальный авториг, Blender headless, 17 костей, без Mixamo",
+        "animations": "Idle и Aim самописные; Walk x4, Run, Dance x2 это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset"
       }
     },
     {
@@ -505,12 +505,12 @@
       "data": {
         "роль": "первый персонаж целиком из облачного маршрута",
         "скелет": "17 костей",
-        "полигоны": "12 000 треугольников"
+        "полигоны": "15 000 треугольников"
       },
       "provenance": {
-        "model": "Hunyuan3D-2 (HF Space, ручка /shape_generation), картинка FLUX.1-schnell (HF Space), текстура проекцией концепта в Blender",
-        "rig": "локальный авториг (Blender headless, веса через voxel-прокси)",
-        "animations": "Idle и Aim самописные, Walk/Run/Dance это mocap Bandai Namco (CC BY-NC)"
+        "model": "форма Hunyuan3D-2, ручка /shape_generation: https://huggingface.co/spaces/tencent/Hunyuan3D-2 ; концепт FLUX.1-schnell: https://huggingface.co/spaces/black-forest-labs/FLUX.1-schnell ; текстура проекцией концепта в Blender, потому что текстурная ветка Space анонимной очереди недоступна",
+        "rig": "локальный авториг, Blender headless, 17 костей, веса через voxel-прокси",
+        "animations": "Idle и Aim самописные; Walk, Run, Dance это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset"
       }
     },
     {
@@ -523,8 +523,8 @@
         "роль": "первый гость из TRELLIS"
       },
       "provenance": {
-        "model": "TRELLIS (HF Space, бесплатная очередь)",
-        "rig": "нет (статичная модель, риг впереди)",
+        "model": "TRELLIS, бесплатная очередь HF Space: https://huggingface.co/spaces/JeffreyXiang/TRELLIS",
+        "rig": "нет, статичная модель, риг впереди",
         "animations": "нет"
       }
     },
