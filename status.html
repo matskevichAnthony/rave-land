@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Статус Rave Land</title>
+  <link rel="stylesheet" href="./styles/status.css" />
+</head>
+<body>
+  <h1 class="page-title">Статус проекта</h1>
+  <p class="page-lead">
+    Страница читает <code>docs/FINDINGS.md</code> напрямую, поэтому расходиться с журналом не может.
+    Правится журнал, а не эта страница. Маршруты и раннбук лежат в <code>docs/PIPELINE.md</code>.
+  </p>
+  <nav class="page-nav">
+    <a href="./index.html">В игру</a>
+    <a href="./characters.html">Персонажи</a>
+    <a href="./props.html">Пропы</a>
+  </nav>
+
+  <div class="tiles" data-js-counts></div>
+
+  <h2 class="section-title">Что сейчас в мире</h2>
+  <div class="npc-grid" data-js-npc></div>
+
+  <h2 class="section-title">Журнал findings</h2>
+  <div class="filters" data-js-filters></div>
+  <div class="findings" data-js-list></div>
+
+  <script type="module" src="./src/status/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+@import './page-shell.css';
+
+.section-title {
+  font-size: 15px;
+  margin: 26px 0 10px;
+}
+
+.tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.tile {
+  background: #24242e;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  min-width: 120px;
+  padding: 12px 16px;
+}
+
+.tile b {
+  display: block;
+  font-size: 22px;
+}
+
+.tile span {
+  color: #9a9aac;
+  font-size: 12px;
+}
+
+.npc-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.npc {
+  background: #1d1d26;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.npc small {
+  color: #7fb7d8;
+  display: block;
+  font-size: 11px;
+  margin: 2px 0 8px;
+}
+
+.npc p {
+  color: #c9c9da;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filters button {
+  background: #24242e;
+  border: 1px solid #3a3a48;
+  border-radius: 6px;
+  color: #c9c9da;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 12px;
+}
+
+.filters button.is-active {
+  background: #33445a;
+  color: #eee;
+}
+
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 980px;
+}
+
+.finding {
+  background: #1d1d26;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.finding header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.finding__title { font-size: 14px; }
+
+.finding__section {
+  color: #9a9aac;
+  font-size: 11px;
+  margin: 4px 0 8px;
+}
+
+.finding__body {
+  color: #c9c9da;
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.finding__body code {
+  color: #d8b46a;
+  font-size: 12px;
+}
+
+.badge {
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.badge--open { background: #6a4a2a; color: #ffd9a0; }
+.badge--closed { background: #2e5a3a; color: #b7f0c4; }
+.badge--info { background: #33445a; color: #cfe4ff; }

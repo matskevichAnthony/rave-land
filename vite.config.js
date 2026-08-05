@@ -10,6 +10,8 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         characters: resolve(import.meta.dirname, 'characters.html'),
+        props: resolve(import.meta.dirname, 'props.html'),
+        status: resolve(import.meta.dirname, 'status.html'),
       },
     },
   },
