@@ -25,9 +25,9 @@ DEFAULT_RIG_DIR = REPO_ROOT / '_other' / 'auto-rig'
 
 
 def resolve_rig_dir():
-    """--rig-dir <path> перед '--' у Blender: каталог с rig.blend, landmarks.json,
-    anim_lib.py, rig_lib.py. По умолчанию — риг Берлинца (_other/auto-rig);
-    для Bold Raver: --rig-dir _other/bold-raver-rig."""
+    """--rig-dir <path> перед '--' у Blender: каталог с rig.blend и landmarks.json.
+    По умолчанию берётся риг Берлинца (_other/auto-rig), для остальных персонажей
+    каталог указывается явно, например --rig-dir _other/bold-raver-rig."""
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
     if '--rig-dir' in argv:
         return Path(argv[argv.index('--rig-dir') + 1]).resolve()
@@ -38,7 +38,10 @@ RIG_DIR = resolve_rig_dir()
 if not (RIG_DIR / 'rig.blend').exists():
     raise SystemExit(f'rig.blend not found in {RIG_DIR} — воспроизведите риг '
                      f'скриптами step1_rig.py/step2_weights.py или укажите --rig-dir')
+# Каталог рига может нести свои версии библиотек, но обычно их там нет и берутся
+# эталонные: одна копия rig_lib/anim_lib на всех персонажей вместо копии на каждого.
 sys.path.insert(0, str(RIG_DIR))
+sys.path.append(str(DEFAULT_RIG_DIR))
 import anim_lib
 import rig_lib
 # Хранилище клипов лежит рядом с ригом: локальные кватернионы считаются от rest-позы

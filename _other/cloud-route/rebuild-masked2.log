@@ -1,0 +1,132 @@
+11:24:32 | INFO: Data are loaded, start creating Blender stuff
+11:24:32 | INFO: Blender create Mesh node geometry_0
+11:24:32 | INFO: glTF import finished in 0.15s
+DECIMATED 142368 -> 15000 -> 15000 tris
+SIDES front 3337, back 2859, side 8804
+INFO Draco mesh compression is available, use library at /home/anton-matzkaim/rave-land/_other/auto-rig/blender-4.2.9-linux-x64/4.2/python/lib/python3.11/site-packages/libextern_draco.so
+11:24:38 | INFO: Starting glTF 2.0 export
+11:24:38 | INFO: Extracting primitive: geometry_0
+11:24:38 | INFO: Primitives created: 3
+11:24:38 | INFO: Finished glTF 2.0 export in 0.035610198974609375 s
+
+EXPORTED /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-prepped.glb
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+
+Blender quit
+11:24:39 | INFO: Data are loaded, start creating Blender stuff
+11:24:39 | INFO: Blender create Mesh node geometry_0
+11:24:39 | INFO: glTF import finished in 0.02s
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Info: Total files 0 | Changed 0 | Failed 0
+MESH_VERTS 8979
+MESH_TRIS 15000
+FORWARD detected 1.0, forced to -1.0
+LANDMARKS {'height': 1.75, 'forward': -1.0, 'pelvis': [0.0, -0.037134066224098206, 0.7700000000000001], 'spine_top': [0.0, -0.06425867229700089, 0.9450000000000002], 'chest_top': [0.0, -0.009596941992640495, 1.3279454708099365], 'neck_top': [0.0, -0.007677553594112397, 1.4756645560264587], 'head_top': [0.0, -0.004798470996320248, 1.7325], 'shoulder': [0.20125, 0.033223461359739304, 1.3279454708099365], 'elbow': [0.4659929738998413, 0.04080563224852085, 1.359074354171753], 'wrist': [0.6929155229568481, 0.013765877112746239, 1.3117657899856567], 'hand_tip': [0.8315904140472412, 0.05684744007885456, 1.3370028734207153], 'hip_joint': [0.1824922412633896, -0.03353957459330559, 0.7350000000000001], 'knee': [0.16022875159978867, 0.02551570232026279, 0.43128750000000005], 'ankle': [0.15775266289710999, -0.03219730406999588, 0.07875], 'toe': [0.15775266289710999, -0.19399574398994446, 0.02]}
+Info: Saved "rig.blend"
+SAVED /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/rig.blend
+
+Blender quit
+PROXY_VERTS 8544
+PROXY_UNWEIGHTED 0 of 8544
+Info: 205 vertex weights limited
+CHAR_UNWEIGHTED 0 of 8979
+Info: Saved "rig.blend"
+SAVED weighted rig.blend
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Read blend: "/home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/rig.blend"
+
+Blender quit
+BVH 195 frames @ 30.00 fps, segment 1.20..4.00s
+	parsing bvh '/home/anton-matzkaim/rave-land/_other/mocap/bandai/dataset-1_walk_normal_001.bvh'...	zero length node found: Head
+	zero length node found: Hand_L
+	zero length node found: Hand_R
+	zero length node found: Toes_L
+	zero length node found: Toes_R
+0.0214
+	importing to blender...	zero length bone found: Head
+	zero length bone found: Hand_L
+	zero length bone found: Hand_R
+	zero length bone found: Toes_L
+Done in 0.0530
+
+BONE MAP: bandai
+T0 frame 54 (hips z 0.925m)
+YAW correction -4.7 deg
+RETARGETED Walk: 85 keys, 2.80s
+CLIPS: ['Idle', 'Walk', 'Run', 'Aim', 'Dance']
+STORE saved: /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/clips.blend
+INFO Draco mesh compression is available, use library at /home/anton-matzkaim/rave-land/_other/auto-rig/blender-4.2.9-linux-x64/4.2/python/lib/python3.11/site-packages/libextern_draco.so
+11:24:40 | INFO: Starting glTF 2.0 export
+11:24:40 | INFO: Extracting primitive: geometry_0
+11:24:41 | INFO: Primitives created: 3
+11:24:41 | INFO: Finished glTF 2.0 export in 0.5579490661621094 s
+
+EXPORTED /home/anton-matzkaim/rave-land/tools/anim/build/raw.glb
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Read blend: "/home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/rig.blend"
+
+Blender quit
+prune: Removed types... Skin (1), Accessor (13)
+written /home/anton-matzkaim/rave-land/tools/anim/build/final.glb
+bvh2clip: Walk -> /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-animated.glb (440K)
+STORE loaded: ['Aim', 'Dance', 'Idle', 'Run', 'Walk']
+BVH 24 frames @ 30.00 fps, segment 0.00..0.77s
+	parsing bvh '/home/anton-matzkaim/rave-land/_other/mocap/bandai/dataset-1_run_normal_001.bvh'...0.0011
+	importing to blender...Done in 0.0094
+
+BONE MAP: bandai
+T0 frame 18 (hips z 0.942m)
+YAW correction 1.2 deg
+RETARGETED Run: 24 keys, 0.77s
+CLIPS: ['Idle', 'Walk', 'Run', 'Aim', 'Dance']
+STORE saved: /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/clips.blend
+INFO Draco mesh compression is available, use library at /home/anton-matzkaim/rave-land/_other/auto-rig/blender-4.2.9-linux-x64/4.2/python/lib/python3.11/site-packages/libextern_draco.so
+11:24:42 | INFO: Starting glTF 2.0 export
+11:24:42 | INFO: Extracting primitive: geometry_0
+11:24:42 | INFO: Primitives created: 3
+11:24:43 | INFO: Finished glTF 2.0 export in 0.561786413192749 s
+
+EXPORTED /home/anton-matzkaim/rave-land/tools/anim/build/raw.glb
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Read blend: "/home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/rig.blend"
+
+Blender quit
+prune: Removed types... Skin (1), Accessor (13)
+written /home/anton-matzkaim/rave-land/tools/anim/build/final.glb
+bvh2clip: Run -> /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-animated.glb (440K)
+STORE loaded: ['Aim', 'Dance', 'Idle', 'Run', 'Walk']
+BVH 1901 frames @ 30.00 fps, segment 51.00..57.70s
+	parsing bvh '/home/anton-matzkaim/rave-land/_other/mocap/bandai/dataset-1_dance-short_normal_001.bvh'...	zero length node found: Head
+	zero length node found: Hand_L
+	zero length node found: Hand_R
+	zero length node found: Toes_L
+	zero length node found: Toes_R
+0.0894
+	importing to blender...	zero length bone found: Head
+	zero length bone found: Hand_L
+	zero length bone found: Hand_R
+	zero length bone found: Toes_L
+	zero length bone found: Toes_R
+Done in 0.5561
+
+BONE MAP: bandai
+T0 frame 949 (hips z 1.137m)
+YAW correction -8.3 deg
+RETARGETED Dance: 202 keys, 6.70s
+CLIPS: ['Idle', 'Walk', 'Run', 'Aim', 'Dance']
+STORE saved: /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/clips.blend
+INFO Draco mesh compression is available, use library at /home/anton-matzkaim/rave-land/_other/auto-rig/blender-4.2.9-linux-x64/4.2/python/lib/python3.11/site-packages/libextern_draco.so
+11:24:45 | INFO: Starting glTF 2.0 export
+11:24:45 | INFO: Extracting primitive: geometry_0
+11:24:45 | INFO: Primitives created: 3
+11:24:45 | INFO: Finished glTF 2.0 export in 0.7005641460418701 s
+
+EXPORTED /home/anton-matzkaim/rave-land/tools/anim/build/raw.glb
+Blender 4.2.9 LTS (hash a10f621e649a built 2025-04-15 01:46:41)
+Read blend: "/home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-rig/rig.blend"
+
+Blender quit
+prune: Removed types... Skin (1), Accessor (13)
+written /home/anton-matzkaim/rave-land/tools/anim/build/final.glb
+bvh2clip: Dance -> /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-animated.glb (480K)
+REBUILD DONE masked-raver 480K

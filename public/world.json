@@ -514,6 +514,24 @@
       }
     },
     {
+      "id": "npc-maska",
+      "name": "Фейсконтроль",
+      "src": "assets/models/masked-raver.glb",
+      "seed": 404,
+      "position": [-3, null, -6],
+      "data": {
+        "роль": "стоит у танцпола и смотрит",
+        "скелет": "17 костей",
+        "полигоны": "15 000 треугольников",
+        "примета": "кепка и маска, лица никто не видел"
+      },
+      "provenance": {
+        "model": "форма Hunyuan3D-2, ручка /shape_generation: https://huggingface.co/spaces/tencent/Hunyuan3D-2 ; концепт нарисован владельцем, текстура проекцией концепта в Blender",
+        "rig": "локальный авториг, Blender headless, 17 костей, веса через voxel-прокси",
+        "animations": "Idle и Aim самописные; Walk, Run, Dance это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset"
+      }
+    },
+    {
       "id": "npc-trellis",
       "name": "Пришелец",
       "src": "assets/models/trellis-npc.glb",

@@ -141,3 +141,28 @@ body {
 }
 
 .viewer__panel button.is-active { background: #4a6a4a; }
+
+/* Происхождение ассета: панель тёмная, поэтому дефолтная синяя ссылка на ней нечитаема. */
+.viewer__panel dl {
+  color: #c9c9da;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.viewer__panel dt {
+  color: #9a9aac;
+  margin-top: 8px;
+}
+
+.viewer__panel dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.viewer__panel dd a { color: #7fb7d8; }
+
+.viewer__panel h3 {
+  font-size: 13px;
+  margin-top: 6px;
+}

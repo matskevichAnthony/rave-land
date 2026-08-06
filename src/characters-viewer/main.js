@@ -8,6 +8,7 @@ const CHARACTERS = [
   { name: 'TRELLIS NPC (сырой)', src: 'assets/models/trellis-npc.glb' },
   { name: 'Bold Raver', src: 'assets/models/bold-raver.glb' },
   { name: 'Техно-рейвер (облачный маршрут)', src: 'assets/models/techno-raver.glb' },
+  { name: 'Фейсконтроль (облачный маршрут)', src: 'assets/models/masked-raver.glb' },
 ];
 
 // Модели, которых нет в мире: у остальных происхождение берётся из world.json,

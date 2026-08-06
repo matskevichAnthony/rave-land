@@ -15,14 +15,15 @@ import bpy
 import numpy as np
 
 WORK = Path(__file__).resolve().parent
+sys.path.insert(0, str(WORK))
 sys.path.insert(0, str(WORK.parent / 'auto-rig'))
 import rig_lib
+from route import FRONT_AXIS_SIGN
 
 BACKGROUND_TOLERANCE = 0.08
 INPAINT_STEPS = 24
 ERODE_STEPS = 3
 SCALP_BAND = 0.03
-FRONT_AXIS_SIGN = -1.0
 SIDE_COLUMN_WIDTH = 8
 SIDE_SMOOTH = 0.08
 SIDE_MARGIN = 1.25

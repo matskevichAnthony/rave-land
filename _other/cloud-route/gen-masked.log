@@ -1,0 +1,6 @@
+  /generation_all упал ('You have exceeded your ZeroGPU quota (135s requested vs. 102s left). Try again in 6:09:59. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'), беру только форму через /shape_generation. Текстуры не будет, красить придётся проекцией картинки в Blender.
+[1/3] Подключаюсь к tencent/Hunyuan3D-2 (публичная очередь, может ждать)...
+Loaded as API: https://tencent-hunyuan3d-2.hf.space
+[2/3] Генерация (минуты; очередь бесплатного Space)...
+[3/3] Готово: /home/anton-matzkaim/rave-land/_other/cloud-route/masked-raver-raw.glb
+Дальше: авториг -> анимации -> постобработка (tools/README.md).

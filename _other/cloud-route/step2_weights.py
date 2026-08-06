@@ -1,9 +1,14 @@
-"""Skin the character via a watertight voxel proxy and weight transfer."""
+"""Веса через водонепроницаемую voxel-копию: на сыром меше из генератора
+автовеса падают с Bone Heat, потому что оболочки не связаны между собой.
+
+Запуск: blender -b --python step2_weights.py -- <каталог-рига>
+"""
+import sys
 from pathlib import Path
 
 import bpy
 
-WORK = Path(__file__).resolve().parent
+WORK = Path(sys.argv[sys.argv.index('--') + 1]).resolve()
 
 bpy.ops.wm.open_mainfile(filepath=str(WORK / 'rig.blend'))
 obj = bpy.data.objects['Character']
