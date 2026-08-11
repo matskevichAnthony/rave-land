@@ -79,6 +79,25 @@ BONE_MAPS = {
         'shin.R': ('LowerLeg_R', 'Foot_R'),
         'foot.R': ('Foot_R', 'Toes_R'),
     },
+    'gta_sa': {
+        'hips': ('Pelvis', 'Spine'),
+        'spine': ('Spine', 'Spine1'),
+        'chest': ('Spine1', 'Neck'),
+        'neck': ('Neck', 'Head'),
+        'head': ('Head', None),
+        'upper_arm.L': ('L_UpperArm', 'L_ForeArm'),
+        'forearm.L': ('L_ForeArm', 'L_Hand'),
+        'hand.L': ('L_Hand', 'L_Finger'),
+        'upper_arm.R': ('R_UpperArm', 'R_ForeArm'),
+        'forearm.R': ('R_ForeArm', 'R_Hand'),
+        'hand.R': ('R_Hand', 'R_Finger'),
+        'thigh.L': ('L_Thigh', 'L_Calf'),
+        'shin.L': ('L_Calf', 'L_Foot'),
+        'foot.L': ('L_Foot', 'L_Toe0'),
+        'thigh.R': ('R_Thigh', 'R_Calf'),
+        'shin.R': ('R_Calf', 'R_Foot'),
+        'foot.R': ('R_Foot', 'R_Toe0'),
+    },
 }
 
 BONE_ORDER = (
@@ -147,6 +166,21 @@ def moving_average(values, window):
     padded = np.concatenate((values[pad:0:-1], values, values[-2:-2 - pad:-1]))
     kernel = np.ones(window) / window
     return np.convolve(padded, kernel, mode='valid')[:len(values)]
+
+
+def sway_only(track, window):
+    """Horizontal hips motion with the travel taken out, leaving the in-place bob.
+
+    Sources that walk somewhere (GTA clips carry real root motion, mocap on a
+    treadmill does not) have to be pinned down twice. The straight line through
+    the end samples removes the distance covered per cycle, which is all a short
+    locomotion loop needs and all the moving average alone cannot do once the
+    window grows wider than the clip. The moving average then takes the slower
+    wandering off longer clips, where subtracting the line changes nothing.
+    """
+    travel = np.linspace(track[0], track[-1], len(track))
+    swayed = track - travel
+    return swayed - moving_average(swayed, window)
 
 
 def source_rotation(pre_quat, pose_bone):
@@ -261,8 +295,8 @@ def main():
         hips_track[i] = pre4_i @ bvh_obj.pose.bones[hips_src].head
 
     window = int(SWAY_WINDOW_SECONDS * fps_out) | 1
-    sway_x = (hips_track[:, 0] - moving_average(hips_track[:, 0], window)) * height_scale
-    sway_y = (hips_track[:, 1] - moving_average(hips_track[:, 1], window)) * height_scale
+    sway_x = sway_only(hips_track[:, 0], window) * height_scale
+    sway_y = sway_only(hips_track[:, 1], window) * height_scale
     dz = (hips_track[:, 2] - hips_z0) * height_scale
 
     old = bpy.data.actions.get(args.name)
