@@ -8,6 +8,25 @@ from mathutils import Matrix, Quaternion, Vector
 
 TARGET_HEIGHT = 1.75
 
+# A clip stores rotations relative to the rest pose, so two characters can only
+# share one if their bones rest the same way. Landmark-built skeletons never do:
+# generated bodies differ enough that the pelvis of one character sits 30 degrees
+# off the pelvis of another. Directions are therefore fixed here by convention
+# and the mesh contributes only the lengths, which keeps every rig identical in
+# orientation and every clip portable between characters.
+CANONICAL_DIRECTIONS = {
+    'hips': (0, 0, 1),
+    'spine': (0, 0, 1),
+    'chest': (0, 0, 1),
+    'neck': (0, 0, 1),
+    'head': (0, 0, 1),
+    'upper_arm': (1, 0, 0),
+    'forearm': (1, 0, 0),
+    'hand': (1, 0, 0),
+    'thigh': (0, 0, -1),
+    'shin': (0, 0, -1),
+}
+
 
 def clear_scene():
     bpy.ops.object.select_all(action='SELECT')
@@ -164,35 +183,51 @@ def build_armature(lm):
     for b in list(eb):
         eb.remove(b)
 
-    def add(name, head, tail, parent=None, connect=False):
+    forward = Vector((0, math.copysign(1, lm['toe'][1] - lm['ankle'][1]), 0))
+
+    def add(name, head, length, parent=None, connect=False, direction=None):
+        """Bone at head, given length, pointed along its canonical axis. Returns
+        the tail so the next bone of the chain starts where this one ends."""
+        axis = direction or Vector(CANONICAL_DIRECTIONS[name.split('.')[0]])
         b = eb.new(name)
         b.head = Vector(head)
-        b.tail = Vector(tail)
+        b.tail = Vector(head) + axis.normalized() * length
+        b.roll = 0
         if parent:
             b.parent = eb[parent]
             b.use_connect = connect
-        return b
+        return b.tail
 
-    add('hips', lm['pelvis'], lm['spine_top'])
-    add('spine', lm['spine_top'], midpoint(lm['spine_top'], lm['chest_top']), 'hips', True)
-    add('chest', midpoint(lm['spine_top'], lm['chest_top']), lm['chest_top'], 'spine', True)
-    add('neck', lm['chest_top'], lm['neck_top'], 'chest', True)
-    add('head', lm['neck_top'], lm['head_top'], 'neck', True)
+    mid_torso = midpoint(lm['spine_top'], lm['chest_top'])
+    spine_start = add('hips', lm['pelvis'], distance(lm['pelvis'], lm['spine_top']))
+    chest_start = add('spine', spine_start, distance(lm['spine_top'], mid_torso), 'hips', True)
+    neck_start = add('chest', chest_start, distance(mid_torso, lm['chest_top']), 'spine', True)
+    head_start = add('neck', neck_start, distance(lm['chest_top'], lm['neck_top']), 'chest', True)
+    add('head', head_start, distance(lm['neck_top'], lm['head_top']), 'neck', True)
     for side, sgn in (('L', 1), ('R', -1)):
         def s(p):
             return p if sgn > 0 else mirror(p)
-        add(f'upper_arm.{side}', s(lm['shoulder']), s(lm['elbow']), 'chest')
-        add(f'forearm.{side}', s(lm['elbow']), s(lm['wrist']), f'upper_arm.{side}', True)
-        add(f'hand.{side}', s(lm['wrist']), s(lm['hand_tip']), f'forearm.{side}', True)
-        add(f'thigh.{side}', s(lm['hip_joint']), s(lm['knee']), 'hips')
-        add(f'shin.{side}', s(lm['knee']), s(lm['ankle']), f'thigh.{side}', True)
-        add(f'foot.{side}', s(lm['ankle']), s(lm['toe']), f'shin.{side}', True)
+        arm_axis = Vector((sgn, 0, 0))
+        elbow = add(f'upper_arm.{side}', s(lm['shoulder']), distance(lm['shoulder'], lm['elbow']),
+                    'chest', direction=arm_axis)
+        wrist = add(f'forearm.{side}', elbow, distance(lm['elbow'], lm['wrist']),
+                    f'upper_arm.{side}', True, direction=arm_axis)
+        add(f'hand.{side}', wrist, distance(lm['wrist'], lm['hand_tip']),
+            f'forearm.{side}', True, direction=arm_axis)
+        knee = add(f'thigh.{side}', s(lm['hip_joint']), distance(lm['hip_joint'], lm['knee']), 'hips')
+        ankle = add(f'shin.{side}', knee, distance(lm['knee'], lm['ankle']), f'thigh.{side}', True)
+        add(f'foot.{side}', ankle, distance(lm['ankle'], lm['toe']), f'shin.{side}', True,
+            direction=forward)
     bpy.ops.object.mode_set(mode='OBJECT')
     return arm_obj
 
 
 def midpoint(a, b):
     return [(a[i] + b[i]) / 2 for i in range(3)]
+
+
+def distance(a, b):
+    return (Vector(b) - Vector(a)).length
 
 
 def key_world_rotation(pose_bone, rest_rot_inv, world_quat, frame):
