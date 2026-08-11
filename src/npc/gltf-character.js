@@ -7,6 +7,8 @@ const WALK_THRESHOLD = 0.1;
 const RUN_THRESHOLD = 3;
 const FADE_SECONDS = 0.25;
 
+// Word starts matter: without \b the run pattern matches WALK_drunk, and a
+// character carrying a drunk walk runs by staggering.
 function pickClip(animations, patterns) {
   return animations.find((clip) => patterns.some((pattern) => pattern.test(clip.name)));
 }
@@ -50,7 +52,7 @@ export async function buildGltfCharacter(src) {
   const mixer = new THREE.AnimationMixer(model);
   const idleClip = pickClip(animations, [/idle|stand|breath/i]) ?? animations[0];
   const walkClip = pickClip(animations, [/walk/i]) ?? idleClip;
-  const runClip = pickClip(animations, [/run|sprint|jog/i]) ?? walkClip;
+  const runClip = pickClip(animations, [/\brun|\bsprint|\bjog/i]) ?? walkClip;
   const aimClip = pickClip(animations, [/aim/i]);
   const danceClip = pickClip(animations, [/^dance$/i, /dance/i]);
   const actions = new Map();

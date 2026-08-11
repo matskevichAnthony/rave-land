@@ -3,7 +3,10 @@ import * as THREE from 'three';
 const GUN_OFFSET = new THREE.Vector3(0.27, 0.82, 0.12);
 const GUN_GRIP_OFFSET = new THREE.Vector3(0, 0.08, 0.03);
 const GUN_GRIP_PITCH = -Math.PI / 2;
-const HAND_BONE_NAMES = ['hand.R', 'handR', 'hand_R', 'Hand_R', 'RightHand', 'mixamorigRightHand'];
+// GLTFLoader runs node names through sanitizeNodeName, so the GTA skeleton's
+// "R Hand" reaches the scene as "R_Hand".
+const HAND_BONE_NAMES = ['hand.R', 'handR', 'hand_R', 'Hand_R', 'RightHand', 'mixamorigRightHand',
+                         'R_Hand'];
 const MUZZLE_LOCAL = new THREE.Vector3(0, 0.03, 0.26);
 const SHOT_COOLDOWN = 0.25;
 const SHOT_RANGE = 80;
@@ -34,7 +37,9 @@ function findRightHand(root) {
   }
   let found = null;
   root.traverse((child) => {
-    if (!found && child.isBone && /hand/i.test(child.name) && /right|[._-]r$/i.test(child.name)) {
+    // Side marker sits at either end of the name: "hand.R" but also "R Hand".
+    if (!found && child.isBone && /hand/i.test(child.name)
+        && /right|[._\- ]r$|^r[._\- ]/i.test(child.name)) {
       found = child;
     }
   });
