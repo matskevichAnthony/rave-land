@@ -3,14 +3,13 @@
 
 ped.ifp carries absolute local rotations per bone and translations for the root
 alone, so the rest skeleton those rotations animate is simply not in the file.
-SA_SKELETON below fills that gap with plausible proportions for a 1.75 m adult,
-laid out in the axis convention the data does reveal: every bone's local X runs
-down the bone toward its child and local Z points to the character's left, which
-is why straight chains offset along X and only the branching joints (pelvis to
-thighs, neck to clavicles) offset sideways. Exact figures would have to come out
-of a ped .dff. retarget.py calibrates against a reference frame and reads world
-orientations, so bone directions are what matter here and lengths only set the
-scale of the root sway.
+SA_SKELETON below is that missing skeleton, read out of the frame list of the
+stock ped model male01.dff by tools/gta/dff.py. Each row is a bone id, a name,
+its parent and the offset from that parent in metres, in the model's own axes,
+where a bone's local X runs down the bone toward its child and local Z points
+to the character's left. All stock peds share this hierarchy but not these
+proportions (hips range from 0.88 m to 1.07 m across the 296 of them), so the
+table is one canonical adult male rather than a figure every SA skin agrees on.
 """
 import argparse
 import sys
@@ -25,37 +24,37 @@ DEFAULT_FPS = 30.0
 
 # The SA root sits at hip level and its translations are deviations from there,
 # while a BVH is read as standing on the ground, so the root offset lifts the
-# whole figure by one hip height.
-HIP_HEIGHT = 0.93
+# whole figure by the distance from male01's soles to its root frame.
+HIP_HEIGHT = 1.0067
 
 # bone id, joint name, parent bone id, offset from the parent in metres.
 SA_SKELETON = (
     (0, 'Root', None, (0.0, 0.0, HIP_HEIGHT)),
-    (1, 'Pelvis', 0, (-0.005, 0.004, 0.0)),
-    (2, 'Spine', 1, (0.10, 0.0, 0.0)),
-    (3, 'Spine1', 2, (0.16, 0.0, 0.0)),
-    (4, 'Neck', 3, (0.24, 0.0, 0.0)),
-    (5, 'Head', 4, (0.10, 0.0, 0.0)),
-    (31, 'L_Clavicle', 4, (0.0, 0.0, 0.03125)),
-    (32, 'L_UpperArm', 31, (0.17, 0.0, 0.0)),
-    (33, 'L_ForeArm', 32, (0.28, 0.0, 0.0)),
-    (34, 'L_Hand', 33, (0.26, 0.0, 0.0)),
-    (35, 'L_Finger', 34, (0.09, 0.0, 0.0)),
-    (36, 'L_Finger01', 35, (0.04, 0.0, 0.0)),
-    (21, 'R_Clavicle', 4, (0.0, 0.0, -0.03125)),
-    (22, 'R_UpperArm', 21, (0.17, 0.0, 0.0)),
-    (23, 'R_ForeArm', 22, (0.28, 0.0, 0.0)),
-    (24, 'R_Hand', 23, (0.26, 0.0, 0.0)),
-    (25, 'R_Finger', 24, (0.09, 0.0, 0.0)),
-    (26, 'R_Finger01', 25, (0.04, 0.0, 0.0)),
-    (41, 'L_Thigh', 1, (0.0, 0.0, 0.09)),
-    (42, 'L_Calf', 41, (0.43, 0.0, 0.0)),
-    (43, 'L_Foot', 42, (0.42, 0.0, 0.0)),
-    (44, 'L_Toe0', 43, (0.05, 0.13, 0.0)),
-    (51, 'R_Thigh', 1, (0.0, 0.0, -0.09)),
-    (52, 'R_Calf', 51, (0.43, 0.0, 0.0)),
-    (53, 'R_Foot', 52, (0.42, 0.0, 0.0)),
-    (54, 'R_Toe0', 53, (0.05, 0.13, 0.0)),
+    (1, 'Pelvis', 0, (-0.0207, -0.0037, 0.0)),
+    (2, 'Spine', 1, (-0.0058, -0.0504, 0.0048)),
+    (3, 'Spine1', 2, (0.2820, -0.0002, 0.0)),
+    (4, 'Neck', 3, (0.2718, -0.0001, 0.0)),
+    (5, 'Head', 4, (0.1460, 0.0, 0.0)),
+    (31, 'L_Clavicle', 4, (0.0, 0.0001, 0.0318)),
+    (32, 'L_UpperArm', 31, (0.1668, 0.0, 0.0)),
+    (33, 'L_ForeArm', 32, (0.2950, 0.0, 0.0)),
+    (34, 'L_Hand', 33, (0.2811, 0.0, 0.0)),
+    (35, 'L_Finger', 34, (0.0884, 0.0, 0.0)),
+    (36, 'L_Finger01', 35, (0.0622, 0.0, 0.0)),
+    (21, 'R_Clavicle', 4, (0.0, 0.0001, -0.0318)),
+    (22, 'R_UpperArm', 21, (0.1668, 0.0, 0.0)),
+    (23, 'R_ForeArm', 22, (0.2950, 0.0, 0.0)),
+    (24, 'R_Hand', 23, (0.2811, 0.0, 0.0)),
+    (25, 'R_Finger', 24, (0.0884, 0.0, 0.0)),
+    (26, 'R_Finger01', 25, (0.0622, 0.0, 0.0)),
+    (41, 'L_Thigh', 1, (0.0, 0.0, 0.1205)),
+    (42, 'L_Calf', 41, (0.4652, 0.0, 0.0)),
+    (43, 'L_Foot', 42, (0.4117, 0.0, 0.0)),
+    (44, 'L_Toe0', 43, (0.1297, 0.1493, 0.0)),
+    (51, 'R_Thigh', 1, (0.0, 0.0, -0.1205)),
+    (52, 'R_Calf', 51, (0.4653, 0.0, 0.0)),
+    (53, 'R_Foot', 52, (0.4117, 0.0, 0.0)),
+    (54, 'R_Toe0', 53, (0.1297, 0.1493, 0.0)),
 )
 
 # BVH needs an End Site on every childless joint to give its bone a direction.
