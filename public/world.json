@@ -583,6 +583,57 @@
         "слух": "живёт в доме на краю поляны",
         "видели": "у деревьев после трёх ночи"
       }
+    },
+    {
+      "id": "npc-gta-ballas",
+      "name": "Ballas",
+      "src": "assets/models/gta-ballas.glb",
+      "seed": 505,
+      "position": [11, null, 8],
+      "data": {
+        "роль": "первый персонаж с чужим скелетом",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "12, наложены по bone id без ретаргета"
+      },
+      "provenance": {
+        "model": "ballas1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py: меш, скелет, веса, текстуры из .txd",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp из GTA San Andreas, наложены напрямую по bone id. Ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-gta-grove",
+      "name": "Grove Street",
+      "src": "assets/models/gta-grove.glb",
+      "seed": 506,
+      "position": [-11, null, -8],
+      "data": {
+        "роль": "зелёная банда с другого конца города",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "10"
+      },
+      "provenance": {
+        "model": "fam1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости",
+        "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-gta-cop",
+      "name": "Мент",
+      "src": "assets/models/gta-cop.glb",
+      "seed": 507,
+      "position": [0, null, -13],
+      "data": {
+        "роль": "стоит на краю поляны и делает вид, что не при делах",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "10"
+      },
+      "provenance": {
+        "model": "lapd1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости",
+        "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      }
     }
   ]
 }

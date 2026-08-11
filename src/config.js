@@ -12,7 +12,7 @@ export const PLAYER = {
   jumpSpeed: 8,
   gravity: -24,
   spawn: { x: 0, z: 21 },
-  appearance: { src: 'assets/models/character-animated.glb' },
+  appearance: { src: 'assets/models/gta-ballas.glb' },
 };
 
 export const CAMERA = {
