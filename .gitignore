@@ -14,5 +14,11 @@ _other/local-gen/models/
 # Сырой высокополигональный исходник до децимации
 _other/bold-raver-rig/character-animated.glb
 
+# Ассеты GTA San Andreas: читаются нашими парсерами, но принадлежат Rockstar
+Стандартные анимации/
+*.ifp
+*.dff
+*.txd
+
 # Python-кеш
 __pycache__/
