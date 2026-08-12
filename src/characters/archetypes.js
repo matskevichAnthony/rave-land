@@ -116,7 +116,7 @@ const ARCHETYPE_LOOKS = {
   medic: medicLook,
 };
 
-const ARCHETYPE_NAMES = Object.keys(ARCHETYPE_LOOKS);
+export const ARCHETYPE_NAMES = Object.keys(ARCHETYPE_LOOKS);
 
 export function resolveArchetype(archetype, seed) {
   if (archetype in ARCHETYPE_LOOKS) return archetype;

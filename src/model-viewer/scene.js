@@ -55,13 +55,21 @@ export function createViewer(canvasRoot, { cameraAt = [1.6, 1.5, 2.4], lookAt = 
     model = null;
   }
 
+  /** Готовый объект вместо файла: процедурные постройки и персонажи приходят из своих сборщиков. */
+  function show(object) {
+    start();
+    clear();
+    model = object;
+    scene.add(object);
+    return object;
+  }
+
   function load(src) {
     start();
     clear();
     return new Promise((resolve, reject) => {
       loader.load(src, (gltf) => {
-        model = gltf.scene;
-        scene.add(model);
+        show(gltf.scene);
         resolve(gltf);
       }, undefined, reject);
     });
@@ -81,6 +89,7 @@ export function createViewer(canvasRoot, { cameraAt = [1.6, 1.5, 2.4], lookAt = 
 
   return {
     load,
+    show,
     clear,
     dispose,
     resize,

@@ -12,6 +12,7 @@ export default defineConfig({
         characters: resolve(import.meta.dirname, 'characters.html'),
         props: resolve(import.meta.dirname, 'props.html'),
         status: resolve(import.meta.dirname, 'status.html'),
+        toolbox: resolve(import.meta.dirname, 'toolbox.html'),
       },
     },
   },

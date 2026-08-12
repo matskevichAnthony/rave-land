@@ -25,6 +25,11 @@ const AIM_SHARE = { spine: 0.35, chest: 0.65 };
 const AIM_YAW_LIMIT = THREE.MathUtils.degToRad(25);
 const AIM_PITCH_LIMIT = THREE.MathUtils.degToRad(35);
 const HIT_PITCH = THREE.MathUtils.degToRad(20);
+// Персонажа разворачивает player вокруг своей вертикали, а смотрит он вдоль своего +Z.
+// Отсюда поперечная ось, вокруг которой корпус наклоняется к цели.
+const CHARACTER_FORWARD = new THREE.Vector3(0, 0, 1);
+const CHARACTER_UP = THREE.Object3D.DEFAULT_UP;
+const CHARACTER_SIDE = new THREE.Vector3().crossVectors(CHARACTER_UP, CHARACTER_FORWARD);
 
 // Производные клипы (маски, статичные позы) считаются один раз на модель: массив animations
 // у GLTFLoader общий для всех экземпляров, а AnimationAction у каждого свой.
@@ -111,7 +116,21 @@ export function createCharacterAnimator({ model, animations, profile }) {
     .filter((entry) => entry.bone);
   const scratch = new THREE.Quaternion();
   const axis = new THREE.Vector3();
-  const parentRotation = new THREE.Quaternion();
+  const boneFrame = new THREE.Quaternion();
+  const characterFrame = new THREE.Quaternion();
+  /**
+   * Поза из клипа, своя копия на каждую доворачиваемую кость.
+   *
+   * three.js пишет кость только когда смиксованное значение изменилось с прошлого кадра:
+   * PropertyMixer.apply сравнивает свои накопители между собой, а не с костью. У статичной
+   * прицельной позы значение постоянно, записи не происходит вовсе, и доворот, положенный
+   * прямо на кость, никто не затирает: он множится каждый кадр, пока корпус не прокрутит
+   * через ноги. Поэтому кость каждый кадр собирается заново от позы из клипа.
+   */
+  const posed = new Map(aimBones.map(({ bone }) => [bone, {
+    fromClip: bone.quaternion.clone(),
+    applied: bone.quaternion.clone(),
+  }]));
 
   function actionFor(clip, { once = false } = {}) {
     if (!clip) return null;
@@ -205,42 +224,51 @@ export function createCharacterAnimator({ model, animations, profile }) {
     const role = locomotionRole(pose.speed);
     const timeScale = paceOf(role, pose.speed);
     if (aimPose && lower[role]) {
-      return { base: lower[role], overlay: aimPose, timeScale, proceduralYaw: true };
+      return { base: lower[role], overlay: aimPose, timeScale };
     }
-    return { base: clips[role] ?? clips.idle, overlay: null, timeScale, proceduralYaw: true };
+    return { base: clips[role] ?? clips.idle, overlay: null, timeScale };
   }
 
-  function applyAim(pose, chosen) {
-    if (!aimBones.length) return;
-    // Доворот корпуса нужен только тем персонажам, у которых прицельной позы нет в клипах.
-    // У модели с авторскими прицельными клипами поза уже в них, и доворот поверх ломает её.
-    // ВРЕМЕННО ВЫКЛЮЧЕНО для скелетов с авторскими прицельными клипами: доворот по
-    // мировым осям на скелете San Andreas выкручивает корпус вертикально. Причина в оси,
-    // а не в накоплении (приостановленный экшен в three продолжает писать значения), и
-    // разбирается отдельно. Персонажам без прицельных клипов доворот нужен и работает.
-    if (!chosen.proceduralYaw) return;
-    const yaw = THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT);
-    const pitch = THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT);
-    const lean = HIT_PITCH * (pose.hitT ?? 0);
-    if (!pose.aiming && !lean) return;
+  /**
+   * Довернуть кость к цели долей общего угла.
+   *
+   * Оси берутся в системе персонажа, а не в мировых: в мировых наклон превращается в крен,
+   * стоит персонажу отвернуться от оси Z. Сам поворот выражается в системе родителя кости,
+   * потому что собственные оси кости у каждого скелета свои: у нашего рига кость идёт вдоль
+   * Y, у гташной вдоль X, и на её локальных осях наклон уводило бы в сторону.
+   */
+  function turnBone(bone, share, yaw, pitch) {
+    // Мировые матрицы костей считаются при рендере, а доворот идёт сразу после mixer.update:
+    // без пересчёта ориентация родителя отстаёт на кадр, а у второй кости ещё и не видит
+    // доворота первой.
+    bone.parent.updateWorldMatrix(true, false);
+    bone.parent.getWorldQuaternion(boneFrame).invert().multiply(characterFrame);
+    if (yaw) {
+      axis.copy(CHARACTER_UP).applyQuaternion(boneFrame).normalize();
+      bone.quaternion.premultiply(scratch.setFromAxisAngle(axis, yaw * share));
+    }
+    if (pitch) {
+      axis.copy(CHARACTER_SIDE).applyQuaternion(boneFrame).normalize();
+      bone.quaternion.premultiply(scratch.setFromAxisAngle(axis, pitch * share));
+    }
+  }
 
-    // Мировые матрицы костей считаются при рендере, поэтому перед чтением ориентации
-    // родителя их надо обновить, иначе компенсация отстаёт на кадр и на быстром развороте
-    // корпус уводит в сторону.
-    model.updateWorldMatrix(false, true);
+  function applyAim(pose) {
+    if (!aimBones.length) return;
+    const aimed = Boolean(pose.aiming);
+    const yaw = aimed
+      ? THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT) : 0;
+    const pitch = HIT_PITCH * (pose.hitT ?? 0) + (aimed
+      ? THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT) : 0);
+
+    model.updateWorldMatrix(true, false);
+    model.getWorldQuaternion(characterFrame);
     for (const { bone, share } of aimBones) {
-      // Доворот выражается в системе родителя, а не в локальных осях кости: у нашего рига
-      // кость идёт вдоль Y, у гташной вдоль X, и поворот в родительской системе от этого
-      // не зависит.
-      bone.parent.getWorldQuaternion(parentRotation).invert();
-      if (yaw) {
-        axis.set(0, 1, 0).applyQuaternion(parentRotation).normalize();
-        bone.quaternion.premultiply(scratch.setFromAxisAngle(axis, yaw * share));
-      }
-      if (pitch || lean) {
-        axis.set(1, 0, 0).applyQuaternion(parentRotation).normalize();
-        bone.quaternion.premultiply(scratch.setFromAxisAngle(axis, (pitch + lean) * share));
-      }
+      const memo = posed.get(bone);
+      if (bone.quaternion.equals(memo.applied)) bone.quaternion.copy(memo.fromClip);
+      else memo.fromClip.copy(bone.quaternion);
+      if (yaw || pitch) turnBone(bone, share, yaw, pitch);
+      memo.applied.copy(bone.quaternion);
     }
   }
 
@@ -269,7 +297,7 @@ export function createCharacterAnimator({ model, animations, profile }) {
       }
     }
     mixer.update(dt);
-    applyAim(pose, chosen);
+    applyAim(pose);
   }
 
   function debug() {

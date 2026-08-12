@@ -1,44 +1,15 @@
-import findingsSource from '../../docs/FINDINGS.md?raw';
-
-// Заголовок записи в журнале: "### F-001", дальше статус и название.
-// Разделителем исторически бывает и обычная точка, и U+00B7, поэтому в шаблоне оба.
-const ENTRY = new RegExp('^###\\s+F-(\\d+)\\s*[·.]\\s*(OPEN|CLOSED|INFO)\\s*[·.]\\s*(.+)$');
-const SECTION = /^##\s+(?:\d+\.\s*)?(.+)$/;
-
-const STATUS_LABELS = { OPEN: 'в работе', CLOSED: 'закрыто', INFO: 'факт' };
+import { FINDINGS, STATUS_LABELS } from '../docs/findings.js';
 
 const listRoot = document.querySelector('[data-js-list]');
 const countsRoot = document.querySelector('[data-js-counts]');
 const filtersRoot = document.querySelector('[data-js-filters]');
 const npcRoot = document.querySelector('[data-js-npc]');
 
-const entries = parseFindings(findingsSource);
+const entries = FINDINGS;
 renderCounts(entries);
 renderFilters();
 renderEntries(entries);
 loadWorldInventory();
-
-function parseFindings(source) {
-  const parsed = [];
-  let section = '';
-  let current = null;
-  for (const line of source.split('\n')) {
-    const sectionMatch = line.match(SECTION);
-    if (sectionMatch) {
-      section = sectionMatch[1].trim();
-      continue;
-    }
-    const entryMatch = line.match(ENTRY);
-    if (entryMatch) {
-      const [, number, status, title] = entryMatch;
-      current = { number, status, title: title.trim(), section, body: [] };
-      parsed.push(current);
-      continue;
-    }
-    if (current) current.body.push(line);
-  }
-  return parsed;
-}
 
 function renderCounts(items) {
   const tiles = [
@@ -77,6 +48,7 @@ function renderEntries(items) {
   listRoot.replaceChildren(...items.map((item) => {
     const card = document.createElement('article');
     card.className = 'finding';
+    card.id = `F-${item.number}`;
     card.innerHTML = `
       <header>
         <span class="badge badge--${item.status.toLowerCase()}">${STATUS_LABELS[item.status]}</span>
