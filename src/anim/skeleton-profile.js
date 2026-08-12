@@ -18,7 +18,7 @@ const PROFILES = [
     detect: ['R_Hand', 'Spine1', 'Pelvis'],
     bones: {
       hips: 'Pelvis', spine: 'Spine', chest: 'Spine1', neck: 'Neck', head: 'Head',
-      handR: 'R_Hand', handL: 'L_Hand', footR: 'R_Foot', footL: 'L_Foot',
+      armR: 'R_UpperArm', handR: 'R_Hand', handL: 'L_Hand', footR: 'R_Foot', footL: 'L_Foot',
     },
     lower: ['Root', 'Pelvis',
             'R_Thigh', 'R_Calf', 'R_Foot', 'R_Toe0',
@@ -53,7 +53,7 @@ const PROFILES = [
     detect: ['hips', 'chest', 'handR'],
     bones: {
       hips: 'hips', spine: 'spine', chest: 'chest', neck: 'neck', head: 'head',
-      handR: 'handR', handL: 'handL', footR: 'footR', footL: 'footL',
+      armR: 'upper_armR', handR: 'handR', handL: 'handL', footR: 'footR', footL: 'footL',
     },
     lower: ['hips', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR'],
     roles: {

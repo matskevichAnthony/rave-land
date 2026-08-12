@@ -8,9 +8,13 @@ const CAPSULE_RADIUS = 0.35;
 const CAPSULE_HALF_HEIGHT = 0.55;
 const BODY_CENTER_Y = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
 const LANDING_SECONDS = 0.23;
-const RECOIL_SECONDS = 0.18;
-// Длительность клипа стрельбы из colt45.ifp: слой держится ровно столько.
-const FIRE_SECONDS = 0.73;
+const TURN_RATE = 12;
+
+/** Кратчайшая разница двух азимутов, со знаком. */
+function angleDiff(target, current) {
+  const diff = target - current;
+  return Math.atan2(Math.sin(diff), Math.cos(diff));
+}
 
 export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   const character = PLAYER.appearance.src
@@ -41,42 +45,62 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let facingOverride = null;
   let airTime = 0;
   let landingLeft = 0;
-  let recoilLeft = 0;
-  let fireLeft = 0;
   let shotId = 0;
+  let reloadId = 0;
+  let reloadLeft = 0;
   let weapon = null;
   const moveDirection = new THREE.Vector3();
   const localMove = new THREE.Vector3();
+  // Поза живёт одна на всё время: аниматор читает её и в кадре, и вне кадра, когда бой
+  // просит начать перезарядку.
+  const pose = { speed: 0, aiming: false, moveDir: { x: 0, z: 1 }, airborne: false, jumpTime: 0,
+                 landing: false, aimYaw: 0, aimPitch: 0, shotId, reloadId, weapon };
 
   function turnToward(targetYaw, dt) {
-    let diff = targetYaw - yaw;
-    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-    yaw += diff * Math.min(1, dt * 12);
+    yaw += angleDiff(targetYaw, yaw) * Math.min(1, dt * TURN_RATE);
   }
 
-  /** Поза для аниматора: движение в системе персонажа, фазы прыжка, углы наведения. */
-  function poseFor(dt, speed, aiming, aimPitch) {
+  /**
+   * Поза для аниматора: движение в системе персонажа, фазы прыжка, углы наведения.
+   *
+   * aimYaw это остаток разворота: ноги догоняют азимут камеры с ограниченной скоростью, а
+   * разницу отыгрывают корпус и рука, иначе ствол всё время смотрит мимо цели.
+   */
+  function poseFor(speed, aiming, aimPitch) {
     localMove.copy(moveDirection).applyAxisAngle(THREE.Object3D.DEFAULT_UP, -yaw);
     const length = Math.hypot(localMove.x, localMove.z) || 1;
-    return {
-      speed,
-      aiming,
-      moveDir: { x: localMove.x / length, z: localMove.z / length },
-      airborne: airTime > 0,
-      jumpTime: airTime,
-      landing: landingLeft > 0,
-      aimYaw: 0,
-      aimPitch,
-      firing: fireLeft > 0,
-      shotId,
-      weapon,
-      recoilT: recoilLeft / RECOIL_SECONDS,
-    };
+    pose.speed = speed;
+    pose.aiming = aiming;
+    pose.moveDir.x = localMove.x / length;
+    pose.moveDir.z = localMove.z / length;
+    pose.airborne = airTime > 0;
+    pose.jumpTime = airTime;
+    pose.landing = landingLeft > 0;
+    pose.aimYaw = facingOverride === null ? 0 : angleDiff(facingOverride, yaw);
+    pose.aimPitch = aimPitch;
+    pose.shotId = shotId;
+    pose.reloadId = reloadId;
+    pose.weapon = weapon;
+    return pose;
+  }
+
+  /**
+   * Скорость с учётом оружия в руках.
+   *
+   * Прицельный шаг режется до темпа клипов GunMove_*, и его домножает moveSpeed из
+   * weapon.dat. Бег остаётся бегом: в San Andreas ствол наизготовку мешает ходить, а не
+   * бегать, и на бегу играет свой клип.
+   */
+  function speedFor(aiming) {
+    const gait = input.gait();
+    const speed = PLAYER[gait];
+    if (!aiming || gait === 'runSpeed') return speed;
+    return Math.min(speed, PLAYER.aimSpeed * (weapon?.moveSpeedFactor ?? 1));
   }
 
   function move(dt, cameraAzimuth, aiming = false, aimPitch = 0) {
     const { x, z } = input.axis();
-    const speed = PLAYER[input.gait()];
+    const speed = speedFor(aiming);
 
     const forwardX = -Math.sin(cameraAzimuth);
     const forwardZ = -Math.cos(cameraAzimuth);
@@ -102,8 +126,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     if (grounded && airTime > 0) landingLeft = LANDING_SECONDS;
     airTime = grounded ? 0 : airTime + dt;
     landingLeft = Math.max(0, landingLeft - dt);
-    recoilLeft = Math.max(0, recoilLeft - dt);
-    fireLeft = Math.max(0, fireLeft - dt);
+    reloadLeft = Math.max(0, reloadLeft - dt);
 
     const movement = controller.computedMovement();
     const current = body.translation();
@@ -112,14 +135,16 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       y: current.y + movement.y,
       z: current.z + movement.z,
     });
-    const planarSpeed = dt > 0 ? Math.hypot(movement.x, movement.z) / dt : 0;
-    character.update(dt, poseFor(dt, planarSpeed, aiming, aimPitch));
 
+    // Разворот идёт до позы, а не после: остаток, который уходит в aimYaw, должен быть
+    // сегодняшним, иначе ствол отстаёт от камеры на кадр.
     if (facingOverride !== null) {
       turnToward(facingOverride, dt);
     } else if (moveDirection.lengthSq() > 0) {
       turnToward(Math.atan2(moveDirection.x, moveDirection.z), dt);
     }
+    const planarSpeed = dt > 0 ? Math.hypot(movement.x, movement.z) / dt : 0;
+    character.update(dt, poseFor(planarSpeed, aiming, aimPitch));
   }
 
   function sync() {
@@ -134,7 +159,21 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
 
   function idle(dt) {
     moveDirection.set(0, 0, 0);
-    character.update(dt, poseFor(dt, 0, false, 0));
+    character.update(dt, poseFor(0, false, 0));
+  }
+
+  /**
+   * Запустить клип перезарядки и сказать, сколько он длится.
+   *
+   * Длительность знает только аниматор, поэтому поза уходит ему сразу же: боезапас ждёт
+   * ответа в тот же кадр, а не со следующего.
+   */
+  function reload() {
+    if (reloadLeft > 0) return 0;
+    reloadId += 1;
+    pose.reloadId = reloadId;
+    reloadLeft = character.update(0, pose) ?? 0;
+    return reloadLeft;
   }
 
   function teleport(x, z) {
@@ -148,6 +187,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     move,
     sync,
     idle,
+    reload,
     teleport,
     setFacing: (value) => {
       facingOverride = value;
@@ -156,8 +196,6 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       weapon = next;
     },
     kick: () => {
-      recoilLeft = RECOIL_SECONDS;
-      fireLeft = FIRE_SECONDS;
       shotId += 1;
     },
     position: () => body.translation(),

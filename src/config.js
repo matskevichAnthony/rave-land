@@ -10,6 +10,9 @@ export const PLAYER = {
   strollSpeed: 1.6,
   walkSpeed: 4.5,
   runSpeed: 8.5,
+  // Со стволом наизготовку в San Andreas ходят, а не бегают. Это авторская скорость клипов
+  // GunMove_* (замер по ped.ifp), weapon.dat домножает её своим moveSpeed.
+  aimSpeed: 1.85,
   jumpSpeed: 8,
   gravity: -24,
   spawn: { x: 0, z: 21 },
