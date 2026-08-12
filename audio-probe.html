@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Звук боя Rave Land</title>
+  <link rel="stylesheet" href="./styles/audio-probe.css" />
+</head>
+<body>
+  <h1 class="page-title">Звук боя</h1>
+  <p class="page-lead">
+    Звуков San Andreas у нас нет и брать их нельзя, поэтому бой синтезируется на лету
+    в <code>src/audio/</code>, без единого файла с ассетом. Характер ствола считается из
+    <code>weapon.dat</code>: урон даёт вес хлопка, дальность резкость щелчка, отрезок клипа
+    выстрела время лязга затвора и вылета гильзы. Кнопки играют звук на месте, первый клик
+    заодно будит AudioContext, как в игре это делает клик по сцене.
+  </p>
+  <nav class="page-nav">
+    <a href="./index.html">В игру</a>
+    <a href="./props.html">Пропы</a>
+    <a href="./characters.html">Персонажи</a>
+    <a href="./toolbox.html">Мастерская</a>
+  </nav>
+
+  <div class="probe__buttons" data-js-buttons></div>
+
+  <h2 class="section-title">Замер</h2>
+  <p class="page-lead">
+    Каждый звук отрисовывается в <code>OfflineAudioContext</code> через ту же шину с
+    лимитером и эхом, что и в игре. Смотреть надо на пик (должен быть ниже нуля),
+    на длительность и на края: громкое начало в первые полмиллисекунды или громкий хвост
+    в последнем окне означают щелчок.
+  </p>
+  <button class="probe__button" data-js-measure>Измерить все звуки</button>
+  <pre class="probe__report" data-js-report></pre>
+  <div class="probe__plots" data-js-plots></div>
+
+  <script type="module" src="./src/audio-probe/main.js"></script>
+</body>
+</html>

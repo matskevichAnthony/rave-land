@@ -11,6 +11,7 @@ import { createEditor } from './editor/editor.js';
 import { createNpcSystem } from './npc/system.js';
 import { createRagdolls } from './combat/ragdoll.js';
 import { createCombat } from './combat/weapon.js';
+import { createBattleAudio } from './audio/battle.js';
 import { loadWorld } from './world/manifest.js';
 import { toast } from './ui/toast.js';
 import { TERRAIN_DEFAULTS } from './config.js';
@@ -56,6 +57,7 @@ async function boot() {
   });
 
   const ragdolls = createRagdolls({ RAPIER, physicsWorld, scene });
+  const battleAudio = createBattleAudio({ camera });
   const combat = createCombat({
     scene,
     camera,
@@ -63,6 +65,7 @@ async function boot() {
     npcSystem,
     ragdolls,
     player,
+    audio: battleAudio,
     isEditing: () => editor.editing,
   });
 

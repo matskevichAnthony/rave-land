@@ -1,0 +1,60 @@
+@import './page-shell.css';
+
+.probe__buttons {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  margin-bottom: 20px;
+  max-width: 860px;
+}
+
+.probe__button {
+  background: #2e2e3a;
+  border: 1px solid #4a4a5a;
+  border-radius: 6px;
+  color: #eee;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.probe__button:hover { background: #3a3a4a; }
+
+.probe__button:active { background: #4a6a4a; }
+
+.probe__report {
+  color: #b9b9c8;
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 14px 0;
+  overflow-x: auto;
+}
+
+.probe__plots {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+}
+
+.probe__plot {
+  background: #1d1d26;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 10px;
+}
+
+.probe__plot figcaption {
+  flex-basis: 100%;
+  font-size: 13px;
+}
+
+.probe__canvas {
+  background: #101016;
+  border-radius: 4px;
+  max-width: 100%;
+}
