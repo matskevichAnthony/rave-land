@@ -25,6 +25,13 @@
   font-weight: 400;
 }
 
+.gen-slot__about {
+  color: #9a9aac;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+
 .gen-slot__body {
   align-items: center;
   background: #16161c;

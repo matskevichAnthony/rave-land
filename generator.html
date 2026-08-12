@@ -67,6 +67,12 @@
         <button type="button" data-js-run="prop">3. Проп</button>
         <button type="button" data-js-cancel hidden>Отменить прогон</button>
       </div>
+      <p class="gen-form__hint">
+        Каждый шаг ест результат предыдущего: картинка делается из промпта, меш из картинки,
+        проп из меша. «Весь маршрут» это те же три шага подряд. Отдельная кнопка нужна, чтобы
+        переделать один шаг, не пересчитывая соседние: подобрать бюджет треугольников это
+        секунды на третьем шаге, а картинка и меш стоят минут.
+      </p>
 
       <div class="gen-actions">
         <select data-js-incoming class="gen-actions__incoming"></select>
@@ -81,16 +87,26 @@
     <section class="gen-stage">
       <article class="gen-slot">
         <h2 class="gen-slot__title">1. Картинка <span data-js-slot-note="image"></span></h2>
+        <p class="gen-slot__about">Промпт превращается в PNG 512×512. Считает Stable Diffusion 1.5
+          с LCM-LoRA на процессоре, веса лежат локально. Около четырёх минут, память до 5.5 ГБ.
+          Стиль и позу дописывает пресет, промпт только по-английски.</p>
         <div class="gen-slot__body"><img data-js-image alt="" hidden /></div>
       </article>
 
       <article class="gen-slot">
         <h2 class="gen-slot__title">2. Сырой меш <span data-js-slot-note="mesh"></span></h2>
+        <p class="gen-slot__about">Картинка превращается в объём. Считает TripoSR на процессоре:
+          видит ровно один ракурс, остальное додумывает. Две-восемь минут, память до 2.4 ГБ.
+          На выходе десятки тысяч треугольников и вершинные цвета без развёртки, в сцену такое
+          не ставят.</p>
         <div class="gen-slot__body gen-slot__body--canvas" data-js-mesh></div>
       </article>
 
       <article class="gen-slot">
         <h2 class="gen-slot__title">3. Проп <span data-js-slot-note="prop"></span></h2>
+        <p class="gen-slot__about">Сырой меш становится игровым. Считает Blender, нейросети тут
+          нет: поправка осей, сжатие до бюджета треугольников, запекание цвета в текстуру 64×64
+          с ближайшей фильтрацией, реальные метры, посадка на землю. Секунды.</p>
         <div class="gen-slot__body gen-slot__body--canvas" data-js-prop></div>
         <div class="gen-slot__stats" data-js-stats></div>
       </article>
