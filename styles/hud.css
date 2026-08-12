@@ -2,6 +2,8 @@
   position: fixed;
   left: 16px;
   bottom: 16px;
+  /* Справа снизу стоит боевой HUD, подсказки переносятся, не залезая под него. */
+  right: 220px;
   pointer-events: none;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
@@ -14,9 +16,4 @@
 
 .hud__hints {
   color: var(--muted);
-}
-
-.hud__weapon {
-  color: var(--accent-2);
-  margin-bottom: 4px;
 }

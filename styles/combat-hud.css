@@ -1,0 +1,67 @@
+.combat {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  text-align: right;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.combat__frags {
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.combat__frags b {
+  color: var(--accent);
+  font-size: 16px;
+}
+
+.combat__weapon {
+  color: var(--accent-2);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.combat__ammo {
+  line-height: 1.1;
+  transition: opacity 0.15s;
+}
+
+.combat__mag {
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.combat__reserve {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.combat__reserve::before {
+  content: '/ ';
+}
+
+.combat__ammo--low .combat__mag {
+  color: var(--accent-2);
+  animation: combat-low 0.7s ease-in-out infinite alternate;
+}
+
+.combat--reloading .combat__ammo {
+  opacity: 0.4;
+}
+
+.combat__state {
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+@keyframes combat-low {
+  to {
+    opacity: 0.45;
+  }
+}

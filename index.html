@@ -9,14 +9,32 @@
 <body>
   <div id="app"></div>
 
-  <div class="crosshair" data-crosshair hidden></div>
+  <div class="crosshair" data-crosshair hidden>
+    <span class="crosshair__dash crosshair__dash--up"></span>
+    <span class="crosshair__dash crosshair__dash--down"></span>
+    <span class="crosshair__dash crosshair__dash--left"></span>
+    <span class="crosshair__dash crosshair__dash--right"></span>
+    <span class="crosshair__marker"></span>
+  </div>
+
+  <div class="killfeed" data-killfeed></div>
+
+  <div class="combat" data-combat hidden>
+    <div class="combat__frags">Фраги <b data-frags>0</b></div>
+    <div class="combat__weapon" data-weapon-name></div>
+    <div class="combat__ammo" data-ammo>
+      <b class="combat__mag" data-ammo-mag>0</b>
+      <span class="combat__reserve" data-ammo-reserve>0</span>
+    </div>
+    <div class="combat__state" data-reloading hidden>Перезарядка</div>
+  </div>
 
   <div class="hud">
     <div class="hud__mode" data-mode>Прогулка</div>
-    <div class="hud__weapon" data-weapon hidden></div>
     <div class="hud__hints">
       Клик захватывает мышь, WASD ходьба, Alt шагом, Shift бег, Space прыжок,
-      G оружие, 1-4 выбор ствола, колесо зум, Tab открывает редактор
+      G оружие, 1-4 выбор ствола, ЛКМ огонь, R перезарядка,
+      колесо зум, Tab открывает редактор
     </div>
   </div>
 

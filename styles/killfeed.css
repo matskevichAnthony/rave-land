@@ -1,0 +1,29 @@
+.killfeed {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  pointer-events: none;
+}
+
+.killfeed__row {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent-2);
+  border-radius: 6px;
+  padding: 4px 10px;
+  animation: killfeed-in 0.18s ease-out;
+}
+
+.killfeed__mark {
+  color: var(--accent-2);
+}
+
+@keyframes killfeed-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}

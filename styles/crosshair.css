@@ -1,18 +1,87 @@
 .crosshair {
+  --crosshair-spread: 8px;
+  --crosshair-color: var(--text);
   position: fixed;
   left: 50%;
   top: 50%;
-  width: 6px;
-  height: 6px;
-  margin: -3px 0 0 -3px;
-  border: 1px solid var(--text);
-  border-radius: 50%;
-  opacity: 0.7;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
 
-.crosshair--armed {
-  border-color: var(--accent-2);
+.crosshair--target {
+  --crosshair-color: var(--accent);
+}
+
+.crosshair__dash {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2px;
+  height: 8px;
+  margin: -4px 0 0 -1px;
+  background: var(--crosshair-color);
+  box-shadow: 0 0 6px var(--crosshair-color);
+}
+
+.crosshair__dash--up {
+  transform: translateY(calc(-1 * var(--crosshair-spread)));
+}
+
+.crosshair__dash--down {
+  transform: translateY(var(--crosshair-spread));
+}
+
+.crosshair__dash--left {
+  transform: translateX(calc(-1 * var(--crosshair-spread))) rotate(90deg);
+}
+
+.crosshair__dash--right {
+  transform: translateX(var(--crosshair-spread)) rotate(90deg);
+}
+
+.crosshair__marker {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  opacity: 0;
+  transition: opacity 0.08s ease-out;
+}
+
+.crosshair__marker::before,
+.crosshair__marker::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: var(--text);
+  box-shadow: 0 0 6px var(--text);
+}
+
+.crosshair__marker::before {
+  transform: rotate(45deg);
+}
+
+.crosshair__marker::after {
+  transform: rotate(-45deg);
+}
+
+.crosshair--hit .crosshair__marker {
   opacity: 1;
-  box-shadow: 0 0 6px var(--accent-2);
+}
+
+.crosshair--frag .crosshair__marker {
+  opacity: 1;
+  transform: scale(1.5);
+}
+
+.crosshair--frag .crosshair__marker::before,
+.crosshair--frag .crosshair__marker::after {
+  background: var(--accent-2);
+  box-shadow: 0 0 10px var(--accent-2);
 }
