@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "timeOfDay": "night",
+  "timeOfDay": "day",
   "terrain": {
     "seed": 7,
     "size": 160,
@@ -9,13 +9,6 @@
     "plateauRadius": 18
   },
   "objects": [
-    {
-      "id": "dancefloor-1",
-      "type": "dancefloor",
-      "position": [0, null, 0],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
-    },
     {
       "id": "speaker-1",
       "type": "speaker",

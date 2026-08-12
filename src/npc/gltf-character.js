@@ -1,17 +1,10 @@
 import * as THREE from 'three';
 import { clone as cloneWithSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { loadModelData } from '../objects/gltf.js';
+import { clipCoverage, createCharacterAnimator } from '../anim/character-animator.js';
+import { detectProfile } from '../anim/skeleton-profile.js';
 
 const TARGET_HEIGHT = 1.75;
-const WALK_THRESHOLD = 0.1;
-const RUN_THRESHOLD = 3;
-const FADE_SECONDS = 0.25;
-
-// Word starts matter: without \b the run pattern matches WALK_drunk, and a
-// character carrying a drunk walk runs by staggering.
-function pickClip(animations, patterns) {
-  return animations.find((clip) => patterns.some((pattern) => pattern.test(clip.name)));
-}
 
 const PUPPET_STEP_FREQUENCY = 9;
 const PUPPET_SWAY = 0.07;
@@ -49,43 +42,21 @@ export async function buildGltfCharacter(src) {
     return { object: root, update: createPuppetAnimator(model, model.position.y) };
   }
 
-  const mixer = new THREE.AnimationMixer(model);
-  const idleClip = pickClip(animations, [/idle|stand|breath/i]) ?? animations[0];
-  const walkClip = pickClip(animations, [/walk/i]) ?? idleClip;
-  const runClip = pickClip(animations, [/\brun|\bsprint|\bjog/i]) ?? walkClip;
-  const aimClip = pickClip(animations, [/aim/i]);
-  const danceClip = pickClip(animations, [/^dance$/i, /dance/i]);
-  const actions = new Map();
-  let currentAction = null;
+  const profile = detectProfile(model);
+  const animator = createCharacterAnimator({ model, animations, profile });
+  const coverage = clipCoverage(animations, profile);
+  console.log(`[anim] ${src} профиль ${profile.id}`
+    + `, полные прицельные клипы: ${coverage.directionalAim ? 'да' : 'нет'}`
+    + `, маски: ${coverage.trackSplit
+      ? `${coverage.trackSplit.lower}+${coverage.trackSplit.upper}=${coverage.trackSplit.total}`
+      : 'недоступны'}`
+    + `, ролей не найдено: ${coverage.missing.join(', ') || 'ни одной'}`);
 
-  function actionFor(clip) {
-    if (!clip) return null;
-    if (!actions.has(clip)) actions.set(clip, mixer.clipAction(clip));
-    return actions.get(clip);
-  }
-
-  function locomotionClip(speed) {
-    return speed > RUN_THRESHOLD ? runClip : speed > WALK_THRESHOLD ? walkClip : idleClip;
-  }
-
-  function update(dt, { speed, aiming = false, dancing = false }) {
-    const clip = aiming && aimClip
-      ? aimClip
-      : dancing && danceClip && speed <= WALK_THRESHOLD
-        ? danceClip
-        : locomotionClip(speed);
-    const action = actionFor(clip);
-    if (action && action !== currentAction) {
-      action.reset().fadeIn(FADE_SECONDS).play();
-      currentAction?.fadeOut(FADE_SECONDS);
-      currentAction = action;
-    }
-    mixer.update(dt);
-  }
-
-  function stopAnimation() {
-    mixer.stopAllAction();
-  }
-
-  return { object: root, update, stopAnimation };
+  return {
+    object: root,
+    model,
+    profile,
+    update: animator.update,
+    stopAnimation: () => animator.mixer.stopAllAction(),
+  };
 }

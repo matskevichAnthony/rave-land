@@ -51,6 +51,9 @@ def parse_args():
                         help='JSON map of texture name to PNG file, unpacked from the .txd')
     parser.add_argument('--ifp', type=Path, help='animation package, e.g. ped.ifp')
     parser.add_argument('--clips', default='', help='comma separated animation names')
+    parser.add_argument('--prop', action='store_true',
+                        help='keep the authored origin: weapons are built in the hand bone '
+                             'space, so lifting them onto the ground breaks the grip')
     arguments = parser.parse_args(argv)
     if arguments.clips and not arguments.ifp:
         parser.error('--clips needs an --ifp to take the animations from')
@@ -133,6 +136,21 @@ def build_armature(clump, world, placement):
     return rig
 
 
+def part_name(clump, atomic, geometry):
+    """Node name for one atomic: its frame name on props, a plain label on peds.
+
+    A weapon carries its meaning in the frame names: the engine finds the muzzle
+    flash, the minigun barrel and the jetpack thrusters by looking up "gunflash",
+    "minigun2" and "jetball1", and hides the flash until the shot. Losing those
+    names is what makes an imported gun render permanently firing. A skinned ped
+    is the opposite case: its one atomic hangs off "Pelvis" while the mesh is the
+    whole body, so the frame name would only mislead.
+    """
+    if geometry.skin:
+        return 'Model'
+    return clump.frames[atomic.frame].name or f'part{atomic.frame}'
+
+
 def build_materials(materials, textures):
     built = []
     for index, source in enumerate(materials):
@@ -157,8 +175,8 @@ def build_materials(materials, textures):
     return built
 
 
-def build_mesh(geometry, placement, materials):
-    mesh = bpy.data.meshes.new('Model')
+def build_mesh(geometry, placement, materials, name):
+    mesh = bpy.data.meshes.new(name)
     mesh.from_pydata([placement @ Vector(vertex) for vertex in geometry.vertices], [],
                      [(a, b, c) for a, b, c, _material in geometry.triangles])
     for material in materials:
@@ -177,7 +195,7 @@ def build_mesh(geometry, placement, materials):
         mesh.normals_split_custom_set_from_vertices(
             [rotation @ Vector(normal) for normal in geometry.normals])
 
-    model = bpy.data.objects.new('Model', mesh)
+    model = bpy.data.objects.new(name, mesh)
     bpy.context.collection.objects.link(model)
     return model
 
@@ -284,12 +302,13 @@ def main():
 
     world = frame_matrices(clump)
     placements = atomic_placements(clump, world)
-    lift = stand_on_ground(clump, placements)
+    lift = Matrix() if args.prop else stand_on_ground(clump, placements)
     rig = build_armature(clump, world, lift @ MODEL_TO_BLENDER)
     for atomic, placement in zip(clump.atomics, placements):
         geometry = clump.geometries[atomic.geometry]
         model = build_mesh(geometry, lift @ placement,
-                           build_materials(geometry.materials, textures))
+                           build_materials(geometry.materials, textures),
+                           part_name(clump, atomic, geometry))
         if geometry.skin:
             bind_skin(model, rig, clump, geometry.skin)
     print(f'BUILT {args.dff.name}: {len(clump.bones)} bones, {len(clump.atomics)} atomics, '

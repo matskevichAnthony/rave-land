@@ -110,7 +110,7 @@ async function boot() {
     if (editor.editing) {
       player.idle(dt);
     } else {
-      player.move(dt, followCam.azimuth(), aiming);
+      player.move(dt, followCam.azimuth(), aiming, followCam.aimPitch());
     }
     physicsWorld.timestep = dt;
     physicsWorld.step();

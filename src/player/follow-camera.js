@@ -105,5 +105,7 @@ export function createFollowCamera(camera, domElement, terrain) {
     },
     update: () => orbit.update(),
     azimuth: () => yaw,
+    // Камера смотрит вниз при положительном pitch, персонаж при этом целится вверх.
+    aimPitch: () => pitch,
   };
 }

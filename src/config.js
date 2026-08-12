@@ -7,8 +7,9 @@ export const TERRAIN_DEFAULTS = {
 };
 
 export const PLAYER = {
+  strollSpeed: 1.6,
   walkSpeed: 4.5,
-  runSpeed: 8,
+  runSpeed: 8.5,
   jumpSpeed: 8,
   gravity: -24,
   spawn: { x: 0, z: 21 },

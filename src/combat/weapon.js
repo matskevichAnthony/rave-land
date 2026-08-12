@@ -1,5 +1,10 @@
 import * as THREE from 'three';
+import { loadModelData } from '../objects/gltf.js';
 
+const WEAPON_KEY = 'KeyG';
+const WEAPON_SRC = 'assets/models/weapons/pistol.glb';
+const MUZZLE_NODE = 'gunflash';
+const MUZZLE_FLASH_LIFETIME = 0.05;
 const GUN_OFFSET = new THREE.Vector3(0.27, 0.82, 0.12);
 const GUN_GRIP_OFFSET = new THREE.Vector3(0, 0.08, 0.03);
 const GUN_GRIP_PITCH = -Math.PI / 2;
@@ -12,6 +17,25 @@ const SHOT_COOLDOWN = 0.25;
 const SHOT_RANGE = 80;
 const TRACER_LIFETIME = 0.07;
 const FLASH_LIFETIME = 0.05;
+
+/**
+ * Модель оружия из GTA вместо процедурной заглушки.
+ *
+ * Оружие в San Andreas авторено прямо в системе кости правой кисти, единичной матрицей:
+ * подбирать смещение, поворот и масштаб не нужно, достаточно вложить модель в кость.
+ * Второй меш в файле это вспышка у дула (узел gunflash): она гасится сразу и зажигается
+ * на кадр по выстрелу, иначе торчит из ствола постоянно. Файла может не быть, тогда
+ * остаётся процедурный ствол и игра работает без ассетов GTA вообще.
+ */
+async function loadWeaponModel(src) {
+  const { scene } = await loadModelData(src);
+  const model = scene.clone(true);
+  let flash = null;
+  model.traverse((child) => {
+    if (child.isMesh && child.name.toLowerCase() === MUZZLE_NODE) flash = child;
+  });
+  return { model, flash };
+}
 
 function buildGun() {
   const gun = new THREE.Group();
@@ -65,6 +89,20 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
   const gun = buildGun();
   gun.visible = false;
   mountGun(gun, player.mesh);
+  let muzzleFlash = null;
+  let flashLeft = 0;
+
+  loadWeaponModel(WEAPON_SRC).then(({ model, flash }) => {
+    gun.clear();
+    // Подобранные под процедурный ствол хват и масштаб сбрасываются: модель из GTA уже
+    // стоит там, где нужно, относительно кости кисти.
+    gun.position.set(0, 0, 0);
+    gun.rotation.set(0, 0, 0);
+    gun.scale.setScalar(1);
+    gun.add(model);
+    muzzleFlash = flash;
+    if (muzzleFlash) muzzleFlash.visible = false;
+  }).catch((error) => console.warn('оружие не загрузилось, остаётся процедурное', error));
 
   const weaponHud = document.querySelector('[data-weapon]');
   const crosshair = document.querySelector('[data-crosshair]');
@@ -91,6 +129,10 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
   }
 
   function muzzleWorld() {
+    // Матрицы костей пересчитываются при рендере, поэтому перед чтением их надо обновить,
+    // иначе трассер вылетает из позиции прошлого кадра.
+    gun.updateWorldMatrix(true, false);
+    if (muzzleFlash) return muzzleFlash.getWorldPosition(new THREE.Vector3());
     return gun.localToWorld(MUZZLE_LOCAL.clone());
   }
 
@@ -125,6 +167,11 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
       ? hits[0].point
       : raycaster.ray.at(SHOT_RANGE, new THREE.Vector3());
     spawnTracer(from, to);
+    player.kick?.();
+    if (muzzleFlash) {
+      muzzleFlash.visible = true;
+      flashLeft = MUZZLE_FLASH_LIFETIME;
+    }
 
     if (hits.length) {
       let node = hits[0].object;
@@ -144,7 +191,7 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
   }
 
   window.addEventListener('keydown', (event) => {
-    if (event.code !== 'Digit1') return;
+    if (event.code !== WEAPON_KEY) return;
     if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
     if (isEditing()) return;
     setArmed(!armed);
@@ -157,6 +204,10 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
 
   function update(dt) {
     cooldown = Math.max(0, cooldown - dt);
+    if (flashLeft > 0) {
+      flashLeft -= dt;
+      if (flashLeft <= 0 && muzzleFlash) muzzleFlash.visible = false;
+    }
     for (let i = effects.length - 1; i >= 0; i -= 1) {
       effects[i].ttl -= dt;
       if (effects[i].ttl <= 0) {

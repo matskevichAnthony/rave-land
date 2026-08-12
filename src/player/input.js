@@ -10,6 +10,12 @@ window.addEventListener('blur', () => pressed.clear());
 
 export const input = {
   isDown: (code) => pressed.has(code),
+  /** Походка: шагом на Alt, бегом на Shift, обычная ходьба по умолчанию. */
+  gait() {
+    if (pressed.has('AltLeft') || pressed.has('AltRight')) return 'strollSpeed';
+    if (pressed.has('ShiftLeft') || pressed.has('ShiftRight')) return 'runSpeed';
+    return 'walkSpeed';
+  },
   axis() {
     const x = (pressed.has('KeyD') || pressed.has('ArrowRight') ? 1 : 0)
       - (pressed.has('KeyA') || pressed.has('ArrowLeft') ? 1 : 0);

@@ -7,6 +7,8 @@ import { PLAYER } from '../config.js';
 const CAPSULE_RADIUS = 0.35;
 const CAPSULE_HALF_HEIGHT = 0.55;
 const BODY_CENTER_Y = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
+const LANDING_SECONDS = 0.23;
+const RECOIL_SECONDS = 0.18;
 
 export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   const character = PLAYER.appearance.src
@@ -35,7 +37,11 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let verticalVelocity = 0;
   let yaw = 0;
   let facingOverride = null;
+  let airTime = 0;
+  let landingLeft = 0;
+  let recoilLeft = 0;
   const moveDirection = new THREE.Vector3();
+  const localMove = new THREE.Vector3();
 
   function turnToward(targetYaw, dt) {
     let diff = targetYaw - yaw;
@@ -43,10 +49,26 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     yaw += diff * Math.min(1, dt * 12);
   }
 
-  function move(dt, cameraAzimuth, aiming = false) {
+  /** Поза для аниматора: движение в системе персонажа, фазы прыжка, углы наведения. */
+  function poseFor(dt, speed, aiming, aimPitch) {
+    localMove.copy(moveDirection).applyAxisAngle(THREE.Object3D.DEFAULT_UP, -yaw);
+    const length = Math.hypot(localMove.x, localMove.z) || 1;
+    return {
+      speed,
+      aiming,
+      moveDir: { x: localMove.x / length, z: localMove.z / length },
+      airborne: airTime > 0,
+      jumpTime: airTime,
+      landing: landingLeft > 0,
+      aimYaw: 0,
+      aimPitch,
+      recoilT: recoilLeft / RECOIL_SECONDS,
+    };
+  }
+
+  function move(dt, cameraAzimuth, aiming = false, aimPitch = 0) {
     const { x, z } = input.axis();
-    const running = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-    const speed = running ? PLAYER.runSpeed : PLAYER.walkSpeed;
+    const speed = PLAYER[input.gait()];
 
     const forwardX = -Math.sin(cameraAzimuth);
     const forwardZ = -Math.cos(cameraAzimuth);
@@ -55,8 +77,10 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       .normalize()
       .multiplyScalar(x || z ? speed * dt : 0);
 
-    if (controller.computedGrounded() && input.isDown('Space')) {
+    const groundedBefore = controller.computedGrounded();
+    if (groundedBefore && input.isDown('Space')) {
       verticalVelocity = PLAYER.jumpSpeed;
+      airTime = Number.EPSILON;
     }
     verticalVelocity += PLAYER.gravity * dt;
 
@@ -65,7 +89,12 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       y: verticalVelocity * dt,
       z: moveDirection.z,
     });
-    if (controller.computedGrounded() && verticalVelocity < 0) verticalVelocity = 0;
+    const grounded = controller.computedGrounded();
+    if (grounded && verticalVelocity < 0) verticalVelocity = 0;
+    if (grounded && airTime > 0) landingLeft = LANDING_SECONDS;
+    airTime = grounded ? 0 : airTime + dt;
+    landingLeft = Math.max(0, landingLeft - dt);
+    recoilLeft = Math.max(0, recoilLeft - dt);
 
     const movement = controller.computedMovement();
     const current = body.translation();
@@ -75,7 +104,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       z: current.z + movement.z,
     });
     const planarSpeed = dt > 0 ? Math.hypot(movement.x, movement.z) / dt : 0;
-    character.update(dt, { speed: planarSpeed, aiming });
+    character.update(dt, poseFor(dt, planarSpeed, aiming, aimPitch));
 
     if (facingOverride !== null) {
       turnToward(facingOverride, dt);
@@ -95,7 +124,8 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   }
 
   function idle(dt) {
-    character.update(dt, { speed: 0, aiming: false });
+    moveDirection.set(0, 0, 0);
+    character.update(dt, poseFor(dt, 0, false, 0));
   }
 
   function teleport(x, z) {
@@ -112,6 +142,9 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     teleport,
     setFacing: (value) => {
       facingOverride = value;
+    },
+    kick: () => {
+      recoilLeft = RECOIL_SECONDS;
     },
     position: () => body.translation(),
   };

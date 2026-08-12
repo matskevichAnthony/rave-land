@@ -33,6 +33,9 @@ def parse_args():
     parser.add_argument('--ifp', type=Path, help='animation package to take clips from')
     parser.add_argument('--clips', default='',
                         help='comma separated animation names, e.g. IDLE_stance,WALK_civi')
+    parser.add_argument('--prop', action='store_true',
+                        help='модель не персонаж: сохранить авторское начало координат '
+                             '(оружие построено в системе кости кисти)')
     parser.add_argument('--raw', action='store_true',
                         help='skip postprocess.mjs and keep the Blender export as it is')
     return parser.parse_args()
@@ -73,6 +76,8 @@ def main():
                  '--dff', args.dff, '--glb', raw, '--textures', manifest]
         if args.clips:
             build += ['--ifp', args.ifp, '--clips', args.clips]
+        if args.prop:
+            build += ['--prop']
         run(build)
         if not args.raw:
             args.output.parent.mkdir(parents=True, exist_ok=True)
