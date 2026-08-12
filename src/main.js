@@ -118,6 +118,7 @@ async function boot() {
     physicsWorld.timestep = dt;
     physicsWorld.step();
     player.sync();
+    stage.focusShadow(player.mesh.position);
     ragdolls.update();
     combat.update(dt);
 

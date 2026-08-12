@@ -6,6 +6,18 @@ import { createNameLabel } from './label.js';
 import { createInfoCard } from './info-card.js';
 
 const WORLD_RADIUS_FACTOR = 0.45;
+// Скелет из San Andreas это 32 кости, и каждая пересчитывается на каждом кадре у каждого
+// персонажа. Вдали разницы между 60 и 15 обновлениями в секунду не видно, поэтому дальние
+// считаются реже: пропущенное время копится и приходит одним шагом, походка не замедляется.
+const ANIMATION_STEP = [
+  { distance: 24, seconds: 0 },
+  { distance: 55, seconds: 1 / 30 },
+  { distance: Infinity, seconds: 1 / 12 },
+];
+
+function animationStep(distance) {
+  return ANIMATION_STEP.find((step) => distance < step.distance).seconds;
+}
 
 export function createNpcSystem({ scene, camera, terrain, renderer }) {
   const npcs = new Map();
@@ -33,6 +45,7 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
         home: { x, z },
         worldRadius: terrain.params.size * WORLD_RADIUS_FACTOR,
       }),
+      pending: 0,
     });
   }
 
@@ -54,7 +67,11 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
       const { x, z, yaw, speed, state } = npc.wanderer.update(dt);
       npc.object.position.set(x, terrain.heightAt(x, z), z);
       npc.object.rotation.y = yaw;
-      npc.animate(dt, { speed, dancing: state === 'dance' });
+
+      npc.pending += dt;
+      if (npc.pending < animationStep(npc.object.position.distanceTo(camera.position))) continue;
+      npc.animate(npc.pending, { speed, dancing: state === 'dance' });
+      npc.pending = 0;
     }
   }
 

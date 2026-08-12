@@ -3,6 +3,16 @@ import { CAMERA } from '../config.js';
 
 const STAR_COUNT = 800;
 const STAR_RADIUS = 420;
+// На экране 4K множитель 2 означает вчетверо больше пикселей на каждый проход композитора.
+// Полтора это предел, за которым разница уже не видна, а кадр дорожает линейно.
+const MAX_PIXEL_RATIO = 1.5;
+// Тень раньше накрывала весь мир картой 2048: 8.8 см на тексель и полный проход геометрии
+// по площади 180 на 180. Коробка вчетверо меньше едет за игроком, поэтому у него под ногами
+// тень стала вдвое чётче, а платить за неё приходится вчетверо меньше.
+const SHADOW_EXTENT = 45;
+const SHADOW_MAP_SIZE = 1024;
+const SHADOW_DISTANCE = 90;
+const SHADOW_TEXEL = (SHADOW_EXTENT * 2) / SHADOW_MAP_SIZE;
 
 const TIME_PRESETS = {
   night: {
@@ -65,12 +75,15 @@ function createStars() {
 }
 
 export function createStage() {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // Сглаживание в буфере экрана выключено осознанно: кадр собирает EffectComposer в свои
+  // мишени, и до экрана доезжает результат последнего прохода, а не этот буфер. MSAA тут
+  // оплачивался бы памятью и пропускной способностью, не появляясь в картинке.
+  const renderer = new THREE.WebGLRenderer({ antialias: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   document.querySelector('#app').appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
@@ -90,17 +103,33 @@ export function createStage() {
 
   const sunLight = new THREE.DirectionalLight();
   sunLight.castShadow = true;
-  sunLight.shadow.camera.left = -90;
-  sunLight.shadow.camera.right = 90;
-  sunLight.shadow.camera.top = 90;
-  sunLight.shadow.camera.bottom = -90;
-  sunLight.shadow.mapSize.set(2048, 2048);
+  sunLight.shadow.camera.left = -SHADOW_EXTENT;
+  sunLight.shadow.camera.right = SHADOW_EXTENT;
+  sunLight.shadow.camera.top = SHADOW_EXTENT;
+  sunLight.shadow.camera.bottom = -SHADOW_EXTENT;
+  sunLight.shadow.camera.far = SHADOW_DISTANCE * 2;
+  sunLight.shadow.mapSize.set(SHADOW_MAP_SIZE, SHADOW_MAP_SIZE);
   scene.add(sunLight);
+  scene.add(sunLight.target);
 
   const stars = createStars();
   scene.add(stars);
 
   let timeOfDay = 'night';
+  const sunDirection = new THREE.Vector3();
+
+  /**
+   * Держать коробку теней на игроке.
+   *
+   * Центр защёлкивается по сетке текселей карты: без этого коробка едет плавно, край тени
+   * попадает то в один тексель, то в соседний, и тень «кипит» на каждом шаге персонажа.
+   */
+  function focusShadow(point) {
+    const x = Math.round(point.x / SHADOW_TEXEL) * SHADOW_TEXEL;
+    const z = Math.round(point.z / SHADOW_TEXEL) * SHADOW_TEXEL;
+    sunLight.target.position.set(x, point.y, z);
+    sunLight.position.copy(sunLight.target.position).addScaledVector(sunDirection, SHADOW_DISTANCE);
+  }
 
   function setTimeOfDay(name) {
     const preset = TIME_PRESETS[name] ?? TIME_PRESETS.night;
@@ -114,7 +143,8 @@ export function createStage() {
     hemiLight.intensity = preset.hemiIntensity;
     sunLight.color.set(preset.sun);
     sunLight.intensity = preset.sunIntensity;
-    sunLight.position.set(...preset.sunPosition);
+    sunDirection.set(...preset.sunPosition).normalize();
+    focusShadow(sunLight.target.position);
     stars.visible = preset.stars;
   }
 
@@ -125,6 +155,7 @@ export function createStage() {
     scene,
     camera,
     setTimeOfDay,
+    focusShadow,
     get timeOfDay() {
       return timeOfDay;
     },

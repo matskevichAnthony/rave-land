@@ -6,17 +6,25 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createGradePass } from './grade.js';
 import { BLOOM } from '../config.js';
 
+// Свечение это пять уровней размытия, и каждый стоит ровно по площади своего входа. Половина
+// стороны означает четверть работы, а на глаз ничего не меняет: размытие само по себе мягкое.
+const BLOOM_SCALE = 0.5;
+
+const bloomResolution = () => new THREE.Vector2(
+  window.innerWidth * BLOOM_SCALE,
+  window.innerHeight * BLOOM_SCALE,
+);
+
 export function createComposer(renderer, scene, camera) {
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(
-    new UnrealBloomPass(
-      new THREE.Vector2(window.innerWidth, window.innerHeight),
-      BLOOM.strength,
-      BLOOM.radius,
-      BLOOM.threshold,
-    ),
+  const bloom = new UnrealBloomPass(
+    bloomResolution(),
+    BLOOM.strength,
+    BLOOM.radius,
+    BLOOM.threshold,
   );
+  composer.addPass(bloom);
   composer.addPass(new OutputPass());
   const gradePass = createGradePass();
   composer.addPass(gradePass);
@@ -26,6 +34,10 @@ export function createComposer(renderer, scene, camera) {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
     composer.setSize(window.innerWidth, window.innerHeight);
+    // Композитор раздаёт свой размер всем проходам подряд, поэтому уменьшенное свечение
+    // приходится возвращать после него, иначе после первого же ресайза оно станет полным.
+    const { x, y } = bloomResolution();
+    bloom.setSize(x, y);
   });
 
   return {
