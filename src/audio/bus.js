@@ -66,6 +66,22 @@ function unlockOnGesture(ctx) {
   UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, resume));
 }
 
+/**
+ * Поставить узел в точку мира.
+ *
+ * Параметры вида positionX есть не у всех: Firefox до сих пор даёт слушателю только старые
+ * setPosition и setOrientation, и обращение к параметру роняет кадр на первом же выстреле.
+ */
+function placeAt(node, point) {
+  if (node.positionX) {
+    node.positionX.value = point.x;
+    node.positionY.value = point.y;
+    node.positionZ.value = point.z;
+    return;
+  }
+  node.setPosition(point.x, point.y, point.z);
+}
+
 export function createAudioBus({ camera, context = null }) {
   const ctx = context ?? new AudioContext();
   const master = ctx.createGain();
@@ -102,15 +118,17 @@ export function createAudioBus({ camera, context = null }) {
     camera.getWorldDirection(forward);
     up.set(0, 1, 0).applyQuaternion(camera.getWorldQuaternion(spin));
     const { listener } = ctx;
-    listener.positionX.value = at.x;
-    listener.positionY.value = at.y;
-    listener.positionZ.value = at.z;
-    listener.forwardX.value = forward.x;
-    listener.forwardY.value = forward.y;
-    listener.forwardZ.value = forward.z;
-    listener.upX.value = up.x;
-    listener.upY.value = up.y;
-    listener.upZ.value = up.z;
+    placeAt(listener, at);
+    if (listener.forwardX) {
+      listener.forwardX.value = forward.x;
+      listener.forwardY.value = forward.y;
+      listener.forwardZ.value = forward.z;
+      listener.upX.value = up.x;
+      listener.upY.value = up.y;
+      listener.upZ.value = up.z;
+      return;
+    }
+    listener.setOrientation(forward.x, forward.y, forward.z, up.x, up.y, up.z);
   }
 
   function voice(position, send) {
@@ -121,9 +139,7 @@ export function createAudioBus({ camera, context = null }) {
     panner.refDistance = REF_DISTANCE;
     panner.rolloffFactor = ROLLOFF;
     panner.maxDistance = MAX_DISTANCE;
-    panner.positionX.value = position.x;
-    panner.positionY.value = position.y;
-    panner.positionZ.value = position.z;
+    placeAt(panner, position);
     const echoSend = ctx.createGain();
     echoSend.gain.value = send;
     input.connect(panner);
