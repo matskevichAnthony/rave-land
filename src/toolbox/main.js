@@ -3,12 +3,21 @@ import * as THREE from 'three';
 
 import { findingsMentioning, STATUS_LABELS } from '../docs/findings.js';
 import { renderMarkdown } from '../docs/markdown.js';
+import { collectInventory } from '../models/inventory.js';
 import { createViewer, measure } from '../model-viewer/scene.js';
 import { collectDocuments } from './documents.js';
-import { collectInventory } from './inventory.js';
 import { RUNTIME_SYSTEMS } from './runtime.js';
 import { createThumbnails } from './thumbnails.js';
 import { collectTools } from './tools.js';
+
+const PROVENANCE_LABELS = {
+  tool: 'Инструмент',
+  params: 'Параметры',
+  model: '3D-модель',
+  rig: 'Риг',
+  animations: 'Анимации',
+  license: 'Лицензия',
+};
 
 const loader = new GLTFLoader();
 const thumbnails = createThumbnails();
@@ -22,6 +31,7 @@ const viewerRoot = document.querySelector('[data-js-viewer]');
 const canvasRoot = document.querySelector('[data-js-canvas]');
 const statsRoot = document.querySelector('[data-js-stats]');
 const clipsRoot = document.querySelector('[data-js-clips]');
+const provenanceRoot = document.querySelector('[data-js-provenance]');
 const nameLabel = document.querySelector('[data-js-name]');
 
 const viewer = createViewer(canvasRoot, { cameraAt: [2.2, 1.8, 2.8], lookAt: [0, 0.9, 0] });
@@ -59,11 +69,13 @@ function startPreviews() {
 function renderCounts(groups) {
   const tools = toolSections.flatMap((section) => section.tools);
   const items = groups.flatMap((group) => group.items);
+  const nameless = groups.find((group) => group.id === 'unknown')?.items ?? [];
   const tiles = [
     ['Утилит в tools/', tools.length],
     ['Из них с правилами работы', tools.filter((tool) => tool.rules).length],
     ['Из них с открытым вопросом', tools.filter((tool) => isTroubled(tool)).length],
-    ['Готовых моделей', items.filter((item) => item.src).length],
+    ['Ассетов в описи', items.filter((item) => item.src || item.preview).length],
+    ['Из них без происхождения', nameless.length],
     ['Собирается кодом', items.filter((item) => item.build).length],
     ['Документов в docs/', documents.length],
   ];
@@ -89,15 +101,34 @@ function renderInventoryGroup(group) {
   return section;
 }
 
+/** Ассет без модели это дошедшая до картинки заготовка: показывать её нечем, кроме самой картинки. */
 function renderItemCard(item) {
-  const card = create('button', 'card card--model');
-  const canvas = create('canvas', 'card__preview');
+  const openable = Boolean(item.src || item.build);
+  const card = create(openable ? 'button' : 'article', 'card card--model');
   const caption = create('span', 'card__caption', item.title);
   caption.append(create('small', null, item.subtitle));
-  card.append(canvas, caption);
-  card.addEventListener('click', () => openViewer(item));
-  previews.push({ canvas, card, item });
+  if (item.license) {
+    const badge = create('span', 'badge badge--open', 'в релиз нельзя');
+    badge.title = item.license;
+    caption.append(badge);
+  }
+  card.append(renderPreview(item, card), caption);
+  if (openable) card.addEventListener('click', () => openViewer(item));
   return card;
+}
+
+/** Готовый кадр инструмента дешевле своего: за него уже заплачено рендером. */
+function renderPreview(item, card) {
+  if (item.preview) {
+    const image = create('img', 'card__preview');
+    image.src = item.preview;
+    image.loading = 'lazy';
+    image.alt = item.title;
+    return image;
+  }
+  const canvas = create('canvas', 'card__preview');
+  previews.push({ canvas, card, item });
+  return canvas;
 }
 
 function buildPreview(item) {
@@ -197,6 +228,7 @@ function openViewer(item) {
   nameLabel.textContent = item.title;
   statsRoot.textContent = 'Загрузка...';
   clipsRoot.replaceChildren();
+  showProvenance(item.provenance);
   viewer.resize();
   if (!framesHooked) {
     viewer.onFrame(step);
@@ -238,6 +270,35 @@ function showStats(object) {
   }));
 }
 
+/** Происхождение читается из описи и показывается как есть: своей копии страница не держит. */
+function showProvenance(provenance) {
+  const rows = Object.entries(provenance ?? {});
+  if (!rows.length) {
+    provenanceRoot.replaceChildren(create('p', 'viewer__hint', 'Происхождение не записано'));
+    return;
+  }
+  provenanceRoot.replaceChildren(...rows.flatMap(([key, value]) => {
+    const term = create('dt', null, PROVENANCE_LABELS[key] ?? key);
+    const detail = create('dd');
+    detail.append(...withLinks(String(value)));
+    return [term, detail];
+  }));
+}
+
+function withLinks(text) {
+  return text.split(/(\s+)/).map((token) => {
+    if (!token.startsWith('http')) return token;
+    const link = create('a', null, token);
+    link.href = token;
+    link.target = '_blank';
+    link.rel = 'noreferrer';
+    const { hostname, pathname } = new URL(token);
+    const tail = pathname.split('/').filter(Boolean).at(-1);
+    link.textContent = tail ? `${hostname}/${tail}` : hostname;
+    return link;
+  });
+}
+
 function showClips(clips) {
   if (!clips.length) {
     clipsRoot.append(create('p', 'viewer__hint', 'Анимаций в файле нет'));
@@ -269,6 +330,7 @@ function closeViewer() {
   framesHooked = false;
   statsRoot.replaceChildren();
   clipsRoot.replaceChildren();
+  provenanceRoot.replaceChildren();
 }
 
 function create(tag, className, text) {

@@ -1,4 +1,5 @@
 @import './page-shell.css';
+@import './guide.css';
 
 .group { margin-bottom: 22px; }
 
@@ -45,6 +46,7 @@
   aspect-ratio: 1;
   background: #1a1a22;
   border-radius: 6px;
+  object-fit: cover;
   width: 100%;
 }
 
@@ -306,4 +308,29 @@
   color: #9a9aac;
   font-size: 12px;
   margin-top: auto;
+}
+
+/* Происхождение ассета: панель тёмная, поэтому дефолтная синяя ссылка на ней нечитаема. */
+.viewer__provenance {
+  color: #c9c9da;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-y: auto;
+}
+
+.viewer__provenance dt {
+  color: #9a9aac;
+  margin-top: 8px;
+}
+
+.viewer__provenance dd {
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.viewer__provenance a { color: #7fb7d8; }
+
+.viewer__panel h3 {
+  font-size: 13px;
+  margin-top: 6px;
 }

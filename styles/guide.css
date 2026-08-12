@@ -1,0 +1,72 @@
+/* Инструкция «как добавить персонажа»: раскрывающийся блок с шагами и промптом. */
+.guide {
+  background: #1d1d26;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  max-width: 860px;
+}
+
+.guide__summary {
+  color: #c9c9da;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 14px 16px;
+}
+
+.guide__summary:hover { color: #eee; }
+
+.guide__body {
+  border-top: 1px solid #3a3a48;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 16px;
+}
+
+.guide__step h2 {
+  color: #eee;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.guide__step ul,
+.guide__step ol {
+  color: #c9c9da;
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  gap: 4px;
+  line-height: 1.5;
+  padding-left: 20px;
+}
+
+.guide__step p {
+  color: #c9c9da;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+
+.guide__prompt {
+  background: #16161c;
+  border: 1px solid #3a3a48;
+  border-radius: 6px;
+  color: #9ad19a;
+  font-size: 12px;
+  line-height: 1.6;
+  margin-top: 8px;
+  overflow-x: auto;
+  padding: 12px;
+  user-select: all;
+  white-space: pre-wrap;
+}
+
+.guide__hint { color: #9a9aac; }
+
+.guide__step code,
+.guide__step em {
+  color: #d8b46a;
+  font-style: normal;
+}

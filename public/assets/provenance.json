@@ -1,0 +1,56 @@
+{
+  "note": "Происхождение файлов, чей инструмент его нигде не записал. У кого происхождение уже есть (пропы знает props.py, прогоны знает генератор, игровые модели знает world.json), тому запись здесь не нужна: опись возьмёт её оттуда. Ключ это путь модели или его начало, у длинного ключа приоритет. Поля: title имя для страницы, source группа в описи (characters, gta, generated), tool чем сделано, license чем это грозит релизу, дальше блок происхождения как в world.json (model, rig, animations).",
+  "origins": {
+    "assets/models/character-animated.glb": {
+      "title": "Игровой персонаж",
+      "source": "characters"
+    },
+    "assets/models/techno-raver.glb": {
+      "title": "Техно-рейвер (облачный маршрут)",
+      "source": "characters"
+    },
+    "assets/models/masked-raver.glb": {
+      "title": "Фейсконтроль (облачный маршрут)",
+      "source": "characters"
+    },
+    "assets/models/trellis-npc.glb": {
+      "title": "TRELLIS NPC (сырой)",
+      "source": "characters"
+    },
+    "assets/models/bold-raver.glb": {
+      "title": "Bold Raver",
+      "source": "characters",
+      "model": "TRELLIS, бесплатная очередь HF Space: https://huggingface.co/spaces/JeffreyXiang/TRELLIS",
+      "rig": "локальный авториг, Blender headless, 17 костей, веса через voxel-прокси",
+      "animations": "Idle и Aim самописные; Walk, Run, Dance это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset",
+      "license": "клипы Bandai остаются CC BY-NC, в релиз не годятся (F-004)"
+    },
+    "assets/models/dance-preview.glb": {
+      "title": "Танцы (mocap-ретаргет)",
+      "source": "characters",
+      "model": "меш Берлинца из TRELLIS: https://huggingface.co/spaces/JeffreyXiang/TRELLIS",
+      "rig": "локальный авториг, Blender headless, 17 костей",
+      "animations": "превью ретаргета танцев, mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset",
+      "license": "клипы Bandai остаются CC BY-NC, в релиз не годятся (F-004)"
+    },
+    "assets/models/sandbags.glb": {
+      "title": "Мешки с песком",
+      "source": "generated",
+      "tool": "tools/gen/mesh2prop.py",
+      "params": "промпт «sandbags», пресет prop, бюджет 1200 тр",
+      "model": "прогон генератора «sandbags», перенесённый из public/assets/generated в модели мира: картинка, TripoSR, лоуполи"
+    },
+    "assets/models/gta-": {
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/weapons/": {
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "модели стволов из GTA San Andreas, свой импортёр .dff и .txd",
+      "rig": "нет, ствол это статичная модель в руке персонажа",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    }
+  }
+}

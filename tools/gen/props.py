@@ -7,9 +7,10 @@
 детерминированно по сиду и сразу в бюджете PS1-эстетики (сотни треугольников,
 плоские нормали).
 
-Рядом с GLB кладётся `manifest.json`: имя, файл, полигонаж и габариты каждого
-пропа. Его читает страница `props.html`, поэтому новый проп появляется в
-библиотеке и на странице одной перегенерацией, без правки JS.
+Рядом с GLB кладётся `manifest.json` с русскими именами пропов: больше про них
+знать неоткуда, всё остальное читается из самих файлов. Единая опись проекта
+(`tools/inventory`) берёт имена оттуда, а новый проп видит просто потому, что он
+появился на диске.
 
 Использование:
     BLENDER=_other/auto-rig/blender-4.2.9-linux-x64/blender
@@ -495,17 +496,22 @@ def setup_render(prop, output):
     cam.rotation_quaternion = (cam.location - target).to_track_quat('Z', 'Y')
 
 
-def write_manifest(path, generated):
-    """Опись библиотеки для props.html: страница не должна держать свой список имён.
+def write_manifest(path):
+    """Русские имена пропов: единственное, чего по самому GLB не узнать.
 
-    Габариты записываются в осях glTF (Y вверх), а не Blender, чтобы цифры на
-    странице совпадали с тем, что намерит three.js по загруженной модели.
+    Полигонаж, габариты и вес отсюда убраны намеренно: их меряет по файлам
+    единая опись проекта (`tools/inventory`), и вторая копия цифр рядом с
+    моделями только расходилась бы с ними. По той же причине здесь нет чужих
+    записей: раньше эта опись притворялась описью всей библиотеки и на каждом
+    прогоне выкидывала из неё всё, что сделал не этот скрипт.
     """
-    previous = json.loads(path.read_text(encoding='utf-8'))['props'] if path.exists() else []
-    known = {entry['file']: entry for entry in previous} | {e['file']: e for e in generated}
-    props = [known[f'{name}.glb'] for name in PROPS if f'{name}.glb' in known]
+    props = [
+        {'name': name, 'title': prop.title, 'file': f'{name}.glb'}
+        for name, prop in PROPS.items() if (path.parent / f'{name}.glb').exists()
+    ]
     path.write_text(
-        json.dumps({'props': props}, ensure_ascii=False, indent=2) + '\n', encoding='utf-8',
+        json.dumps({'tool': 'tools/gen/props.py', 'props': props}, ensure_ascii=False, indent=2) + '\n',
+        encoding='utf-8',
     )
 
 
@@ -535,15 +541,6 @@ def generate(prop_name, out_path, seed, render_path):
         bpy.ops.render.render(write_still=True)
         print(f'{prop_name}: контрольный кадр {render_path}')
 
-    return {
-        'name': prop_name,
-        'title': PROPS[prop_name].title,
-        'file': out_path.name,
-        'triangles': tris,
-        'kilobytes': kilobytes,
-        'size': [width, height, depth],
-    }
-
 
 def main():
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
@@ -559,14 +556,13 @@ def main():
     if args.out and len(names) > 1:
         p.error('--out работает только с одним --prop, для всех пропов используй --out-dir')
 
-    generated = []
     for name in names:
         out_path = args.out or args.out_dir / f'{name}.glb'
         render_path = args.render if len(names) == 1 else None
-        generated.append(generate(name, out_path, args.seed, render_path))
+        generate(name, out_path, args.seed, render_path)
 
     manifest = (args.out.parent if args.out else args.out_dir) / MANIFEST_NAME
-    write_manifest(manifest, generated)
+    write_manifest(manifest)
     print(f'опись библиотеки: {manifest} ({len(json.loads(manifest.read_text())["props"])} пропов)')
 
 

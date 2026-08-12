@@ -9,16 +9,16 @@
 <body>
   <h1 class="page-title">Мастерская</h1>
   <p class="page-lead">
-    Всё, чем этот проект делает контент, на одном экране: генераторы мешей, ретаргет анимаций,
-    свои читатели форматов GTA и вся геометрия, которая из них вышла. Превью рисуются
-    из тех же файлов и тех же сборщиков, что работают в игре, а строчка «работает или нет»
-    берётся из <code>docs/FINDINGS.md</code> по упоминанию файла утилиты, поэтому страница
-    не может разойтись с репозиторием. Клик по модели открывает вьюер, у персонажей там же клипы.
+    Всё, что в проекте есть из моделей, и всё, чем это сделано, на одном экране. Опись
+    <code>assets/inventory.json</code> собирается с диска при каждом запросе страницы: ассет попадает
+    в неё потому, что он лежит в <code>public/assets</code>, а не потому, что его кто-то вписал в список.
+    Поэтому свежий проп из генератора виден здесь сразу после перезагрузки, а цифры (полигонаж,
+    габариты, вес) читаются из самих GLB и разойтись с файлами не могут. Строчка «работает или нет»
+    у утилит берётся из <code>docs/FINDINGS.md</code> по упоминанию файла. Клик по модели открывает
+    вьюер: там клипы, замер по загруженной модели и происхождение ассета.
   </p>
   <nav class="page-nav">
     <a href="./index.html">В игру</a>
-    <a href="./characters.html">Персонажи</a>
-    <a href="./props.html">Пропы</a>
     <a href="./generator.html">Генератор</a>
     <a href="./status.html">Статус проекта</a>
   </nav>
@@ -27,6 +27,47 @@
 
   <h2 class="section-title">Что уже есть в геометрии</h2>
   <div data-js-inventory></div>
+
+  <details class="guide">
+    <summary class="guide__summary">Как добавить нового персонажа (инструкция)</summary>
+    <div class="guide__body">
+      <section class="guide__step">
+        <h2>1. Какая нужна картинка</h2>
+        <ul>
+          <li><strong>T-поза или A-поза</strong>: руки в стороны, ноги прямо.</li>
+          <li><strong>Весь персонаж в кадре</strong>, вид спереди, один персонаж.</li>
+          <li><strong>Светлый однотонный фон</strong>, ровный свет без резких теней.</li>
+          <li>Стиль задаётся текстурой, а не позой: low-poly хоррор (FEAR, Cry of Fear, старые Resident Evil).</li>
+        </ul>
+        <p>Готовый промпт для любого генератора картинок:</p>
+        <pre class="guide__prompt">full body game character in T-pose, arms straight out to the sides,
+facing camera, standing straight, low-poly PS2 survival horror style
+(FEAR, Cry of Fear, classic Resident Evil), muted colors, gritty textures,
+plain light gray background, even studio lighting, no shadows on background,
+single character, full figure visible head to toe</pre>
+        <p class="guide__hint">К промпту добавь описание самого персонажа (одежда, лицо, атмосфера).</p>
+      </section>
+
+      <section class="guide__step">
+        <h2>2. Что сделать с картинкой</h2>
+        <ol>
+          <li>Сохранить в <code>_other/incoming/&lt;имя&gt;.png</code> (или просто приложить в чат).</li>
+          <li>Сказать агенту: <em>«Реализуй персонажа &lt;имя&gt; из этой картинки»</em>.</li>
+          <li>Агент идёт по раннбуку <code>tools/README.md</code>: меш, авториг, mocap-анимации, постобработка, в игру.</li>
+        </ol>
+      </section>
+
+      <section class="guide__step">
+        <h2>3. С чего начать первые генерации</h2>
+        <ol>
+          <li>Сгенерируй две или три картинки разных персонажей по промпту выше.</li>
+          <li>Начни с одной: дай агенту и попроси провести по <strong>маршруту A</strong> (бесплатно, проверен дважды).</li>
+          <li>Проверь результат в описи выше (клик по карточке открывает вьюер с клипами) и в игре.</li>
+          <li>Карточка NPC в игре показывает «Происхождение ассета» из того же источника, что и вьюер.</li>
+        </ol>
+      </section>
+    </div>
+  </details>
 
   <h2 class="section-title">Чем это делается</h2>
   <div data-js-tools></div>
@@ -44,6 +85,8 @@
       <h2 data-js-name></h2>
       <div class="viewer__stats" data-js-stats></div>
       <div class="viewer__clips" data-js-clips></div>
+      <h3>Происхождение ассета</h3>
+      <dl class="viewer__provenance" data-js-provenance></dl>
       <p class="viewer__hint">Мышь вращает, колесо приближает.</p>
     </aside>
   </div>
