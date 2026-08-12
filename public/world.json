@@ -470,6 +470,30 @@
       "position": [-6.9, null, 10.9],
       "rotation": [0, 0, 0],
       "scale": [1, 1, 1]
+    },
+    {
+      "id": "prop-sandbags-1",
+      "type": "model",
+      "src": "assets/models/sandbags.glb",
+      "position": [-2.4, null, 8.6],
+      "rotation": [0, 0.2, 0],
+      "scale": [1, 1, 1]
+    },
+    {
+      "id": "prop-sandbags-2",
+      "type": "model",
+      "src": "assets/models/sandbags.glb",
+      "position": [-0.9, null, 8.9],
+      "rotation": [0, -0.15, 0],
+      "scale": [1, 1, 1]
+    },
+    {
+      "id": "prop-sandbags-3",
+      "type": "model",
+      "src": "assets/models/sandbags.glb",
+      "position": [9.2, null, -4.2],
+      "rotation": [0, 1.35, 0],
+      "scale": [1, 1, 1]
     }
   ],
   "npcs": [
