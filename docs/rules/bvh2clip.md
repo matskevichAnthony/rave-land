@@ -2,6 +2,7 @@
 tool: tools/anim/bvh2clip
 title: Мокап в игровой клип
 input: BVH и имя клипа
+summary: Одна команда на весь путь: ретаргет мокапа на скелет персонажа, вклейка клипа под своим именем в GLB и постобработка.
 output: обновлённый GLB персонажа с новым клипом
 command: tools/anim/bvh2clip _other/mocap/bandai/dataset-1_walk_normal_001.bvh Walk --rig-dir _other/hero-rig
 ---

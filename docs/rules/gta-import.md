@@ -2,6 +2,7 @@
 tool: tools/gta/dff2glb.py
 title: Персонаж GTA в игровой GLB
 input: dff, txd и пакеты ifp
+summary: Модель, текстуры и выбранные анимации игры собираются в GLB со скелетом и весами, готовый лечь в мир.
 output: GLB со скелетом, весами и клипами
 command: python3 tools/gta/dff2glb.py _other/gta/male01.dff -o public/assets/models/gta-grove.glb --txd _other/gta/male01.txd --ifp "Стандартные анимации/ped.ifp" --clips WALK_civi,IDLE_stance
 ---

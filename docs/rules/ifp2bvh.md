@@ -2,6 +2,7 @@
 tool: tools/anim/ifp2bvh.py
 title: Анимации GTA в общий формат
 input: пакет ped.ifp и имя анимации
+summary: Адаптер анимаций San Andreas к общему маршруту: повороты костей из пакета игры превращаются в обычный BVH.
 output: BVH для bvh2clip
 command: python3 tools/anim/ifp2bvh.py "Стандартные анимации/ped.ifp" WALK_civi -o _other/mocap/gta/walk.bvh
 ---

@@ -2,6 +2,7 @@
 tool: tools/gen/props.py
 title: Пропы рейв-поля из примитивов
 input: имя пропа и сид
+summary: Blender headless собирает утварь рейв-поля из примитивов, детерминированно по сиду и сразу в бюджете полигонов.
 output: GLB плюс строка в manifest.json
 command: _other/auto-rig/blender-4.2.9-linux-x64/blender --background --python tools/gen/props.py -- --prop all --out-dir public/assets/models/props
 ---

@@ -2,6 +2,7 @@
 tool: tools/gen/image2mesh.py
 title: Картинка в меш через облако
 input: PNG по правилам кадра, персонаж в T-позе
+summary: Гонит картинку через бесплатные HF Spaces и приносит GLB. Очередь публичная, минуты ожидания и перегруз это норма.
 output: GLB-меш без скелета
 command: python3 tools/gen/image2mesh.py _other/incoming/hero.png _other/hero-rig/mesh-raw.glb --space hunyuan
 ---

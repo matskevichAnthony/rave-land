@@ -2,6 +2,7 @@
 tool: tools/gen/text2image.py
 title: Текст в картинку
 input: промпт по правилам кадра
+summary: Рисует концепт бесплатной очередью FLUX.1-schnell, когда картинки на входе ещё нет.
 output: PNG для генератора мешей
 command: _other/hf-client/venv/bin/python tools/gen/text2image.py "промпт" _other/incoming/prop.png
 ---

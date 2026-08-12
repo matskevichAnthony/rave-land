@@ -2,6 +2,7 @@
 tool: tools/gen/triposr_local.py
 title: Картинка в меш локально, без интернета
 input: PNG предмета в три четверти на светлом фоне
+summary: TripoSR на голом CPU: чекпоинт через mmap, пик около 2.2 ГБ, сторож памяти обрывает прогон, если её не хватает.
 output: GLB с вершинными цветами, без UV
 command: cd _other/local-gen && HF_HOME=$PWD/weights ./venv/bin/python ../../tools/gen/triposr_local.py hero.png out/hero.glb --mc-resolution 256
 ---

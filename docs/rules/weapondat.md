@@ -2,6 +2,7 @@
 tool: tools/gta/weapondat.py
 title: Данные оружия в каталог игры
 input: weapon.dat из папки data игры
+summary: Из игрового weapon.dat достаётся и баланс, и поведение: кадры прицеливания, отрезок выстрела и флаги стрельбы.
 output: src/combat/weapons.json
 command: python3 tools/gta/weapondat.py "Стандартная папка data/data/weapon.dat" -o src/combat/weapons.json --only PISTOL,DESERT_EAGLE,SHOTGUN,AK47,M4
 ---
