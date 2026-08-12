@@ -36,6 +36,27 @@ async function loadWeaponModel(src) {
   return { model, flash };
 }
 
+/**
+ * Развернуть оружие так, чтобы ствол смотрел вдоль кости кисти.
+ *
+ * Модель авторена в системе фрейма кисти, а кость в скелете живёт в своей: импортёр
+ * доворачивает её, потому что Blender держит кость вдоль одной оси, а RenderWare вдоль
+ * другой. Поправку можно было бы записать константой, но она развалится на другом
+ * скелете, поэтому она выводится из данных: куда смотрит ствол, говорит узел вспышки, а
+ * куда смотрит кисть, говорит её дочерняя кость. Годится для любой модели и любого рига.
+ */
+function alignToHand(gun, flash, hand) {
+  const child = hand.children.find((node) => node.isBone);
+  if (!flash || !child) return;
+  gun.quaternion.identity();
+  gun.updateWorldMatrix(true, true);
+  // Оба направления берутся в локальной системе: ствол переводится в систему самого узла
+  // оружия, а положение дочерней кости в ней уже и лежит, потому что её родитель кисть.
+  const barrel = gun.worldToLocal(flash.getWorldPosition(new THREE.Vector3())).normalize();
+  const along = child.position.clone().normalize();
+  if (barrel.lengthSq() && along.lengthSq()) gun.quaternion.setFromUnitVectors(barrel, along);
+}
+
 function buildGun() {
   const gun = new THREE.Group();
   const metal = new THREE.MeshStandardMaterial({ color: '#23222c', roughness: 0.6 });
@@ -74,7 +95,7 @@ function mountGun(gun, playerMesh) {
   if (!hand) {
     gun.position.copy(GUN_OFFSET);
     playerMesh.add(gun);
-    return;
+    return null;
   }
   playerMesh.updateWorldMatrix(true, true);
   const handScale = hand.getWorldScale(new THREE.Vector3()).y || 1;
@@ -82,12 +103,13 @@ function mountGun(gun, playerMesh) {
   gun.position.copy(GUN_GRIP_OFFSET);
   gun.rotation.x = GUN_GRIP_PITCH;
   hand.add(gun);
+  return hand;
 }
 
 export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, player, isEditing }) {
   const gun = buildGun();
   gun.visible = false;
-  mountGun(gun, player.mesh);
+  const hand = mountGun(gun, player.mesh);
   let muzzleFlash = null;
   let flashLeft = 0;
 
@@ -106,6 +128,7 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
       gun.scale.setScalar(1);
       gun.add(model);
       muzzleFlash = flash;
+      alignToHand(gun, flash, hand);
       if (muzzleFlash) muzzleFlash.visible = false;
       updateHud();
     }).catch((error) => console.warn(`модель ${next.model} не загрузилась`, error));

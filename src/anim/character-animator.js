@@ -19,11 +19,11 @@ const SPRINT_THRESHOLD = 6.5;
 const CLIP_SPEED = { walk: 1.52, run: 4.3, sprint: 6.3 };
 const TIME_SCALE_LIMIT = { min: 0.45, max: 1.8 };
 const STRAFE_DOMINANCE = 0.5;
-// Доли доворота: корпус ведёт цель, голова добирает остаток.
-const AIM_SHARE = { spine: 0.25, chest: 0.45, head: 0.3 };
+// Доворот раскладывается по позвоночнику. Руки не трогаются: их держит клип оружия,
+// и доворот поверх него ломает хват. Голову тоже, иначе взгляд уезжает от прицела.
+const AIM_SHARE = { spine: 0.35, chest: 0.65 };
 const AIM_YAW_LIMIT = THREE.MathUtils.degToRad(25);
 const AIM_PITCH_LIMIT = THREE.MathUtils.degToRad(35);
-const RECOIL_PITCH = THREE.MathUtils.degToRad(14);
 const HIT_PITCH = THREE.MathUtils.degToRad(20);
 
 // Производные клипы (маски, статичные позы) считаются один раз на модель: массив animations
@@ -214,13 +214,11 @@ export function createCharacterAnimator({ model, animations, profile }) {
     if (!aimBones.length) return;
     // Доворот корпуса нужен только тем персонажам, у которых прицельной позы нет в клипах.
     // У модели с авторскими прицельными клипами поза уже в них, и доворот поверх ломает её.
-    // Отдача и удержание оружия у моделей GTA уже внутри клипа: кадры animLoop это и есть
-    // отдача. Своя докрутка поверх авторской позы её ломает и накапливается, поэтому здесь
-    // не трогается ничего, кроме персонажей без прицельных клипов.
-    if (!chosen.proceduralYaw) return;
+    // Так наведение сделано в самой игре: отдельного клипа прицеливания в San Andreas нет,
+    // движок доворачивает кости к цели поверх позы удержания. Отдачу здесь не добавляем,
+    // она уже внутри клипа оружия (кадры animLoop), и вторая поверх авторской накапливается.
     const yaw = THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT);
-    const pitch = THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT)
-      - RECOIL_PITCH * (pose.recoilT ?? 0);
+    const pitch = THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT);
     const lean = HIT_PITCH * (pose.hitT ?? 0);
     if (!pose.aiming && !lean) return;
 
