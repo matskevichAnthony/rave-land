@@ -1,0 +1,27 @@
+/* Раскладка страницы генератора: форма слева, результаты и лог справа, библиотека снизу. */
+.gen {
+  align-items: start;
+  display: grid;
+  gap: 20px;
+  grid-template-areas:
+    'form stage'
+    'form log'
+    'library library';
+  grid-template-columns: 340px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+}
+
+.gen-form { grid-area: form; }
+
+.gen-stage { grid-area: stage; }
+
+.gen-log { grid-area: log; }
+
+.gen-library { grid-area: library; }
+
+@media (max-width: 1000px) {
+  .gen {
+    grid-template-areas: 'form' 'stage' 'log' 'library';
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

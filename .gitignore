@@ -20,3 +20,7 @@ _other/bold-raver-rig/character-animated.glb
 
 # Python-кеш
 __pycache__/
+
+# Прогоны генератора: сырой меш весит по 2.7 МБ на прогон, а всё это воспроизводится
+# инструментами из tools/gen. В репозиторий едут только отобранные пропы.
+public/assets/generated/

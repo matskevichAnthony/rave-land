@@ -1,0 +1,27 @@
+/* Живой лог прогона: строки инструмента с временем от запуска процесса. */
+.gen-log__lines {
+  background: #12121a;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  font-size: 12px;
+  height: 260px;
+  line-height: 1.5;
+  overflow: auto;
+  padding: 12px;
+}
+
+.gen-log__line {
+  color: #b9b9c8;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.gen-log__line--title {
+  color: #7fb7d8;
+  margin-top: 8px;
+}
+
+.gen-log__line--done { color: #b7f0c4; }
+
+.gen-log__line--error { color: #ff9b9b; }

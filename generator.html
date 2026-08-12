@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Генератор ассетов Rave Land</title>
+  <link rel="stylesheet" href="./styles/generator.css" />
+</head>
+<body>
+  <h1 class="page-title">Генератор ассетов</h1>
+  <p class="page-lead">
+    Весь маршрут промпт → картинка → меш → лоуполи-проп, не выходя из браузера и не выходя
+    в интернет. Кнопки дёргают те же инструменты, что и в терминале:
+    <code>tools/gen/text2image_local.py</code>, <code>tools/gen/triposr_local.py</code>,
+    <code>tools/gen/mesh2prop.py</code>. Шаг идёт минутами, поэтому его видно построчно в логе,
+    а каждый промежуточный результат сразу показывается: картинку посмотреть, меш и проп покрутить.
+    Прогон всегда один: TripoSR держит 2.2 ГБ, второй параллельный уложит машину.
+    Страница живёт только под <code>npm run dev</code>, готовой сборке запускать нечего.
+  </p>
+  <nav class="page-nav">
+    <a href="./index.html">В игру</a>
+    <a href="./props.html">Пропы</a>
+    <a href="./characters.html">Персонажи</a>
+    <a href="./toolbox.html">Мастерская</a>
+    <a href="./status.html">Статус проекта</a>
+  </nav>
+
+  <div class="gen">
+    <form class="gen-form" data-js-form>
+      <label class="gen-field">
+        <span>Промпт</span>
+        <textarea data-js-prompt rows="4" placeholder="stack of sandbags, military prop"></textarea>
+      </label>
+
+      <label class="gen-field">
+        <span>Пресет</span>
+        <select data-js-preset>
+          <option value="prop">Предмет</option>
+          <option value="character">Персонаж</option>
+        </select>
+      </label>
+
+      <label class="gen-field">
+        <span>Бюджет треугольников</span>
+        <input type="number" data-js-triangles min="50" max="200000" step="100"
+               placeholder="по умолчанию пресета" />
+      </label>
+
+      <label class="gen-field">
+        <span>Целевой габарит, м</span>
+        <input type="number" data-js-size min="0.05" max="50" step="0.1"
+               placeholder="по умолчанию пресета" />
+      </label>
+
+      <p class="gen-form__hint">
+        Стиль первой PlayStation и правила T-позы держат сами пресеты генератора картинок,
+        промпт их не повторяет: пиши, что за предмет. Пустые бюджет и габарит означают
+        умолчание типа из <code>tools/gen/mesh2prop.py</code>, фактические числа видно в логе.
+      </p>
+
+      <div class="gen-actions">
+        <button type="button" data-js-run="all" class="gen-actions__main">Весь маршрут</button>
+        <button type="button" data-js-run="image">1. Картинка</button>
+        <button type="button" data-js-run="mesh">2. Меш</button>
+        <button type="button" data-js-run="prop">3. Проп</button>
+        <button type="button" data-js-cancel hidden>Отменить прогон</button>
+      </div>
+
+      <div class="gen-actions">
+        <select data-js-incoming class="gen-actions__incoming"></select>
+        <button type="button" data-js-take>Взять готовую картинку</button>
+      </div>
+      <p class="gen-form__hint">
+        Готовая картинка из <code>_other/incoming</code> заменяет первый шаг: дальше меш и проп
+        считаются от неё. Так же перезапускается любой шаг по отдельности, не трогая соседние.
+      </p>
+    </form>
+
+    <section class="gen-stage">
+      <article class="gen-slot">
+        <h2 class="gen-slot__title">1. Картинка <span data-js-slot-note="image"></span></h2>
+        <div class="gen-slot__body"><img data-js-image alt="" hidden /></div>
+      </article>
+
+      <article class="gen-slot">
+        <h2 class="gen-slot__title">2. Сырой меш <span data-js-slot-note="mesh"></span></h2>
+        <div class="gen-slot__body gen-slot__body--canvas" data-js-mesh></div>
+      </article>
+
+      <article class="gen-slot">
+        <h2 class="gen-slot__title">3. Проп <span data-js-slot-note="prop"></span></h2>
+        <div class="gen-slot__body gen-slot__body--canvas" data-js-prop></div>
+        <div class="gen-slot__stats" data-js-stats></div>
+      </article>
+    </section>
+
+    <section class="gen-log">
+      <h2 class="section-title">Лог прогона</h2>
+      <div class="gen-log__lines" data-js-log></div>
+    </section>
+
+    <section class="gen-library">
+      <h2 class="section-title">Что уже сгенерировано</h2>
+      <p class="page-lead">
+        Опись <code>public/assets/generated/manifest.json</code> пишет сам генератор. Каталог
+        отдельный от библиотеки пропов намеренно: тамошнюю опись <code>props.py</code> переписывает
+        целиком по своему списку, и всё чужое из неё пропадает.
+      </p>
+      <div class="cards-grid" data-js-library></div>
+    </section>
+  </div>
+
+  <script type="module" src="./src/generator/main.js"></script>
+</body>
+</html>
