@@ -36,6 +36,19 @@ function maskedClip(clip, mask, id) {
   return tracks.length ? new THREE.AnimationClip(`${clip.name}@${id}`, clip.duration, tracks) : null;
 }
 
+/**
+ * Клип без костей, которые забирает слой выше.
+ *
+ * Два экшена, пишущих одну кость с весом 1, дают среднее, то есть движение вполсилы.
+ * Поэтому под частичный клип стрельбы у стойки вычитаются ровно его кости: наборы снова
+ * не пересекаются, и каждую кость пишет ровно один экшен.
+ */
+function withoutBones(clip, exclude) {
+  const tracks = clip.tracks.filter(
+    (track) => !exclude.has(THREE.PropertyBinding.parseTrackName(track.name).nodeName));
+  return tracks.length ? new THREE.AnimationClip(`${clip.name}-minus`, clip.duration, tracks) : null;
+}
+
 /** Одна поза вместо цикла: для верхнего слоя этого достаточно и дешевле цикла. */
 function frozenClip(clip, mask) {
   const masked = maskedClip(clip, mask, 'upper');
@@ -123,6 +136,15 @@ export function createCharacterAnimator({ model, animations, profile }) {
   }
 
   const { clips, lower, aimPose, directionalAim } = derived;
+  const fireBones = clips.fire ? bonesOfClip(clips.fire) : null;
+  const trimmed = new Map();
+
+  /** Стойка без костей выстрела, посчитанная по требованию и запомненная. */
+  function stanceUnderFire(clip) {
+    if (!clip || !fireBones) return clip;
+    if (!trimmed.has(clip)) trimmed.set(clip, withoutBones(clip, fireBones) ?? clip);
+    return trimmed.get(clip);
+  }
 
   function locomotionRole(speed) {
     if (speed > SPRINT_THRESHOLD && clips.sprint) return 'sprint';
@@ -157,7 +179,11 @@ export function createCharacterAnimator({ model, animations, profile }) {
     }
 
     if (directionalAim) {
-      if (pose.speed <= WALK_THRESHOLD) return { base: clips.armedIdle, overlay: null };
+      // Стоя это Gun_stand: одна кадровая прицельная поза, ровно как в игре. IDLE_armed
+      // это расслабленное удержание, оно годится когда оружие в руках, но цель не взята.
+      if (pose.speed <= WALK_THRESHOLD) {
+        return { base: clips.aimPose ?? clips.armedIdle, overlay: null };
+      }
       if (pose.speed > RUN_THRESHOLD && clips.armedRun) return { base: clips.armedRun, overlay: null };
       const byDirection = { forward: clips.aimWalkF, back: clips.aimWalkB,
                             left: clips.aimWalkL, right: clips.aimWalkR };
@@ -203,8 +229,11 @@ export function createCharacterAnimator({ model, animations, profile }) {
 
   function update(dt, pose) {
     const chosen = plan(pose);
-    setLayer('base', chosen.base, { once: chosen.once, timeScale: chosen.timeScale });
-    setLayer('overlay', chosen.overlay);
+    // Выстрел это верхний слой из пакета своего оружия, поверх любой стойки и походки.
+    const firing = pose.firing && clips.fire;
+    setLayer('base', firing ? stanceUnderFire(chosen.base) : chosen.base,
+             { once: chosen.once, timeScale: chosen.timeScale });
+    setLayer('overlay', firing ? clips.fire : chosen.overlay, { once: Boolean(firing) });
     mixer.update(dt);
     applyAim(pose, chosen);
   }

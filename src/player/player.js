@@ -9,6 +9,8 @@ const CAPSULE_HALF_HEIGHT = 0.55;
 const BODY_CENTER_Y = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
 const LANDING_SECONDS = 0.23;
 const RECOIL_SECONDS = 0.18;
+// Длительность клипа стрельбы из colt45.ifp: слой держится ровно столько.
+const FIRE_SECONDS = 0.73;
 
 export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   const character = PLAYER.appearance.src
@@ -40,6 +42,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let airTime = 0;
   let landingLeft = 0;
   let recoilLeft = 0;
+  let fireLeft = 0;
   const moveDirection = new THREE.Vector3();
   const localMove = new THREE.Vector3();
 
@@ -62,6 +65,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       landing: landingLeft > 0,
       aimYaw: 0,
       aimPitch,
+      firing: fireLeft > 0,
       recoilT: recoilLeft / RECOIL_SECONDS,
     };
   }
@@ -95,6 +99,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     airTime = grounded ? 0 : airTime + dt;
     landingLeft = Math.max(0, landingLeft - dt);
     recoilLeft = Math.max(0, recoilLeft - dt);
+    fireLeft = Math.max(0, fireLeft - dt);
 
     const movement = controller.computedMovement();
     const current = body.translation();
@@ -145,6 +150,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     },
     kick: () => {
       recoilLeft = RECOIL_SECONDS;
+      fireLeft = FIRE_SECONDS;
     },
     position: () => body.translation(),
   };

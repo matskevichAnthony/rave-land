@@ -49,7 +49,8 @@ def parse_args():
     parser.add_argument('--glb', type=Path, required=True)
     parser.add_argument('--textures', type=Path,
                         help='JSON map of texture name to PNG file, unpacked from the .txd')
-    parser.add_argument('--ifp', type=Path, help='animation package, e.g. ped.ifp')
+    parser.add_argument('--ifp', type=Path, action='append',
+                        help='animation package, repeatable: ped.ifp plus a weapon package')
     parser.add_argument('--clips', default='', help='comma separated animation names')
     parser.add_argument('--prop', action='store_true',
                         help='keep the authored origin: weapons are built in the hand bone '
@@ -315,13 +316,18 @@ def main():
           f'{len(textures)} textures')
 
     wanted = [name.strip() for name in args.clips.split(',') if name.strip()]
-    available = {animation.name.casefold(): animation
-                 for animation in (load_ifp(args.ifp) if wanted else [])}
+    # San Andreas раскладывает клипы по пакетам: стойки и походки в ped.ifp, стрельба и
+    # перезарядка в файле своей группы оружия (colt45.ifp, rifle.ifp). Персонаж собирается
+    # из нескольких пакетов, поэтому имя клипа ищется во всех по порядку.
+    available = {}
+    for package in (args.ifp or []) if wanted else []:
+        for animation in load_ifp(package):
+            available.setdefault(animation.name.casefold(), animation)
     clips = 0
     for name in wanted:
         animation = available.get(name.casefold())
         if animation is None:
-            print(f'MISSING {name}: no such animation in {args.ifp.name}')
+            print(f'MISSING {name}: no such animation in the given packages')
             continue
         build_clip(rig, clump, animation)
         clips += 1

@@ -30,7 +30,8 @@ def parse_args():
     parser.add_argument('-o', '--output', type=Path, required=True, help='GLB file to write')
     parser.add_argument('--txd', type=Path,
                         help='texture dictionary (default: the .txd beside the model)')
-    parser.add_argument('--ifp', type=Path, help='animation package to take clips from')
+    parser.add_argument('--ifp', type=Path, action='append',
+                        help='пакет анимаций, можно повторять: ped.ifp плюс пакет оружия')
     parser.add_argument('--clips', default='',
                         help='comma separated animation names, e.g. IDLE_stance,WALK_civi')
     parser.add_argument('--prop', action='store_true',
@@ -75,7 +76,9 @@ def main():
         build = [BLENDER, '-b', '--python', BUILDER, '--',
                  '--dff', args.dff, '--glb', raw, '--textures', manifest]
         if args.clips:
-            build += ['--ifp', args.ifp, '--clips', args.clips]
+            for package in args.ifp:
+                build += ['--ifp', package]
+            build += ['--clips', args.clips]
         if args.prop:
             build += ['--prop']
         run(build)
