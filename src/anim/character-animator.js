@@ -214,14 +214,15 @@ export function createCharacterAnimator({ model, animations, profile }) {
     if (!aimBones.length) return;
     // Доворот корпуса нужен только тем персонажам, у которых прицельной позы нет в клипах.
     // У модели с авторскими прицельными клипами поза уже в них, и доворот поверх ломает её.
-    const procedural = Boolean(chosen.proceduralYaw);
-    const yaw = procedural
-      ? THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT) : 0;
-    const pitch = procedural
-      ? THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT) : 0;
-    const lean = HIT_PITCH * (pose.hitT ?? 0) - RECOIL_PITCH * (pose.recoilT ?? 0);
-    const aiming = pose.aiming && (yaw || pitch);
-    if (!aiming && !lean) return;
+    // Отдача и удержание оружия у моделей GTA уже внутри клипа: кадры animLoop это и есть
+    // отдача. Своя докрутка поверх авторской позы её ломает и накапливается, поэтому здесь
+    // не трогается ничего, кроме персонажей без прицельных клипов.
+    if (!chosen.proceduralYaw) return;
+    const yaw = THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT);
+    const pitch = THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT)
+      - RECOIL_PITCH * (pose.recoilT ?? 0);
+    const lean = HIT_PITCH * (pose.hitT ?? 0);
+    if (!pose.aiming && !lean) return;
 
     // Мировые матрицы костей считаются при рендере, поэтому перед чтением ориентации
     // родителя их надо обновить, иначе компенсация отстаёт на кадр и на быстром развороте
