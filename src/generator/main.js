@@ -15,6 +15,7 @@ const fields = {
   size: document.querySelector('[data-js-size]'),
 };
 const incoming = document.querySelector('[data-js-incoming]');
+const latinWarning = document.querySelector('[data-js-latin]');
 const cancelButton = document.querySelector('[data-js-cancel]');
 const runButtons = [...document.querySelectorAll('[data-js-run]')];
 const takeButton = document.querySelector('[data-js-take]');
@@ -34,6 +35,13 @@ function params() {
     size: fields.size.value || null,
   };
 }
+
+// Текстовый кодировщик модели знает только латиницу: кириллица уходит в него неизвестными
+// словами, и вместо мешков с песком приезжает случайная картинка. Предупредить дешевле, чем
+// объяснять потом четыре минуты ожидания впустую.
+fields.prompt.addEventListener('input', () => {
+  latinWarning.hidden = !/[А-Яа-яЁё]/.test(fields.prompt.value);
+});
 
 function setBusy(busy) {
   for (const button of [...runButtons, takeButton]) button.disabled = busy;

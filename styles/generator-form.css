@@ -20,6 +20,13 @@
   font-size: 12px;
 }
 
+.gen-field__warning {
+  color: #e0b070;
+  font-size: 12px;
+  line-height: 1.35;
+  margin: 0;
+}
+
 .gen-field input,
 .gen-field select,
 .gen-field textarea {
