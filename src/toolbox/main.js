@@ -2,10 +2,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 
 import { findingsMentioning, STATUS_LABELS } from '../docs/findings.js';
+import { renderMarkdown } from '../docs/markdown.js';
 import { createViewer, measure } from '../model-viewer/scene.js';
-import { RUNTIME_SYSTEMS, TOOL_SECTIONS } from './catalog.js';
+import { collectDocuments } from './documents.js';
 import { collectInventory } from './inventory.js';
+import { RUNTIME_SYSTEMS } from './runtime.js';
 import { createThumbnails } from './thumbnails.js';
+import { collectTools } from './tools.js';
 
 const loader = new GLTFLoader();
 const thumbnails = createThumbnails();
@@ -14,6 +17,7 @@ const countsRoot = document.querySelector('[data-js-counts]');
 const inventoryRoot = document.querySelector('[data-js-inventory]');
 const toolsRoot = document.querySelector('[data-js-tools]');
 const runtimeRoot = document.querySelector('[data-js-runtime]');
+const documentsRoot = document.querySelector('[data-js-documents]');
 const viewerRoot = document.querySelector('[data-js-viewer]');
 const canvasRoot = document.querySelector('[data-js-canvas]');
 const statsRoot = document.querySelector('[data-js-stats]');
@@ -30,8 +34,11 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeViewer();
 });
 
-toolsRoot.replaceChildren(...TOOL_SECTIONS.map(renderToolSection));
+const toolSections = collectTools();
+const documents = collectDocuments();
+toolsRoot.replaceChildren(...toolSections.map(renderToolSection));
 runtimeRoot.replaceChildren(...RUNTIME_SYSTEMS.map(renderRuntimeSystem));
+documentsRoot.replaceChildren(...documents.map(renderDocument));
 
 const previews = [];
 const inventory = await collectInventory();
@@ -50,13 +57,15 @@ function startPreviews() {
 }
 
 function renderCounts(groups) {
-  const tools = TOOL_SECTIONS.flatMap((section) => section.tools);
+  const tools = toolSections.flatMap((section) => section.tools);
   const items = groups.flatMap((group) => group.items);
   const tiles = [
     ['Утилит в tools/', tools.length],
+    ['Из них с правилами работы', tools.filter((tool) => tool.rules).length],
     ['Из них с открытым вопросом', tools.filter((tool) => isTroubled(tool)).length],
     ['Готовых моделей', items.filter((item) => item.src).length],
     ['Собирается кодом', items.filter((item) => item.build).length],
+    ['Документов в docs/', documents.length],
   ];
   return tiles.map(([label, value]) => {
     const tile = create('div', 'tile');
@@ -98,7 +107,9 @@ function buildPreview(item) {
 
 function renderToolSection(section) {
   const block = create('section', 'group');
-  block.append(create('h3', 'group__title', section.title), create('p', 'group__lead', section.lead));
+  const heading = create('h3', 'group__title', section.title);
+  heading.append(create('code', 'group__source', section.directory));
+  block.append(heading);
   const grid = create('div', 'tools-grid');
   grid.append(...section.tools.map(renderToolCard));
   block.append(grid);
@@ -111,10 +122,31 @@ function renderToolCard(tool) {
   const header = create('header', 'tool__header');
   header.append(create('b', null, tool.title), renderBadge(findings));
   card.append(header, create('code', 'tool__path', tool.path), create('p', 'tool__summary', tool.summary));
-  card.append(create('p', 'tool__io', `${tool.input} → ${tool.output}`));
+  if (tool.input && tool.output) card.append(create('p', 'tool__io', `${tool.input} → ${tool.output}`));
   if (tool.command) card.append(create('pre', 'tool__command', tool.command));
+  if (tool.rules) card.append(renderRules(tool.rules));
   card.append(renderFindings(findings));
   return card;
+}
+
+/** Правила лежат в docs/rules и цепляются к утилите сами: здесь их только показывают. */
+function renderRules(rules) {
+  const block = create('details', 'tool__rules');
+  const summary = create('summary', 'tool__rules-summary', 'Правила работы');
+  const body = create('div', 'tool__rules-body');
+  body.append(renderMarkdown(rules));
+  block.append(summary, body);
+  return block;
+}
+
+function renderDocument(doc) {
+  const block = create('details', 'document');
+  const summary = create('summary', 'document__summary', doc.title);
+  summary.append(create('code', 'document__path', doc.path));
+  const body = create('div', 'document__body');
+  body.append(renderMarkdown(doc.body));
+  block.append(summary, body);
+  return block;
 }
 
 /** Что известно про утилиту, берётся из журнала: своей отметки «работает» страница не держит. */

@@ -207,10 +207,14 @@ export function createCharacterAnimator({ model, animations, profile }) {
     }
 
     if (directionalAim) {
-      // Стоя это Gun_stand: одна кадровая прицельная поза, ровно как в игре. IDLE_armed
-      // это расслабленное удержание, оно годится когда оружие в руках, но цель не взята.
+      // Стойка стоя выбирается по флагу оружия, как в CTaskSimpleUseGun::SetMoveAnim
+      // (F-050): одноручному стволу гановая стойка не даётся вовсе, гангстер встаёт в
+      // gang_gunstand и наводит только руку, а двуручному достаётся Gun_stand.
       if (pose.speed <= WALK_THRESHOLD) {
-        return { base: clips.aimPose ?? clips.armedIdle, overlay: null };
+        const standing = pose.weapon?.flags?.aimWithArm
+          ? clips.gangStand ?? clips.idle
+          : clips.gunStand ?? clips.armedIdle;
+        return { base: standing, overlay: null };
       }
       if (pose.speed > RUN_THRESHOLD && clips.armedRun) return { base: clips.armedRun, overlay: null };
       const byDirection = { forward: clips.aimWalkF, back: clips.aimWalkB,
@@ -255,7 +259,10 @@ export function createCharacterAnimator({ model, animations, profile }) {
 
   function applyAim(pose) {
     if (!aimBones.length) return;
-    const aimed = Boolean(pose.aiming);
+    // Одноручному стволу движок доворачивает руку, а не корпус, и подключает корпус только
+    // за пределами 45° от направления тела (F-050). Пока руку не наводим, поэтому корпус
+    // при одноручном хвате остаётся как в клипе: это ближе к игре, чем крутить его зря.
+    const aimed = Boolean(pose.aiming) && !pose.weapon?.flags?.aimWithArm;
     const yaw = aimed
       ? THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT) : 0;
     const pitch = HIT_PITCH * (pose.hitT ?? 0) + (aimed

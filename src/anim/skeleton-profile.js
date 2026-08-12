@@ -29,6 +29,10 @@ const PROFILES = [
       run: [/^run_civi$/, /\brun_/],
       sprint: [/^sprint_civi$/, /\bsprint_/],
       armedIdle: [/^IDLE_armed$/],
+      // Две стойки стоя с оружием, и они не взаимозаменяемы: gang_gunstand это выпрямленная
+      // рука с завалом пистолета набок, Gun_stand это двуручное удержание корпусом (F-050).
+      gangStand: [/^gang_gunstand$/],
+      gunStand: [/^Gun_stand$/],
       armedWalk: [/^WALK_armed$/],
       crouchAim: [/^WEAPON_crouch$/],
       aimWalkF: [/^GunMove_FWD$/],

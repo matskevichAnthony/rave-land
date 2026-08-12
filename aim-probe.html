@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>aim probe</title></head>
+<body>
+<script type="module">
+import * as THREE from 'three';
+import { buildGltfCharacter } from '/src/npc/gltf-character.js';
+import { WEAPONS } from '/src/combat/weapons.js';
+
+const params = new URLSearchParams(location.search);
+const src = params.get('model') ?? 'assets/models/gta-ballas.glb';
+const frames = Number(params.get('frames') ?? 120);
+const pitch = Number(params.get('pitch') ?? 0.4);
+const aiming = params.get('aiming') !== '0';
+const withWeapon = params.get('weapon') !== '0';
+
+globalThis.__aimTrace = new URLSearchParams(location.search).has('trace');
+const character = await buildGltfCharacter(src).catch((error) => {
+  console.log(`load failed ${error}`);
+  throw error;
+});
+const model = character.model;
+character.object.rotation.y = Number(params.get('yaw') ?? 0);
+const bones = [];
+model.traverse((node) => { if (node.isBone) bones.push(node); });
+const names = character.profile.bones;
+const watched = ['spine', 'chest', 'head', 'hips']
+  .map((role) => ({ role, bone: model.getObjectByName(names[role]) }))
+  .filter((entry) => entry.bone);
+
+const pose = {
+  speed: 0,
+  aiming,
+  moveDir: { x: 0, z: 0 },
+  airborne: false,
+  jumpTime: 0,
+  landing: false,
+  aimYaw: 0,
+  aimPitch: pitch,
+  firing: false,
+  shotId: 0,
+  weapon: withWeapon ? WEAPONS[Number(params.get('gun') ?? 0)] : null,
+  recoilT: 0,
+};
+
+const deg = (radians) => (radians * 180 / Math.PI).toFixed(2);
+const local = new Map(watched.map(({ role, bone }) => [role, bone.quaternion.clone()]));
+const forward = new THREE.Vector3();
+const worldRotation = new THREE.Quaternion();
+
+function report(frame) {
+  const parts = watched.map(({ role, bone }) => {
+    const drift = bone.quaternion.angleTo(local.get(role));
+    model.updateWorldMatrix(true, true);
+    bone.getWorldQuaternion(worldRotation);
+    forward.set(0, 1, 0).applyQuaternion(worldRotation);
+    character.object.updateWorldMatrix(true, false);
+    forward.applyQuaternion(character.object.getWorldQuaternion(new THREE.Quaternion()).invert());
+    return `${role} drift=${deg(drift)} up=(${forward.x.toFixed(2)},${forward.y.toFixed(2)},${forward.z.toFixed(2)})`;
+  });
+  console.log(`frame ${String(frame).padStart(3)} | ${parts.join(' | ')}`);
+}
+
+console.log(`probe ${src} profile=${character.profile.id} bones=${bones.length} pitch=${pitch}`);
+report(0);
+for (let frame = 1; frame <= frames; frame += 1) {
+  character.update(1 / 60, pose);
+  if (frame % 10 === 0 || frame < 4) report(frame);
+}
+const nudge = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 18);
+for (const { role, bone } of watched) {
+  character.update(1 / 60, pose);
+  const written = bone.quaternion.clone();
+  bone.quaternion.premultiply(nudge);
+  character.update(1 / 60, pose);
+  const kept = bone.quaternion.angleTo(written);
+  console.log(`mutation ${role}: nudge 10deg -> after mixer.update kept ${deg(kept)}deg`
+    + ` (0 = mixer rewrote the bone, 10 = mixer skipped it)`);
+}
+
+console.log('probe done');
+</script>
+</body>
+</html>
