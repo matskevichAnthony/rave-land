@@ -105,6 +105,7 @@ export function createCharacterAnimator({ model, animations, profile }) {
   const derived = derivedFor(animations, profile);
   const actions = new Map();
   const layers = { base: null, overlay: null };
+  let lastShotId = 0;
   const aimBones = Object.entries(AIM_SHARE)
     .map(([role, share]) => ({ bone: findBone(model, profile, role), share }))
     .filter((entry) => entry.bone);
@@ -136,14 +137,22 @@ export function createCharacterAnimator({ model, animations, profile }) {
   }
 
   const { clips, lower, aimPose, directionalAim } = derived;
-  const fireBones = clips.fire ? bonesOfClip(clips.fire) : null;
+  const byName = new Map(animations.map((clip) => [clip.name, clip]));
   const trimmed = new Map();
 
-  /** Стойка без костей выстрела, посчитанная по требованию и запомненная. */
-  function stanceUnderFire(clip) {
-    if (!clip || !fireBones) return clip;
-    if (!trimmed.has(clip)) trimmed.set(clip, withoutBones(clip, fireBones) ?? clip);
-    return trimmed.get(clip);
+  /**
+   * Стойка без костей, которые забирает клип оружия.
+   *
+   * Ключ кеша это пара «стойка и клип оружия»: у пистолета выстрел трогает 7 костей, у
+   * автомата 15, поэтому одна и та же стойка обрезается по-разному.
+   */
+  function stanceUnder(clip, weaponClip) {
+    if (!clip || !weaponClip) return clip;
+    const key = `${clip.name}|${weaponClip.name}`;
+    if (!trimmed.has(key)) {
+      trimmed.set(key, withoutBones(clip, bonesOfClip(weaponClip)) ?? clip);
+    }
+    return trimmed.get(key);
   }
 
   function locomotionRole(speed) {
@@ -203,14 +212,21 @@ export function createCharacterAnimator({ model, animations, profile }) {
 
   function applyAim(pose, chosen) {
     if (!aimBones.length) return;
-    const yaw = chosen.proceduralYaw
+    // Доворот корпуса нужен только тем персонажам, у которых прицельной позы нет в клипах.
+    // У модели с авторскими прицельными клипами поза уже в них, и доворот поверх ломает её.
+    const procedural = Boolean(chosen.proceduralYaw);
+    const yaw = procedural
       ? THREE.MathUtils.clamp(pose.aimYaw ?? 0, -AIM_YAW_LIMIT, AIM_YAW_LIMIT) : 0;
-    const pitch = THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT)
-      - RECOIL_PITCH * (pose.recoilT ?? 0);
-    const lean = HIT_PITCH * (pose.hitT ?? 0);
+    const pitch = procedural
+      ? THREE.MathUtils.clamp(pose.aimPitch ?? 0, -AIM_PITCH_LIMIT, AIM_PITCH_LIMIT) : 0;
+    const lean = HIT_PITCH * (pose.hitT ?? 0) - RECOIL_PITCH * (pose.recoilT ?? 0);
     const aiming = pose.aiming && (yaw || pitch);
     if (!aiming && !lean) return;
 
+    // Мировые матрицы костей считаются при рендере, поэтому перед чтением ориентации
+    // родителя их надо обновить, иначе компенсация отстаёт на кадр и на быстром развороте
+    // корпус уводит в сторону.
+    model.updateWorldMatrix(false, true);
     for (const { bone, share } of aimBones) {
       // Доворот выражается в системе родителя, а не в локальных осях кости: у нашего рига
       // кость идёт вдоль Y, у гташной вдоль X, и поворот в родительской системе от этого
@@ -229,11 +245,28 @@ export function createCharacterAnimator({ model, animations, profile }) {
 
   function update(dt, pose) {
     const chosen = plan(pose);
-    // Выстрел это верхний слой из пакета своего оружия, поверх любой стойки и походки.
-    const firing = pose.firing && clips.fire;
-    setLayer('base', firing ? stanceUnderFire(chosen.base) : chosen.base,
+    // Оружие в руках это верхний слой из пакета своей группы, поверх любой стойки и походки.
+    // Прицел это тот же клип, остановленный на кадре aimTime, выстрел проигрывает отрезок
+    // до fireTo и возвращается к прицелу. Ровно так это устроено в самой игре.
+    const weapon = pose.aiming ? pose.weapon : null;
+    const weaponClip = weapon ? byName.get(weapon.fireClip) : null;
+    setLayer('base', weaponClip ? stanceUnder(chosen.base, weaponClip) : chosen.base,
              { once: chosen.once, timeScale: chosen.timeScale });
-    setLayer('overlay', firing ? clips.fire : chosen.overlay, { once: Boolean(firing) });
+    setLayer('overlay', weaponClip ?? chosen.overlay);
+
+    const action = weaponClip ? layers.overlay : null;
+    if (action) {
+      if (pose.shotId !== lastShotId) {
+        action.paused = false;
+        action.time = weapon.fireFrom;
+        lastShotId = pose.shotId;
+      } else if (!action.paused && action.time >= weapon.fireTo) {
+        action.paused = true;
+        action.time = weapon.aimTime;
+      } else if (action.paused) {
+        action.time = weapon.aimTime;
+      }
+    }
     mixer.update(dt);
     applyAim(pose, chosen);
   }

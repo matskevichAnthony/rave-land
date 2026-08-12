@@ -43,6 +43,8 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let landingLeft = 0;
   let recoilLeft = 0;
   let fireLeft = 0;
+  let shotId = 0;
+  let weapon = null;
   const moveDirection = new THREE.Vector3();
   const localMove = new THREE.Vector3();
 
@@ -66,6 +68,8 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       aimYaw: 0,
       aimPitch,
       firing: fireLeft > 0,
+      shotId,
+      weapon,
       recoilT: recoilLeft / RECOIL_SECONDS,
     };
   }
@@ -148,9 +152,13 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     setFacing: (value) => {
       facingOverride = value;
     },
+    setWeapon: (next) => {
+      weapon = next;
+    },
     kick: () => {
       recoilLeft = RECOIL_SECONDS;
       fireLeft = FIRE_SECONDS;
+      shotId += 1;
     },
     position: () => body.translation(),
   };

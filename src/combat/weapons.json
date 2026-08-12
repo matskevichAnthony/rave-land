@@ -1,0 +1,539 @@
+{
+  "PISTOL": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "poor": {
+        "group": "colt45",
+        "targetRange": 25.0,
+        "weaponRange": 30.0,
+        "magazine": 17,
+        "damage": 25,
+        "fireOffset": [
+          0.25,
+          0.05,
+          0.09
+        ],
+        "accuracy": 0.75,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 17,
+          "fire": 6
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": true,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "std": {
+        "group": "colt45",
+        "targetRange": 30.0,
+        "weaponRange": 35.0,
+        "magazine": 17,
+        "damage": 25,
+        "fireOffset": [
+          0.25,
+          0.05,
+          0.09
+        ],
+        "accuracy": 1.0,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 15,
+          "fire": 6
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": true,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "pro": {
+        "group": "colt45pro",
+        "targetRange": 35.0,
+        "weaponRange": 35.0,
+        "magazine": 34,
+        "damage": 25,
+        "fireOffset": [
+          0.25,
+          0.05,
+          0.09
+        ],
+        "accuracy": 1.25,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 18,
+          "fire": 6
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": true,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": true,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "cop": {
+        "group": "colt_cop",
+        "targetRange": 30.0,
+        "weaponRange": 35.0,
+        "magazine": 17,
+        "damage": 25,
+        "fireOffset": [
+          0.25,
+          0.05,
+          0.09
+        ],
+        "accuracy": 1.0,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 15,
+          "fire": 6
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      }
+    }
+  },
+  "DESERT_EAGLE": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "poor": {
+        "group": "pythonbad",
+        "targetRange": 25.0,
+        "weaponRange": 30.0,
+        "magazine": 7,
+        "damage": 70,
+        "fireOffset": [
+          0.41,
+          0.03,
+          0.12
+        ],
+        "accuracy": 0.75,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 7,
+          "end": 36,
+          "fire": 8
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": false,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "std": {
+        "group": "python",
+        "targetRange": 30.0,
+        "weaponRange": 35.0,
+        "magazine": 7,
+        "damage": 140,
+        "fireOffset": [
+          0.41,
+          0.03,
+          0.12
+        ],
+        "accuracy": 1.0,
+        "moveSpeed": 1.2,
+        "animLoop": {
+          "start": 6,
+          "end": 30,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "pro": {
+        "group": "python",
+        "targetRange": 35.0,
+        "weaponRange": 35.0,
+        "magazine": 7,
+        "damage": 140,
+        "fireOffset": [
+          0.41,
+          0.03,
+          0.12
+        ],
+        "accuracy": 1.25,
+        "moveSpeed": 1.5,
+        "animLoop": {
+          "start": 6,
+          "end": 28,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      }
+    }
+  },
+  "SHOTGUN": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "poor": {
+        "group": "shotgunbad",
+        "targetRange": 30.0,
+        "weaponRange": 40.0,
+        "magazine": 1,
+        "damage": 10,
+        "fireOffset": [
+          0.82,
+          -0.02,
+          0.23
+        ],
+        "accuracy": 1.0,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 40,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": false,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": false,
+          "crouchFire": true
+        }
+      },
+      "std": {
+        "group": "shotgun",
+        "targetRange": 35.0,
+        "weaponRange": 40.0,
+        "magazine": 1,
+        "damage": 10,
+        "fireOffset": [
+          0.82,
+          -0.02,
+          0.25
+        ],
+        "accuracy": 1.2,
+        "moveSpeed": 1.1,
+        "animLoop": {
+          "start": 6,
+          "end": 38,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": false,
+          "crouchFire": true
+        }
+      },
+      "pro": {
+        "group": "shotgun",
+        "targetRange": 40.0,
+        "weaponRange": 40.0,
+        "magazine": 1,
+        "damage": 10,
+        "fireOffset": [
+          0.82,
+          -0.02,
+          0.25
+        ],
+        "accuracy": 1.4,
+        "moveSpeed": 1.3,
+        "animLoop": {
+          "start": 6,
+          "end": 38,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": false,
+          "crouchFire": true
+        }
+      }
+    }
+  },
+  "AK47": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "poor": {
+        "group": "riflebad",
+        "targetRange": 40.0,
+        "weaponRange": 70.0,
+        "magazine": 30,
+        "damage": 30,
+        "fireOffset": [
+          0.78,
+          -0.06,
+          0.13
+        ],
+        "accuracy": 0.4,
+        "moveSpeed": 0.9,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": false,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "std": {
+        "group": "rifle",
+        "targetRange": 45.0,
+        "weaponRange": 70.0,
+        "magazine": 30,
+        "damage": 30,
+        "fireOffset": [
+          0.78,
+          -0.06,
+          0.13
+        ],
+        "accuracy": 0.5,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "pro": {
+        "group": "rifle",
+        "targetRange": 50.0,
+        "weaponRange": 70.0,
+        "magazine": 30,
+        "damage": 30,
+        "fireOffset": [
+          0.78,
+          -0.06,
+          0.13
+        ],
+        "accuracy": 0.6,
+        "moveSpeed": 1.1,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      }
+    }
+  },
+  "M4": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "poor": {
+        "group": "riflebad",
+        "targetRange": 40.0,
+        "weaponRange": 90.0,
+        "magazine": 50,
+        "damage": 30,
+        "fireOffset": [
+          0.74,
+          -0.04,
+          0.13
+        ],
+        "accuracy": 0.45,
+        "moveSpeed": 0.9,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": false,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "std": {
+        "group": "rifle",
+        "targetRange": 45.0,
+        "weaponRange": 90.0,
+        "magazine": 50,
+        "damage": 30,
+        "fireOffset": [
+          0.74,
+          -0.04,
+          0.13
+        ],
+        "accuracy": 0.65,
+        "moveSpeed": 1.0,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      },
+      "pro": {
+        "group": "rifle",
+        "targetRange": 50.0,
+        "weaponRange": 90.0,
+        "magazine": 50,
+        "damage": 30,
+        "fireOffset": [
+          0.74,
+          -0.04,
+          0.13
+        ],
+        "accuracy": 0.8,
+        "moveSpeed": 1.1,
+        "animLoop": {
+          "start": 6,
+          "end": 10,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": true,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": true,
+          "moveFire": true,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": true,
+          "crouchFire": true
+        }
+      }
+    }
+  }
+}

@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { loadModelData } from '../objects/gltf.js';
+import { WEAPONS, weaponByKey } from './weapons.js';
 
 const WEAPON_KEY = 'KeyG';
-const WEAPON_SRC = 'assets/models/weapons/pistol.glb';
 const MUZZLE_NODE = 'gunflash';
 const MUZZLE_FLASH_LIFETIME = 0.05;
 const GUN_OFFSET = new THREE.Vector3(0.27, 0.82, 0.12);
@@ -14,7 +14,6 @@ const HAND_BONE_NAMES = ['hand.R', 'handR', 'hand_R', 'Hand_R', 'RightHand', 'mi
                          'R_Hand'];
 const MUZZLE_LOCAL = new THREE.Vector3(0, 0.03, 0.26);
 const SHOT_COOLDOWN = 0.25;
-const SHOT_RANGE = 80;
 const TRACER_LIFETIME = 0.07;
 const FLASH_LIFETIME = 0.05;
 
@@ -92,20 +91,35 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
   let muzzleFlash = null;
   let flashLeft = 0;
 
-  loadWeaponModel(WEAPON_SRC).then(({ model, flash }) => {
-    gun.clear();
-    // Подобранные под процедурный ствол хват и масштаб сбрасываются: модель из GTA уже
-    // стоит там, где нужно, относительно кости кисти.
-    gun.position.set(0, 0, 0);
-    gun.rotation.set(0, 0, 0);
-    gun.scale.setScalar(1);
-    gun.add(model);
-    muzzleFlash = flash;
-    if (muzzleFlash) muzzleFlash.visible = false;
-  }).catch((error) => console.warn('оружие не загрузилось, остаётся процедурное', error));
+  let weapon = WEAPONS[0];
+
+  function equip(next) {
+    weapon = next;
+    player.setWeapon?.(next);
+    loadWeaponModel(next.model).then(({ model, flash }) => {
+      if (weapon !== next) return;
+      gun.clear();
+      // Подобранные под процедурный ствол хват и масштаб сбрасываются: модель из GTA уже
+      // стоит там, где нужно, относительно кости кисти.
+      gun.position.set(0, 0, 0);
+      gun.rotation.set(0, 0, 0);
+      gun.scale.setScalar(1);
+      gun.add(model);
+      muzzleFlash = flash;
+      if (muzzleFlash) muzzleFlash.visible = false;
+      updateHud();
+    }).catch((error) => console.warn(`модель ${next.model} не загрузилась`, error));
+  }
+
+  function updateHud() {
+    weaponHud.textContent = `${weapon.name}: урон ${weapon.damage}, магазин ${weapon.magazine}`
+      + `, дальность ${weapon.range} м${weapon.flags.moveFire ? ', стрельба на ходу' : ''}`;
+  }
 
   const weaponHud = document.querySelector('[data-weapon]');
   const crosshair = document.querySelector('[data-crosshair]');
+  equip(weapon);
+
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   const effects = [];
@@ -124,6 +138,7 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
     armed = next;
     gun.visible = armed;
     weaponHud.hidden = !armed;
+    updateHud();
     npcSystem.setCardEnabled(!armed);
     refreshCrosshair();
   }
@@ -160,12 +175,12 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
       -(clientY / window.innerHeight) * 2 + 1,
     );
     raycaster.setFromCamera(pointer, camera);
-    raycaster.far = SHOT_RANGE;
+    raycaster.far = weapon.range;
     const hits = raycaster.intersectObjects(npcSystem.objects, true);
     const from = muzzleWorld();
     const to = hits.length
       ? hits[0].point
-      : raycaster.ray.at(SHOT_RANGE, new THREE.Vector3());
+      : raycaster.ray.at(weapon.range, new THREE.Vector3());
     spawnTracer(from, to);
     player.kick?.();
     if (muzzleFlash) {
@@ -191,10 +206,15 @@ export function createCombat({ scene, camera, renderer, npcSystem, ragdolls, pla
   }
 
   window.addEventListener('keydown', (event) => {
-    if (event.code !== WEAPON_KEY) return;
-    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
-    if (isEditing()) return;
-    setArmed(!armed);
+    if (['INPUT', 'TEXTAREA'].includes(event.target.tagName) || isEditing()) return;
+    if (event.code === WEAPON_KEY) {
+      setArmed(!armed);
+      return;
+    }
+    const chosen = weaponByKey(event.code);
+    if (!chosen) return;
+    if (chosen !== weapon) equip(chosen);
+    if (!armed) setArmed(true);
   });
 
   renderer.domElement.addEventListener('pointerdown', (event) => {

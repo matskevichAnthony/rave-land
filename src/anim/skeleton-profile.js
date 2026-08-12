@@ -35,11 +35,6 @@ const PROFILES = [
       aimWalkL: [/^GunMove_L$/],
       aimWalkR: [/^GunMove_R$/],
       armedRun: [/^run_armed$/],
-      // Клипы стрельбы и перезарядки лежат в пакете своей группы оружия и трогают только
-      // верх: у пистолета вообще одну правую руку (7 костей), у двуручного обе (15).
-      // Ног в них нет ни у одного, они задуманы для наложения поверх походки.
-      fire: [/_fire$/i, /_fire_2hands$/i],
-      reload: [/_reload$/i, /_load$/i],
       jumpLaunch: [/^JUMP_launch$/],
       jumpGlide: [/^JUMP_glide$/, /^FALL_glide$/],
       jumpLand: [/^JUMP_land$/, /^FALL_land$/],
