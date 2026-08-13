@@ -1,4 +1,4 @@
-import { CIVIL } from './teams.js';
+import { CIVIL, teamTemper } from './teams.js';
 
 /**
  * Событие в реакцию, взвешенным выбором.
@@ -29,10 +29,8 @@ const REACTIONS = {
   },
 };
 
-const PROFILE_OF_TEAM = { ballas: 'gang', grove: 'gang', cops: 'cops', [CIVIL]: CIVIL };
-
 export function react(team, event, roll) {
-  const table = REACTIONS[PROFILE_OF_TEAM[team] ?? CIVIL][event];
+  const table = REACTIONS[teamTemper(team)][event];
   if (!table) return null;
   let left = roll;
   for (const [reaction, weight] of Object.entries(table)) {
