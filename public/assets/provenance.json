@@ -45,6 +45,60 @@
       "tool": "tools/gta/dff2glb.py",
       "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
     },
+    "assets/models/gta-aztecas.glb": {
+      "title": "Varrios Los Aztecas",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "vla1.dff и vla1.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/gta-triad.glb": {
+      "title": "Триада",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "triadb.dff и triadb.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/gta-swat.glb": {
+      "title": "SWAT",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "swat.dff и swat.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/gta-dj.glb": {
+      "title": "Диджей",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "bmydj.dff и bmydj.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/gta-jogger.glb": {
+      "title": "Бегунья",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "wfyjg.dff и wfyjg.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/gta-lady.glb": {
+      "title": "Горожанка",
+      "source": "gta",
+      "tool": "tools/gta/dff2glb.py",
+      "model": "bfyri.dff и bfyri.txd, распакованы из локального gta3.img владельца читателем tools/gta/img.py",
+      "rig": "родной скелет San Andreas, 32 кости",
+      "animations": "37 клипов по bone id: ped.ifp плюс dancing.ifp, colt45.ifp, python.ifp, shotgun.ifp, rifle.ifp",
+      "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
     "assets/models/weapons/": {
       "source": "gta",
       "tool": "tools/gta/dff2glb.py",
