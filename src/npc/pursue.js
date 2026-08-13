@@ -27,7 +27,7 @@ function lerpAngle(from, to, t) {
   return from + wrapAngle(to - from) * t;
 }
 
-export function createPursuer({ x, z, yaw = 0, worldRadius }) {
+export function createPursuer({ x, z, yaw = 0, worldRadius, pathFree }) {
   const position = { x, z };
   // Шаг и обход отвечают в одни и те же объекты: их спрашивают каждый кадр у каждого бойца.
   const course = { dx: 0, dz: 0 };
@@ -42,24 +42,9 @@ export function createPursuer({ x, z, yaw = 0, worldRadius }) {
     return PLAYER.aimSpeed * (weapon?.moveSpeedFactor ?? 1);
   }
 
-  /**
-   * Упёрся и не едет, значит обходить.
-   *
-   * Ход есть, а продвижения нет только если на пути коллайдер: тогда направление на время
-   * доворачивается вбок, и боец обтекает препятствие вместо того, чтобы тереться о стену.
-   */
-  function detour(dx, dz, moved, wanted, dt) {
+  /** Куда шагать: на цель, а пока идёт обход, под углом к ней. */
+  function steer(dx, dz, dt) {
     sidestepLeft -= dt;
-    if (moved < wanted * BOT.stuckProgress && wanted > 0) {
-      stuckFor += dt;
-      if (stuckFor > BOT.stuckSeconds && sidestepLeft <= 0) {
-        sidestepLeft = BOT.sidestepSeconds;
-        sidestepSign = -sidestepSign;
-        stuckFor = 0;
-      }
-    } else {
-      stuckFor = 0;
-    }
     course.dx = dx;
     course.dz = dz;
     if (sidestepLeft <= 0) return course;
@@ -69,18 +54,43 @@ export function createPursuer({ x, z, yaw = 0, worldRadius }) {
     return course;
   }
 
+  /**
+   * Упёрся и не едет, значит обходить.
+   *
+   * Ход есть, а продвижения нет только если на пути преграда: тогда направление на время
+   * доворачивается вбок, и боец обтекает препятствие вместо того, чтобы тереться о стену.
+   * Сравнивать надо пройденное с задуманным, а не задуманное с самим собой: пока путь
+   * не проверялся у мира, эти два числа были равны и обход не включался никогда.
+   */
+  function trackStuck(moved, wanted, dt) {
+    if (wanted > 0 && moved < wanted * BOT.stuckProgress) {
+      stuckFor += dt;
+      if (stuckFor > BOT.stuckSeconds && sidestepLeft <= 0) {
+        sidestepLeft = BOT.sidestepSeconds;
+        sidestepSign = -sidestepSign;
+        stuckFor = 0;
+      }
+      return;
+    }
+    stuckFor = 0;
+  }
+
   function update(dt, order, weapon) {
     const toX = order.x - position.x;
     const toZ = order.z - position.z;
     const distance = Math.hypot(toX, toZ);
     const speed = distance > BOT.arriveRadius ? speedFor(order, weapon) : 0;
     const reach = Math.min(speed * dt, distance);
-    detour(toX / (distance || 1), toZ / (distance || 1), reach, speed * dt, dt);
+    steer(toX / (distance || 1), toZ / (distance || 1), dt);
+    // Коллайдера у бойца нет, поэтому вместо тела у него спрос к миру: сколько метров в эту
+    // сторону свободно. Без этого он проходит сквозь дом и сквозь ящик, за которым прячется.
+    const free = pathFree ? pathFree(position.x, position.z, course.dx, course.dz, reach) : reach;
+    trackStuck(free, reach, dt);
 
     const beforeX = position.x;
     const beforeZ = position.z;
-    position.x += course.dx * reach;
-    position.z += course.dz * reach;
+    position.x += course.dx * free;
+    position.z += course.dz * free;
     const fromCenter = Math.hypot(position.x, position.z);
     if (fromCenter > worldRadius) {
       position.x *= worldRadius / fromCenter;
@@ -111,5 +121,13 @@ export function createPursuer({ x, z, yaw = 0, worldRadius }) {
     return step;
   }
 
-  return { update, position };
+  return {
+    update,
+    position,
+    /** Взять бойца там, где он стоит: иначе первый же приказ телепортирует его к себе домой. */
+    moveTo(spot) {
+      position.x = spot.x;
+      position.z = spot.z;
+    },
+  };
 }

@@ -25,12 +25,16 @@ import { mulberry32 } from '../terrain/heightfield.js';
  */
 
 const ALLY_ALERT_RADIUS = 25;
+// Ближе этого луч упирается не в препятствие впереди, а в то, внутри чего боец стоит.
+const INSIDE_GEOMETRY = 0.05;
 // Рабочие вектора и списки заводятся один раз на модуль: выстрел бывает по нескольку раз в
 // шаг, и объекты на выстрел это мусор в самом занятом месте кадра.
 const CORPSE_IMPULSE = new THREE.Vector3();
 const shotOrigin = new THREE.Vector3();
 const shotAim = new THREE.Vector3();
 const gunPoint = new THREE.Vector3();
+const probeFrom = new THREE.Vector3();
+const probeTo = new THREE.Vector3();
 const targets = [];
 const visible = [];
 const look = { distance: 0, fighter: null };
@@ -91,6 +95,23 @@ export function createArena({
   }
 
   /**
+   * Голос раненого: один на выстрел, изредка и с паузой.
+   *
+   * Восемь картечин это одно попадание для того, в кого попали. А попаданий в перестрелке
+   * столько, что крик на каждое сливается в непрерывный вой, поэтому раненый молчит чаще,
+   * чем кричит. Смерть звучит всегда: она у бойца одна.
+   */
+  function cry(victim) {
+    if (!victim.alive) {
+      audio.pain(gunPointOf(victim), true);
+      return;
+    }
+    if (victim.painLeft > 0 || Math.random() > COMBAT.painChance) return;
+    victim.painLeft = COMBAT.painPauseSeconds;
+    audio.pain(gunPointOf(victim), false);
+  }
+
+  /**
    * Выстрел одного бойца: луч, трассер, звук, урон.
    *
    * Точка вылета берётся у самого ствола, а направление у того, кто стреляет: игроку его
@@ -141,9 +162,7 @@ export function createArena({
     // Звук попадания один на выстрел, а не на каждую картечину: восемь щелчков подряд
     // слышны как треск, а не как попадание.
     audio.impact(shot.point, struck ? 'body' : 'ground');
-    // Крик тоже один на выстрел и идёт от груди раненого: восемь картечин это одно попадание
-    // для того, в кого попали, а голос у него один.
-    if (victim) audio.pain(gunPointOf(victim), !victim.alive);
+    if (victim) cry(victim);
     emit('shot', { fighter, point: shot.point });
   }
 
@@ -171,6 +190,25 @@ export function createArena({
     if (fighter.isPlayer) player.respawn(spot);
     else npcSystem.respawn(fighter.id, spot);
     emit('respawn', { fighter });
+  }
+
+  /**
+   * Сколько метров свободно в эту сторону: тело бойца, которого у него нет.
+   *
+   * Коллайдеров у ботов не заведено, они двигаются арифметикой, поэтому вопрос «упрусь ли»
+   * задаётся физике лучом на шаг вперёд. Луч короткий, длиной ровно в шаг плюс полтела, и
+   * идёт на высоте груди: у самой земли он ловил бы подъёмы рельефа и держал бота на склоне.
+   */
+  function pathFree(x, z, dirX, dirZ, distance) {
+    if (distance <= 0) return distance;
+    probeFrom.set(x, terrain.heightAt(x, z) + COMBAT.chestHeight, z);
+    probeTo.set(dirX, 0, dirZ);
+    const wall = ray.world(probeFrom, probeTo, distance + COMBAT.bodyRadius);
+    if (wall === null) return distance;
+    // Стоит вплотную или внутри геометрии: запрет шага запер бы его там навсегда, поэтому
+    // изнутри выпускаем свободно. Снаружи это не лазейка: подойти вплотную он уже не сможет.
+    if (wall <= INSIDE_GEOMETRY) return distance;
+    return Math.max(0, wall - COMBAT.bodyRadius);
   }
 
   /** Где у бойца железо: щелчок и лязг слышны от ствола, а не из-под ног. */
@@ -250,6 +288,7 @@ export function createArena({
     fighters,
     scoreboard,
     lookAt,
+    pathFree,
     registerPlayer,
     addBot,
     setSpawns,

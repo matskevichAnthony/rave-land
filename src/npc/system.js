@@ -61,7 +61,7 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
       stopAnimation,
       team,
       wanderer: createWanderer({ seed: entry.seed, home: { x, z }, worldRadius }),
-      pursuer: createPursuer({ x, z, worldRadius }),
+      pursuer: createPursuer({ x, z, worldRadius, pathFree: arena?.pathFree }),
       brain: createBrain({ seed: entry.seed, team }),
       mount: armed ? createGunMount(object) : null,
       fighter: arena?.addBot({
@@ -171,7 +171,13 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
     for (const npc of npcs.values()) {
       npc.mount?.setVisible(active);
       npc.order = null;
-      if (active || !npc.fighter) continue;
+      if (active) {
+        // Бой начинается там, где персонаж стоит сейчас, а не в его точке из world.json:
+        // иначе первый же приказ дёргает его через полкарты на глазах у игрока.
+        npc.pursuer.moveTo(npc.object.position);
+        continue;
+      }
+      if (!npc.fighter) continue;
       npc.fighter.intent.aim = false;
       // Мирное блуждание начинается оттуда, где закончился бой, иначе персонаж прыгает на
       // ту точку, где его оставил wander до перестрелки.

@@ -52,7 +52,7 @@ export function createFighters() {
       maxHp, hp: maxHp, alive: true,
       stance: STANCE.unarmed,
       ...magazineFor(weapon),
-      fireCooldown: 0, reloadLeft: 0, flinchLeft: 0, respawnLeft: 0, aimedFor: 0,
+      fireCooldown: 0, reloadLeft: 0, flinchLeft: 0, respawnLeft: 0, aimedFor: 0, painLeft: 0, crouching: false,
       shotId: 0, reloadId: 0, hitT: 0, dryFired: false, reloadStarted: false,
       x: 0, y: 0, z: 0, yaw: 0, speed: 0, aimPitch: 0,
       // Куда наведён ствол и не упал ли рядом свой: пишет мозг и арена, читают мозг и NPC.
@@ -79,6 +79,7 @@ export function createFighters() {
     fighter.stance = STANCE.armed;
     fighter.respawnLeft = 0;
     fighter.flinchLeft = 0;
+    fighter.painLeft = 0;
     fighter.hitT = 0;
     fighter.aimAt = null;
     fighter.allyDown = false;
@@ -138,6 +139,7 @@ export function createFighters() {
     fighter.reloadStarted = false;
     fighter.fireCooldown = Math.max(0, fighter.fireCooldown - dt);
     fighter.flinchLeft = Math.max(0, fighter.flinchLeft - dt);
+    fighter.painLeft = Math.max(0, fighter.painLeft - dt);
     fighter.hitT = fighter.flinchLeft / COMBAT.flinchSeconds;
   }
 
