@@ -11,9 +11,11 @@
 
 const ROOT = 'assets/audio/';
 const FAMILIES = {
-  pistol: ['weapons/pistol-1.wav', 'weapons/pistol-2.wav', 'weapons/pistol-3.wav'],
-  rifle: ['weapons/rifle-1.wav', 'weapons/rifle-2.wav', 'weapons/rifle-3.wav'],
-  shotgun: ['weapons/shotgun-1.wav', 'weapons/shotgun-2.wav', 'weapons/shotgun-3.wav'],
+  // Вариантов по два: столько записано в самой игре, и она берёт их вперемешку.
+  pistol: ['weapons/pistol-1.wav', 'weapons/pistol-2.wav'],
+  deagle: ['weapons/deagle-1.wav', 'weapons/deagle-2.wav'],
+  rifle: ['weapons/rifle-1.wav', 'weapons/rifle-2.wav'],
+  shotgun: ['weapons/shotgun-1.wav', 'weapons/shotgun-2.wav'],
   dry: ['weapons/dry-1.wav', 'weapons/dry-2.wav'],
   reload: ['weapons/reload-1.wav', 'weapons/reload-2.wav', 'weapons/reload-3.wav'],
   casing: ['weapons/casing-1.wav', 'weapons/casing-2.wav'],
@@ -22,9 +24,9 @@ const FAMILIES = {
   hurt: ['pain/hurt-1.wav', 'pain/hurt-2.wav', 'pain/hurt-3.wav', 'pain/hurt-4.wav'],
   death: ['pain/death-1.wav', 'pain/death-2.wav', 'pain/death-3.wav'],
 };
-// Группы оружия из weapon.dat, у которых нет своей записи: пистолетные звучат кольтом,
-// снайперские винтовочным.
-const FAMILY_BY_GROUP = { colt45: 'pistol', python: 'pistol', sniper: 'rifle' };
+// Группы оружия из weapon.dat в семейства записей. Своей записи нет только у снайперской
+// группы, ей достаётся винтовочная: в архиве это соседние стволы одного калибра.
+const FAMILY_BY_GROUP = { colt45: 'pistol', python: 'deagle', sniper: 'rifle' };
 // Записи лежат в исходной громкости San Andreas, а шина рассчитана на синтез.
 const LEVEL = 0.7;
 
