@@ -1,0 +1,47 @@
+/* Кнопка генератора: одна на все три шага, полосу прогона и приём своей картинки. */
+.gen-button {
+  background: #2e2e3a;
+  border: 1px solid #4a4a5a;
+  border-radius: 6px;
+  color: #eee;
+  cursor: pointer;
+  display: inline-block;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.gen-button:hover:not(:disabled) { background: #3a3a4a; }
+
+/* Свой display перебивает браузерное скрытие, поэтому спрятанную кнопку гасим сами. */
+.gen-button[hidden] { display: none; }
+
+.gen-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* Кнопка шага главная в своей карточке: её ищут глазами после чтения условий. */
+.gen-button--go {
+  background: #33445a;
+  border-color: #46607f;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.gen-button--go:hover:not(:disabled) { background: #3d5169; }
+
+.gen-button--main {
+  background: #2e5a3a;
+  border-color: #46825a;
+}
+
+.gen-button--main:hover:not(:disabled) { background: #376c46; }
+
+.gen-button--danger {
+  background: #5a2e2e;
+  border-color: #82464a;
+}
+
+.gen-button--danger:hover:not(:disabled) { background: #6c3737; }

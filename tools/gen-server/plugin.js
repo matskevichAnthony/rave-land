@@ -4,6 +4,7 @@ import { extname, join, resolve, sep } from 'node:path';
 import { GENERATED, assetDir, createAsset, incomingImages, readAssets, saveAsset, takeIncoming } from './library.js';
 import { FILES, PRESETS, STEPS } from './pipeline.js';
 import { busy, cancel, run } from './runner.js';
+import { acceptImage } from './upload.js';
 
 /** Маршруты генератора внутри дев-сервера: питоновские инструменты процессами.
  *
@@ -120,32 +121,52 @@ function sendFile(name, res) {
   createReadStream(path).pipe(res);
 }
 
+/** Чего шагу не хватает, страница спрашивает до нажатия: кнопка объясняет себя сама.
+ *
+ * Порядок шагов и то, кто чей файл ест, описан в pipeline.js, поэтому страница
+ * не держит второго списка маршрута.
+ */
+const stepStates = () => Object.entries(STEPS).map(([name, step]) => ({
+  name,
+  title: step.title,
+  needs: step.needs ?? null,
+  problem: step.ready(),
+}));
+
 const ROUTES = {
   'GET /assets': (_payload, res) => json(res, 200, { assets: readAssets(), busy: busy() }),
+  'GET /steps': (_payload, res) => json(res, 200, { steps: stepStates(), busy: busy() }),
   'GET /incoming': (_payload, res) => json(res, 200, { images: incomingImages() }),
   'POST /cancel': (_payload, res) => json(res, 200, { cancelled: cancel() }),
   'POST /import': (payload, res) => json(res, 200, {
-    asset: takeIncoming({
-      name: String(payload.name),
-      id: payload.asset,
-      preset: readParams(payload).preset,
-    }),
+    asset: takeIncoming({ name: String(payload.name), preset: readParams(payload).preset }),
   }),
 };
 
 const FILE_ROUTE = '/file/';
+const UPLOAD_ROUTE = '/upload';
 
 async function api(req, res, next) {
-  const path = (req.url ?? '').split('?')[0].replace(/\/+$/, '') || '/';
+  const url = new URL(req.url ?? '/', 'http://generator');
+  const path = url.pathname.replace(/\/+$/, '') || '/';
   if (req.method === 'GET' && path.startsWith(FILE_ROUTE)) {
     return sendFile(decodeURIComponent(path.slice(FILE_ROUTE.length)), res);
   }
 
   const route = ROUTES[`${req.method} ${path}`];
   const step = req.method === 'POST' && path.startsWith('/run/') ? path.slice('/run/'.length) : '';
-  if (!route && !STEPS[step]) return next();
+  const upload = req.method === 'POST' && path === UPLOAD_ROUTE;
+  if (!route && !upload && !STEPS[step]) return next();
 
   try {
+    if (upload) {
+      return json(res, 200, {
+        asset: await acceptImage(req, {
+          name: url.searchParams.get('name'),
+          preset: readParams({ preset: url.searchParams.get('preset') }).preset,
+        }),
+      });
+    }
     const payload = await readBody(req);
     if (route) route(payload, res);
     else await runStep(step, payload, res);

@@ -14,103 +14,152 @@
     <code>tools/gen/text2image_local.py</code>, <code>tools/gen/triposr_local.py</code>,
     <code>tools/gen/mesh2prop.py</code>. Шаг идёт минутами, поэтому его видно построчно в логе,
     а каждый промежуточный результат сразу показывается: картинку посмотреть, меш и проп покрутить.
-    Прогон всегда один: TripoSR держит 2.2 ГБ, второй параллельный уложит машину.
+    Каждый шаг запускается сам по себе и берёт с диска готовый файл соседа, так что переделать
+    один шаг можно, не пересчитывая остальные.
     Страница живёт только под <code>npm run dev</code>, готовой сборке запускать нечего.
   </p>
   <nav class="page-nav">
     <a href="./index.html">В игру</a>
-    <a href="./props.html">Пропы</a>
-    <a href="./characters.html">Персонажи</a>
     <a href="./toolbox.html">Мастерская</a>
     <a href="./status.html">Статус проекта</a>
   </nav>
 
   <div class="gen">
-    <form class="gen-form" data-js-form>
-      <label class="gen-field">
-        <span>Промпт</span>
-        <textarea data-js-prompt rows="4" placeholder="stack of sandbags, military prop"></textarea>
-        <p class="gen-field__warning" data-js-latin hidden>Промпт понимается только по-английски:
-          кириллица уходит в модель мусором, и картинка выйдет случайной.</p>
-      </label>
-
-      <label class="gen-field">
-        <span>Пресет</span>
-        <select data-js-preset>
-          <option value="prop">Предмет</option>
-          <option value="character">Персонаж</option>
-        </select>
-      </label>
-
-      <label class="gen-field">
-        <span>Бюджет треугольников</span>
-        <input type="number" data-js-triangles min="50" max="200000" step="100"
-               placeholder="по умолчанию пресета" />
-      </label>
-
-      <label class="gen-field">
-        <span>Целевой габарит, м</span>
-        <input type="number" data-js-size min="0.05" max="50" step="0.1"
-               placeholder="по умолчанию пресета" />
-      </label>
-
-      <p class="gen-form__hint">
-        Стиль первой PlayStation и правила T-позы держат сами пресеты генератора картинок,
-        промпт их не повторяет: пиши, что за предмет. Пустые бюджет и габарит означают
-        умолчание типа из <code>tools/gen/mesh2prop.py</code>, фактические числа видно в логе.
-      </p>
-
-      <div class="gen-actions">
-        <button type="button" data-js-run="all" class="gen-actions__main">Весь маршрут</button>
-        <button type="button" data-js-run="image">1. Картинка</button>
-        <button type="button" data-js-run="mesh">2. Меш</button>
-        <button type="button" data-js-run="prop">3. Проп</button>
-        <button type="button" data-js-cancel hidden>Отменить прогон</button>
+    <section class="gen-run">
+      <div class="gen-run__now">
+        <span class="gen-run__label">Открытый прогон</span>
+        <b class="gen-run__id" data-js-run-id></b>
+        <span class="gen-run__done" data-js-run-done></span>
       </div>
-      <p class="gen-form__hint">
-        Каждый шаг ест результат предыдущего: картинка делается из промпта, меш из картинки,
-        проп из меша. «Весь маршрут» это те же три шага подряд. Отдельная кнопка нужна, чтобы
-        переделать один шаг, не пересчитывая соседние: подобрать бюджет треугольников это
-        секунды на третьем шаге, а картинка и меш стоят минут.
+      <p class="gen-run__about">
+        Прогон это папка в <code>public/assets/generated</code>: картинка, сырой меш и проп
+        одного предмета. Шаги пишут в открытый прогон и читают друг у друга файлы с диска.
+        На сервере прогон всегда один: диффузия держит 3.7 ГБ, TripoSR 2.4 ГБ, вдвоём в семь
+        гигабайт машины они не влезают.
       </p>
-
-      <div class="gen-actions">
-        <select data-js-incoming class="gen-actions__incoming"></select>
-        <button type="button" data-js-take>Взять готовую картинку</button>
+      <div class="gen-run__actions">
+        <button type="button" class="gen-button gen-button--main" data-js-all>
+          Весь маршрут: новый прогон от промпта
+        </button>
+        <button type="button" class="gen-button" data-js-new>Забыть прогон</button>
+        <button type="button" class="gen-button gen-button--danger" data-js-cancel hidden>
+          Отменить прогон
+        </button>
       </div>
-      <p class="gen-form__hint">
-        Готовая картинка из <code>_other/incoming</code> заменяет первый шаг: дальше меш и проп
-        считаются от неё. Так же перезапускается любой шаг по отдельности, не трогая соседние.
-      </p>
-    </form>
+    </section>
 
-    <section class="gen-stage">
-      <article class="gen-slot">
-        <h2 class="gen-slot__title">1. Картинка <span data-js-slot-note="image"></span></h2>
-        <p class="gen-slot__about">Промпт превращается в PNG 512×512. Считает Stable Diffusion 1.5
-          с LCM-LoRA на процессоре, веса лежат локально. Около четырёх минут, память до 5.5 ГБ.
+    <ol class="gen-steps" data-js-steps>
+      <li class="gen-step" data-js-step="image">
+        <header class="gen-step__head">
+          <h2 class="gen-step__title">1. Картинка</h2>
+          <span class="gen-step__state" data-js-state></span>
+        </header>
+        <p class="gen-step__about">Промпт превращается в PNG 512×512. Считает Stable Diffusion 1.5
+          с LCM-LoRA на процессоре, веса лежат локально. Считается минутами, пик 3.7 ГБ, из них
+          анонимных 1.6 ГБ: браузер закрывать не надо.
           Стиль и позу дописывает пресет, промпт только по-английски.</p>
-        <div class="gen-slot__body"><img data-js-image alt="" hidden /></div>
-      </article>
 
-      <article class="gen-slot">
-        <h2 class="gen-slot__title">2. Сырой меш <span data-js-slot-note="mesh"></span></h2>
-        <p class="gen-slot__about">Картинка превращается в объём. Считает TripoSR на процессоре:
+        <div class="gen-step__input">
+          <p class="gen-step__legend">Вход: промпт и пресет</p>
+          <label class="gen-field">
+            <span>Промпт</span>
+            <textarea data-js-prompt rows="3" placeholder="stack of sandbags, military prop"></textarea>
+            <p class="gen-field__warning" data-js-latin hidden>Промпт понимается только по-английски:
+              кириллица уходит в модель мусором, и картинка выйдет случайной.</p>
+          </label>
+          <label class="gen-field">
+            <span>Пресет</span>
+            <select data-js-preset>
+              <option value="prop">Предмет</option>
+              <option value="character">Персонаж</option>
+            </select>
+          </label>
+          <p class="gen-step__hint">Стиль первой PlayStation и правила T-позы держат сами пресеты
+            генератора картинок, промпт их не повторяет: пиши, что за предмет.</p>
+        </div>
+
+        <button type="button" class="gen-button gen-button--go" data-js-go disabled>Проверяю инструменты</button>
+        <p class="gen-step__why" data-js-why hidden></p>
+
+        <div class="gen-step__body"><img data-js-image alt="" hidden /></div>
+        <p class="gen-step__note" data-js-note="image"></p>
+
+        <div class="gen-drop" data-js-drop>
+          <p class="gen-drop__title">Или своя картинка, без первого шага</p>
+          <p class="gen-drop__hint">Перетащи PNG или JPEG куда угодно в окно или выбери файл.
+            Картинка ложится в новый прогон вместо сгенерированной, дальше меш и проп считаются
+            от неё.</p>
+          <div class="gen-drop__actions">
+            <label class="gen-button gen-drop__file">
+              Выбрать файл
+              <input type="file" accept="image/png,image/jpeg" data-js-file hidden />
+            </label>
+          </div>
+          <div class="gen-drop__actions">
+            <select class="gen-field__control" data-js-incoming></select>
+            <button type="button" class="gen-button" data-js-take>Взять</button>
+          </div>
+          <p class="gen-drop__hint">В списке готовые картинки из <code>_other/incoming</code>.</p>
+        </div>
+      </li>
+
+      <li class="gen-step" data-js-step="mesh">
+        <header class="gen-step__head">
+          <h2 class="gen-step__title">2. Сырой меш</h2>
+          <span class="gen-step__state" data-js-state></span>
+        </header>
+        <p class="gen-step__about">Картинка превращается в объём. Считает TripoSR на процессоре:
           видит ровно один ракурс, остальное додумывает. Две-восемь минут, память до 2.4 ГБ.
           На выходе десятки тысяч треугольников и вершинные цвета без развёртки, в сцену такое
           не ставят.</p>
-        <div class="gen-slot__body gen-slot__body--canvas" data-js-mesh></div>
-      </article>
 
-      <article class="gen-slot">
-        <h2 class="gen-slot__title">3. Проп <span data-js-slot-note="prop"></span></h2>
-        <p class="gen-slot__about">Сырой меш становится игровым. Считает Blender, нейросети тут
+        <div class="gen-step__input">
+          <p class="gen-step__legend">Вход: картинка прогона</p>
+          <p class="gen-step__hint">Берётся <code>image.png</code> открытого прогона, та самая,
+            что показана слева. Своих настроек у шага нет.</p>
+        </div>
+
+        <button type="button" class="gen-button gen-button--go" data-js-go disabled>Проверяю инструменты</button>
+        <p class="gen-step__why" data-js-why hidden></p>
+
+        <div class="gen-step__body gen-step__body--canvas" data-js-mesh></div>
+        <p class="gen-step__note" data-js-note="mesh"></p>
+      </li>
+
+      <li class="gen-step" data-js-step="prop">
+        <header class="gen-step__head">
+          <h2 class="gen-step__title">3. Проп</h2>
+          <span class="gen-step__state" data-js-state></span>
+        </header>
+        <p class="gen-step__about">Сырой меш становится игровым. Считает Blender, нейросети тут
           нет: поправка осей, сжатие до бюджета треугольников, запекание цвета в текстуру 64×64
           с ближайшей фильтрацией, реальные метры, посадка на землю. Секунды.</p>
-        <div class="gen-slot__body gen-slot__body--canvas" data-js-prop></div>
-        <div class="gen-slot__stats" data-js-stats></div>
-      </article>
-    </section>
+
+        <div class="gen-step__input">
+          <p class="gen-step__legend">Вход: сырой меш, бюджет и габарит</p>
+          <label class="gen-field">
+            <span>Бюджет треугольников</span>
+            <input type="number" data-js-triangles min="50" max="200000" step="100"
+                   placeholder="по умолчанию пресета" />
+          </label>
+          <label class="gen-field">
+            <span>Целевой габарит, м</span>
+            <input type="number" data-js-size min="0.05" max="50" step="0.1"
+                   placeholder="по умолчанию пресета" />
+          </label>
+          <p class="gen-step__hint">Пустые бюджет и габарит означают умолчание типа из
+            <code>tools/gen/mesh2prop.py</code>, фактические числа видно в логе. Шаг стоит секунды,
+            поэтому бюджет подбирают повторными запусками только этого шага.</p>
+        </div>
+
+        <button type="button" class="gen-button gen-button--go" data-js-go disabled>Проверяю инструменты</button>
+        <p class="gen-step__why" data-js-why hidden></p>
+
+        <div class="gen-step__body gen-step__body--canvas" data-js-prop></div>
+        <p class="gen-step__note" data-js-note="prop"></p>
+        <div class="gen-step__stats" data-js-stats></div>
+      </li>
+    </ol>
 
     <section class="gen-log">
       <h2 class="section-title">Лог прогона</h2>
@@ -122,7 +171,8 @@
       <p class="page-lead">
         Опись <code>public/assets/generated/manifest.json</code> пишет сам генератор. Каталог
         отдельный от библиотеки пропов намеренно: тамошнюю опись <code>props.py</code> переписывает
-        целиком по своему списку, и всё чужое из неё пропадает.
+        целиком по своему списку, и всё чужое из неё пропадает. Карточка открывает прогон:
+        его шаги встают по местам, и любой из них можно переделать.
       </p>
       <div class="cards-grid" data-js-library></div>
     </section>

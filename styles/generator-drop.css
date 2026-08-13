@@ -1,0 +1,41 @@
+/* Приём своей картинки: рамка внутри первого шага, ловит перетаскивание по всему окну. */
+.gen-drop {
+  border: 1px dashed #4a4a5a;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.gen-drop.is-dragged {
+  background: #23303d;
+  border-color: #7fb7d8;
+  border-style: solid;
+}
+
+.gen-drop.is-busy { opacity: 0.45; }
+
+.gen-drop__title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.gen-drop__hint {
+  color: #7d7d8e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.gen-drop__hint code { color: #d8b46a; }
+
+.gen-drop__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.gen-drop__file { cursor: pointer; }
+
+.gen-drop__actions .gen-field__control { flex: 1; }
+
+.gen-drop.is-busy .gen-drop__file { cursor: default; }

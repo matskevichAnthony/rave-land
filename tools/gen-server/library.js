@@ -5,10 +5,10 @@ import { FILES, ROOT } from './pipeline.js';
 
 /** Каталог сгенерированного и опись к нему.
  *
- * Отдельно от `public/assets/models/props`: тамошний `manifest.json` целиком
- * переписывает props.py по своему списку PROPS, и всё чужое из описи молча
- * пропадает. Поэтому у генератора свой каталог и своя опись, которую пишет
- * только он.
+ * Это рабочая опись самого генератора: промпт, пресет, время и отчёт шага
+ * лоуполи. Общей описью проекта она не притворяется и чужих ассетов не знает.
+ * Единый список всего, что в проекте есть моделями, собирает по диску
+ * `tools/inventory`, и прогоны попадают туда сами, вместе с остальными.
  *
  * Состав записи собирается с диска, а не копится в памяти: что лежит в папке
  * прогона, то и записано в описи.
@@ -96,10 +96,10 @@ export function incomingImages() {
   return readdirSync(INCOMING).filter((name) => IMAGE_SUFFIX.test(name)).sort();
 }
 
-export function takeIncoming({ name, id, preset }) {
+export function takeIncoming({ name, preset }) {
   const file = basename(name);
   if (!incomingImages().includes(file)) throw new Error(`Нет такой картинки: ${file}`);
-  const asset = id ?? createAsset({ prompt: file.replace(IMAGE_SUFFIX, ''), preset }).id;
-  copyFileSync(join(INCOMING, file), join(assetDir(asset), FILES.image));
-  return saveAsset({ id: asset, preset });
+  const { id } = createAsset({ prompt: file.replace(IMAGE_SUFFIX, ''), preset });
+  copyFileSync(join(INCOMING, file), join(assetDir(id), FILES.image));
+  return saveAsset({ id, preset });
 }

@@ -25,7 +25,6 @@ export function createLibrary(root, onPick) {
     async refresh() {
       const { assets } = await ask('/assets');
       root.replaceChildren(...assets.map((asset) => createCard(asset, onPick)));
-      return assets;
     },
   };
 }

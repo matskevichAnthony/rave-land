@@ -43,8 +43,8 @@ export const STEPS = {
     produces: 'image',
     ready: () => missing(
       TEXT2IMAGE,
-      'Локальный генератор картинок ещё не готов. Пока возьми готовую картинку '
-      + 'из _other/incoming кнопкой «Взять готовую картинку».',
+      'Локальный генератор картинок ещё не готов. Пока принеси свою картинку: '
+      + 'перетащи её в окно или возьми готовую из _other/incoming.',
     ),
     command: (dir, params) => ({
       command: python(IMAGE_PYTHON),
@@ -74,7 +74,6 @@ export const STEPS = {
     title: 'Проп',
     needs: 'mesh',
     produces: 'prop',
-    stats: FILES.stats,
     // Blender сыплет в stdout построчный прогресс рендера, в живом логе он лишний.
     noise: /^Fra:/,
     ready: () => missing(MESH2PROP, 'Инструмент лоуполи не найден.')

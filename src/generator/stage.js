@@ -38,7 +38,7 @@ export function createStage(root) {
   const image = root.querySelector('[data-js-image]');
   const statsRoot = root.querySelector('[data-js-stats]');
   const notes = Object.fromEntries(['image', 'mesh', 'prop'].map((step) => [
-    step, root.querySelector(`[data-js-slot-note="${step}"]`),
+    step, root.querySelector(`[data-js-note="${step}"]`),
   ]));
   const viewers = {
     mesh: createViewer(root.querySelector('[data-js-mesh]'), MESH_CAMERA),
@@ -89,12 +89,16 @@ export function createStage(root) {
 
   const show = { image: showImage, mesh: showMesh, prop: showProp };
 
+  function showAsset(asset) {
+    showImage(asset);
+    showMesh(asset);
+    showProp(asset);
+  }
+
   return {
     showStep: (step, asset) => show[step](asset),
-    showAsset(asset) {
-      showImage(asset);
-      showMesh(asset);
-      showProp(asset);
-    },
+    showAsset,
+    /** Прогон закрыт: пустая опись гасит все три слота тем же путём, что и живая. */
+    clear: () => showAsset({ files: {} }),
   };
 }

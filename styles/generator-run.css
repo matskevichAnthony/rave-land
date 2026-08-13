@@ -1,0 +1,56 @@
+/* Полоса открытого прогона: что сейчас на столе и что с ним можно сделать целиком. */
+.gen-run {
+  align-items: center;
+  background: #1d1d26;
+  border: 1px solid #3a3a48;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px 20px;
+  grid-template-columns: minmax(200px, auto) minmax(0, 1fr) auto;
+  padding: 14px 16px;
+}
+
+.gen-run__now {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gen-run__label {
+  color: #9a9aac;
+  font-size: 12px;
+}
+
+.gen-run__id {
+  color: #7fb7d8;
+  font-size: 16px;
+  word-break: break-all;
+}
+
+.gen-run__done {
+  color: #b9b9c8;
+  font-size: 12px;
+}
+
+.gen-run__about {
+  color: #7d7d8e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.gen-run__about code { color: #d8b46a; }
+
+.gen-run__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .gen-run {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gen-run__actions { justify-content: flex-start; }
+}

@@ -1,5 +1,9 @@
 @import './page-shell.css';
 @import './generator-layout.css';
-@import './generator-form.css';
-@import './generator-stage.css';
+@import './generator-run.css';
+@import './generator-step.css';
+@import './generator-field.css';
+@import './generator-button.css';
+@import './generator-drop.css';
+@import './generator-stat.css';
 @import './generator-log.css';

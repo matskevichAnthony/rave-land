@@ -20,6 +20,15 @@ export async function send(path, body) {
   }));
 }
 
+/** Своя картинка уходит байтами: base64 в JSON раздул бы её на треть на ровном месте. */
+export async function upload(blob, query) {
+  return unpack(await fetch(`${BASE}/upload?${new URLSearchParams(query)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'image/png' },
+    body: blob,
+  }));
+}
+
 /** Прогон шага: события приходят по мере работы инструмента, а не пачкой в конце. */
 export async function runStep(step, params, onEvent) {
   const response = await fetch(`${BASE}/run/${step}`, {
