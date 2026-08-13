@@ -127,7 +127,7 @@ export function createFighters() {
 
   function canFire(fighter) {
     if (fighter.fireCooldown > 0 || fighter.reloadLeft > 0 || !fighter.alive) return false;
-    if (fighter.speed > COMBAT.movingThreshold && !fighter.weapon.flags.moveFire) return false;
+    if (fighter.speed > COMBAT.runningThreshold && !fighter.weapon.flags.moveFire) return false;
     return fighter.stance === STANCE.aiming;
   }
 
