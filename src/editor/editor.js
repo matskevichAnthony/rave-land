@@ -25,7 +25,9 @@ export function createEditor({
   const selectedLabel = document.querySelector('[data-selected]');
 
   const transform = new TransformControls(camera, renderer.domElement);
-  scene.add(transform.getHelper ? transform.getHelper() : transform);
+  // Гизмо живёт в сцене только пока редактируют. Невидимым оно не бесплатно: три.js всё
+  // равно обходит его и считает матрицы каждый кадр, а редактор открыт минуты из часа.
+  const gizmo = transform.getHelper ? transform.getHelper() : transform;
   transform.addEventListener('dragging-changed', (event) => {
     followCam.controls.enabled = !event.value;
     if (!event.value && selectedItem) registry.refreshBody(selectedItem.entry.id);
@@ -49,7 +51,12 @@ export function createEditor({
     panel.hidden = !editing;
     modeLabel.textContent = editing ? 'Редактор' : 'Прогулка';
     followCam.setEditMode(editing);
-    if (!editing) select(null);
+    if (editing) {
+      scene.add(gizmo);
+      return;
+    }
+    select(null);
+    scene.remove(gizmo);
   }
 
   function spawnPoint() {
