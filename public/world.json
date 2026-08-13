@@ -1575,6 +1575,184 @@
         "rig": "родной скелет San Andreas, 32 кости",
         "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
       }
+    },
+    {
+      "id": "npc-aztecas",
+      "name": "Aztecas",
+      "src": "assets/models/gta-aztecas.glb",
+      "seed": 606,
+      "position": [
+        21,
+        null,
+        -7
+      ],
+      "data": {
+        "роль": "третья банда, юго-восток",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "aztecas из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      },
+      "team": "aztecas",
+      "weapon": "m4"
+    },
+    {
+      "id": "npc-aztecas-2",
+      "name": "Aztecas",
+      "src": "assets/models/gta-aztecas.glb",
+      "seed": 607,
+      "position": [
+        16,
+        null,
+        -13
+      ],
+      "data": {
+        "роль": "третья банда, юго-восток",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "aztecas из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      },
+      "team": "aztecas",
+      "weapon": "pistol"
+    },
+    {
+      "id": "npc-triad",
+      "name": "Триада",
+      "src": "assets/models/gta-triad.glb",
+      "seed": 707,
+      "position": [
+        -19,
+        null,
+        9
+      ],
+      "data": {
+        "роль": "четвёртая банда, северо-запад",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "triad из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      },
+      "team": "triads",
+      "weapon": "rifle"
+    },
+    {
+      "id": "npc-triad-2",
+      "name": "Триада",
+      "src": "assets/models/gta-triad.glb",
+      "seed": 708,
+      "position": [
+        -13,
+        null,
+        15
+      ],
+      "data": {
+        "роль": "четвёртая банда, северо-запад",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "triad из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      },
+      "team": "triads",
+      "weapon": "shotgun"
+    },
+    {
+      "id": "npc-swat",
+      "name": "SWAT",
+      "src": "assets/models/gta-swat.glb",
+      "seed": 808,
+      "position": [
+        -3,
+        null,
+        -17
+      ],
+      "data": {
+        "роль": "тяжёлая пехота полиции",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "swat из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      },
+      "team": "cops",
+      "weapon": "m4"
+    },
+    {
+      "id": "npc-dj",
+      "name": "Диджей",
+      "src": "assets/models/gta-dj.glb",
+      "seed": 909,
+      "position": [
+        2,
+        null,
+        5
+      ],
+      "data": {
+        "роль": "мирный, у танцпола",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "dj из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-jogger",
+      "name": "Бегунья",
+      "src": "assets/models/gta-jogger.glb",
+      "seed": 910,
+      "position": [
+        -5,
+        null,
+        7
+      ],
+      "data": {
+        "роль": "мирная, у танцпола",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "jogger из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-lady",
+      "name": "Гостья",
+      "src": "assets/models/gta-lady.glb",
+      "seed": 911,
+      "position": [
+        6,
+        null,
+        9
+      ],
+      "data": {
+        "роль": "мирная, у танцпола",
+        "скелет": "родной San Andreas, 32 кости",
+        "клипов": "37"
+      },
+      "provenance": {
+        "model": "lady из локального gta3.img, распакован tools/gta/img.py, собран tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp, dancing.ifp и оружейные пакеты из anim.img. ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      }
     }
   ],
   "spawns": [
@@ -1622,6 +1800,26 @@
       "team": "cops",
       "x": 10,
       "z": -19
+    },
+    {
+      "team": "aztecas",
+      "x": 24,
+      "z": -6
+    },
+    {
+      "team": "aztecas",
+      "x": 18,
+      "z": -16
+    },
+    {
+      "team": "triads",
+      "x": -22,
+      "z": 8
+    },
+    {
+      "team": "triads",
+      "x": -12,
+      "z": 18
     }
   ]
 }

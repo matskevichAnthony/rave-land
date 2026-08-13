@@ -13,18 +13,18 @@ const TEAMS = {
   ballas: { name: 'Ballas', color: '#b98cff' },
   grove: { name: 'Grove Street', color: '#5ddc7a' },
   cops: { name: 'Полиция', color: '#5aa9ff' },
+  aztecas: { name: 'Aztecas', color: '#3fe0d0' },
+  triads: { name: 'Триады', color: '#ff8a5c' },
   [CIVIL]: { name: 'Мирные', color: '#9aa0a6' },
 };
 
-const HOSTILE = {
-  ballas: ['grove', 'cops'],
-  grove: ['ballas', 'cops'],
-  cops: ['ballas', 'grove'],
-  [CIVIL]: [],
-};
-
-/** Фракции, которые вообще воюют: по ним строится счёт. */
-export const FIGHTING_TEAMS = Object.keys(HOSTILE).filter((team) => HOSTILE[team].length);
+/**
+ * Фракции, которые вообще воюют: по ним строится счёт, и из них же выводится вражда.
+ *
+ * Союзов в этом мире нет, каждый против каждого, поэтому таблицы «кто кому враг» тут нет:
+ * рукописная копия того же знания разошлась бы с этим списком на первой же новой банде.
+ */
+export const FIGHTING_TEAMS = Object.keys(TEAMS).filter((team) => team !== CIVIL);
 
 export function teamName(team) {
   return TEAMS[team]?.name ?? TEAMS[CIVIL].name;
@@ -35,7 +35,8 @@ export function teamColor(team) {
 }
 
 export function isHostile(attacker, target) {
-  return Boolean(attacker && target && HOSTILE[attacker]?.includes(target));
+  return attacker !== target
+    && FIGHTING_TEAMS.includes(attacker) && FIGHTING_TEAMS.includes(target);
 }
 
 /** Дружественный огонь выключен: банда из четырёх человек иначе выкашивает себя сама. */
