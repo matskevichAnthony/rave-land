@@ -32,7 +32,12 @@ export function createPlayerIntent({ domElement, isEditing }) {
     if (event.code === RELOAD_KEY && !isEditing() && !isTyping(event)) reloadPressed = true;
   });
 
-  /** Заполнить намерение бойца. Нажатия читаются один раз, поэтому write вызывается раз в кадр. */
+  /**
+   * Заполнить намерение бойца.
+   *
+   * Нажатие живёт защёлкой до ближайшего шага боя и гасится только здесь: спуск читается
+   * ровно один раз, но ни одного клика при этом не теряется.
+   */
   function write(intent, { armed, automatic, aimPitch }) {
     intent.aim = armed;
     intent.fire = armed && (automatic ? triggerHeld : triggerPressed);

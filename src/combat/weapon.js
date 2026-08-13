@@ -35,7 +35,13 @@ export function createPlayerCombat({
   let scanLeft = 0;
   let underCrosshair = null;
 
-  /** Снимок игрока для реестра: позиция от стоп, разворот и фактическая скорость. */
+  /**
+   * Снимок игрока для реестра: позиция от стоп, разворот, скорость и намерение.
+   *
+   * Намерение пишется именно здесь, потому что арена зовёт снимок из шага боя. Раньше оно
+   * писалось в кадре, и нажатия гасли: шаг идёт 30 раз в секунду, кадр 60 и чаще, поэтому
+   * клик, попавший между шагами, стирался следующим кадром, не дойдя до спуска.
+   */
   function sample(record) {
     const { x, y, z } = player.position();
     record.x = x;
@@ -43,6 +49,11 @@ export function createPlayerCombat({
     record.z = z;
     record.yaw = followCam.azimuth() + Math.PI;
     record.speed = player.speed();
+    input.write(record.intent, {
+      armed: armed && record.alive && !isEditing(),
+      automatic: isAutomatic(weapon),
+      aimPitch: followCam.aimPitch(),
+    });
   }
 
   function refreshCrosshair() {
@@ -131,11 +142,6 @@ export function createPlayerCombat({
 
   function update(dt) {
     updateAim();
-    input.write(fighter.intent, {
-      armed: armed && fighter.alive && !isEditing(),
-      automatic: isAutomatic(weapon),
-      aimPitch: followCam.aimPitch(),
-    });
     mount.update(dt);
     hud.setAmmo({ mag: fighter.ammo, reserve: fighter.reserve, capacity: weapon.magazine });
     hud.setReloading(fighter.reloadLeft > 0);
