@@ -48,12 +48,14 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let facingOverride = null;
   let airTime = 0;
   let landingLeft = 0;
+  let crouching = false;
   let planarSpeed = 0;
   const moveDirection = new THREE.Vector3();
   const localMove = new THREE.Vector3();
   // Поза живёт одна на всё время: аниматор читает её каждый кадр, а заводить объект в кадре
   // значит кормить мусорщик.
-  const pose = { speed: 0, aiming: false, moveDir: { x: 0, z: 1 }, airborne: false, jumpTime: 0,
+  const pose = { speed: 0, aiming: false, crouching: false,
+                 moveDir: { x: 0, z: 1 }, airborne: false, jumpTime: 0,
                  landing: false, aimYaw: 0, aimPitch: 0, shotId: 0, reloadId: 0, weapon: null,
                  dead: false, hitT: 0 };
 
@@ -73,6 +75,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     const length = Math.hypot(localMove.x, localMove.z) || 1;
     pose.speed = speed;
     pose.aiming = combat.aiming;
+    pose.crouching = crouching;
     pose.moveDir.x = localMove.x / length;
     pose.moveDir.z = localMove.z / length;
     pose.airborne = airTime > 0;
@@ -98,11 +101,15 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   function speedFor(combat) {
     const gait = input.gait();
     const speed = PLAYER[gait];
+    // Клипа ходьбы на корточках в наборе нет, только поза: значит на корточках и не ходят.
+    if (crouching) return 0;
     if (!combat.aiming || gait === 'runSpeed') return speed;
     return Math.min(speed, PLAYER.aimSpeed * (combat.weapon?.moveSpeedFactor ?? 1));
   }
 
   function move(dt, cameraAzimuth, combat) {
+    // В воздухе и мёртвым не приседают: иначе поза перебивает прыжок и смерть.
+    crouching = input.crouching() && !combat.dead && airTime === 0;
     const { x, z } = input.axis();
     const speed = combat.dead ? 0 : speedFor(combat);
 
@@ -186,6 +193,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     // и реестру бойцов, и тому, кто рисует.
     feetOffset: BODY_CENTER_Y,
     speed: () => planarSpeed,
+    crouching: () => crouching,
     position: () => body.translation(),
   };
 }

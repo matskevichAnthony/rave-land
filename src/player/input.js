@@ -12,6 +12,8 @@ window.addEventListener('blur', () => pressed.clear());
 
 export const input = {
   isDown: (code) => pressed.has(code),
+  /** Присед это удержание, а не переключатель: отпустил клавишу, встал. */
+  crouching: () => pressed.has('KeyC'),
   /** Походка: шагом на Alt, бегом на Shift, обычная ходьба по умолчанию. */
   gait() {
     if (pressed.has('AltLeft') || pressed.has('AltRight')) return 'strollSpeed';

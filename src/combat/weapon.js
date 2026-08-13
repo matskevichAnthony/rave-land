@@ -49,6 +49,7 @@ export function createPlayerCombat({
     record.z = z;
     record.yaw = followCam.azimuth() + Math.PI;
     record.speed = player.speed();
+    record.crouching = player.crouching();
     input.write(record.intent, {
       armed: armed && record.alive && !isEditing(),
       automatic: isAutomatic(weapon),

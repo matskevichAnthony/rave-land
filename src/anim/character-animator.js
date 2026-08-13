@@ -321,6 +321,9 @@ export function createCharacterAnimator({ model, animations, profile }) {
     }
     if (pose.landing && clips.jumpLand) return { base: clips.jumpLand, overlay: null, once: true };
     if (pose.dancing && clips.dance) return { base: clips.dance, overlay: null };
+    // Присед это одна поза без ходьбы: клипа передвижения на корточках в наборе нет,
+    // поэтому на корточках стоят на месте, а не ползают с чужой анимацией ног.
+    if (pose.crouching && clips.crouchAim) return { base: clips.crouchAim, overlay: null };
 
     if (!pose.aiming) {
       const role = locomotionRole(pose.speed);

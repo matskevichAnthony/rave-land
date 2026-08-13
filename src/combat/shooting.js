@@ -39,7 +39,10 @@ function spreadFor(fighter) {
   const fresh = fighter.aimedFor < COMBAT.freshTargetSeconds ? COMBAT.freshTargetSpreadFactor : 1;
   const hand = fighter.isPlayer ? COMBAT.playerSpreadFactor : 1;
   const { accuracy, spreadFactor } = fighter.weapon;
-  return (SPREAD_UNIT / accuracy) * spreadFactor * moving * fresh * hand;
+  // Присед это упор: в San Andreas у него свой флаг CROUCHFIRE, и смысл приседать должен
+  // быть не только в том, что в тебя труднее попасть.
+  const crouch = fighter.crouching ? COMBAT.crouchSpreadFactor : 1;
+  return (SPREAD_UNIT / accuracy) * spreadFactor * moving * fresh * hand * crouch;
 }
 
 /** Симметричный разброс: два независимых случайных числа дают нормальное облако вокруг оси. */
