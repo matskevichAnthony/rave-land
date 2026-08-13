@@ -18,18 +18,21 @@
 `--print-prompt`.
 
 Распечатать готовый промпт для чужого генератора:
-    tools/gen/text2image_local.py "stack of sandbags" out.png --preset prop --print-prompt
+    _other/sd-local/venv/bin/python tools/gen/text2image_local.py \\
+        "stack of sandbags" out.png --preset prop --print-prompt
 """
 
-# Слово «texture» здесь под запретом сознательно: на «low resolution texture»
-# модель рисует не предмет, а образец ткани во весь кадр. Проверено на мешках
-# с песком, которые вышли клетчатым полотном.
+# Слова тут подобраны прогонами, и каждое выброшенное выбрасывалось за дело:
+# «texture» заставляло рисовать образец ткани во весь кадр вместо предмета,
+# «screenshot» добавляло чёрные полосы сверху и снизу и рамку по периметру,
+# «desaturated» обесцвечивало предмет в серый, хотя у PS1 цвет был.
+# Геометрию держит одна фраза, а не три: на «few large flat polygons» вдобавок
+# к остальным генератор рисовал голый серый блок вместо предмета.
 STYLE = (
     'low poly PS1 game asset, 1998 survival horror video game graphics, '
     'Resident Evil and Silent Hill and Cry of Fear look, '
-    'chunky faceted geometry, few large flat polygons, hard edges, '
-    'simple painted surfaces, muted desaturated palette, '
-    'flat even lighting, screenshot of a 3d model'
+    'chunky faceted geometry with hard edges and visible polygon facets, '
+    'simple painted surfaces, muted earthy colors, flat even lighting'
 )
 
 # Фотореализм убивается перечислением ровно тех слов, которыми его обычно зовут:
@@ -41,15 +44,19 @@ NEGATIVE = (
     'high poly, highly detailed, smooth shading, glossy, reflections, '
     'dramatic lighting, hard shadows, gradient background, scenery, '
     'text, watermark, multiple views, collage, grid, split image, frame, border, '
-    'seamless pattern, tiled texture, fabric swatch, wallpaper, material sample'
+    'letterbox, black bars, grayscale, monochrome, black and white, '
+    'seamless pattern, tiled texture, fabric swatch, wallpaper'
 )
 
 # В шаблоне видно, где стоит суть: у предмета в начале, у персонажа после позы.
 # SD слушает начало промпта заметно сильнее хвоста, а у персонажа разваливается
 # именно поза, поэтому первые слова отданы ей, а не описанию одежды.
+# Суть повторяется дважды не для красоты: слов про стиль в промпте вчетверо
+# больше, и в одном экземпляре предмет в них тонет.
 PROP_FRAME = (
-    '{subject}, single object alone on a plain flat light gray background, '
-    'one object only, whole object in frame, three-quarter view, centered'
+    '{subject}, single {subject} alone on a plain flat light gray background, '
+    'one object only, whole object in frame with margins, '
+    'three-quarter view, centered'
 )
 
 PROP_NEGATIVE = (

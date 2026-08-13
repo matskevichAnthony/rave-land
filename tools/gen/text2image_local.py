@@ -21,11 +21,18 @@
 Стиль в промпт дописывает `prompt_style.py`, он же единственное место, где стиль
 вообще описан словами. Пользователь задаёт только суть.
 
-Персонаж рисуется не с чистого шума, а поверх болванки в T-позе из
-`tpose_template.py`: словами эту позу от модели не добиться, а от геометрии она
-наследуется сама. Подробности там же, в докстринге болванки.
+Персонаж рисуется не с чистого шума, а поверх болванки из `scaffold.py`, в режиме
+img2img: T-поза словами от модели не добивается, а от геометрии наследуется сама.
+Предмету болванка вредна, и это проверено, поэтому он идёт с чистого шума, а его
+кадр правится после генерации расчётом в `framing.py`. Подробности там же, в
+докстрингах обоих модулей.
 
-Подготовка окружения (один раз, 1 ГБ venv плюс 2.7 ГБ весов на диске):
+Веса берутся в fp32 и подключаются через mmap: файловые страницы ядро выбрасывает
+под давлением само, поэтому анонимной памяти прогон занимает около полутора
+гигабайт и живёт рядом с открытым браузером. Плата за это в скорости, цифры и
+причины в docs/rules/text2image-local.md.
+
+Подготовка окружения (один раз, 1 ГБ venv плюс 4 ГБ весов на диске):
     uv venv --python 3.12 _other/sd-local/venv
     uv pip install --python _other/sd-local/venv/bin/python torch \\
         --index-url https://download.pytorch.org/whl/cpu
@@ -58,14 +65,19 @@ WEIGHTS_DIR = REPO_ROOT / '_other' / 'local-gen' / 'weights'
 os.environ.setdefault('HF_HOME', str(WEIGHTS_DIR))
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import tpose_template  # noqa: E402
+import framing  # noqa: E402
+import scaffold  # noqa: E402
 from prompt_style import build  # noqa: E402
 
 BASE_MODEL = 'stable-diffusion-v1-5/stable-diffusion-v1-5'
 LCM_LORA = 'latent-consistency/lcm-lora-sdv1-5'
-# Веса качаются в половинной точности (вдвое меньше трафика), считаются в fp32.
+# Веса качаются сразу в fp32, хотя половинные вдвое меньше. Причина в памяти, а
+# не в качестве: fp16-файл пришлось бы поднимать до fp32 в оперативке, и это была
+# бы анонимная копия на 3.4 ГБ. Файл нужной точности отображается в память как
+# есть, страницы остаются файловыми, и ядро выбрасывает их под давлением само.
 WEIGHT_PATTERNS = ['model_index.json', 'scheduler/*', 'tokenizer/*', 'feature_extractor/*',
-                   '*/config.json', '*/*.fp16.safetensors']
+                   '*/config.json', 'unet/diffusion_pytorch_model.safetensors',
+                   'vae/diffusion_pytorch_model.safetensors', 'text_encoder/model.safetensors']
 SIDE = 512
 STEPS = 6
 GUIDANCE = 1.8
@@ -73,7 +85,7 @@ SEED = 7
 STRENGTH = 0.75
 THREADS = 4
 MEMORY_FLOOR_MB = 250
-PEAK_MB = 5000
+ANONYMOUS_MB = 1800
 SAMPLE_SECONDS = 2
 WINDOW_LIMIT = 2
 CYRILLIC = re.compile('[а-яёА-ЯЁ]')
@@ -87,12 +99,20 @@ def meminfo_available_mb():
     return 0
 
 
-def self_rss_mb():
+def self_memory_mb():
+    """Весь RSS и его анонимная часть.
+
+    Считать надо обе. Веса лежат в памяти файловыми страницами: они видны в RSS,
+    но ядро выбрасывает их под давлением без swap, и на соседний браузер они не
+    давят. Давит анонимная часть, поэтому решения принимаются по ней.
+    """
+    values = {}
     with open('/proc/self/status') as f:
         for line in f:
-            if line.startswith('VmRSS:'):
-                return int(line.split()[1]) // 1024
-    return 0
+            name = line.split(':')[0]
+            if name in ('VmRSS', 'RssAnon'):
+                values[name] = int(line.split()[1]) // 1024
+    return values.get('VmRSS', 0), values.get('RssAnon', 0)
 
 
 class MemoryGuard:
@@ -101,17 +121,20 @@ class MemoryGuard:
     def __init__(self, floor_mb):
         self.floor_mb = floor_mb
         self.peak_mb = 0
+        self.peak_anon_mb = 0
         threading.Thread(target=self._watch, daemon=True).start()
 
     def _watch(self):
         while True:
-            self.peak_mb = max(self.peak_mb, self_rss_mb())
+            rss, anon = self_memory_mb()
+            self.peak_mb = max(self.peak_mb, rss)
+            self.peak_anon_mb = max(self.peak_anon_mb, anon)
             available = meminfo_available_mb()
             if available < self.floor_mb:
                 print(
                     f'\nОстановлено сторожем памяти: свободно {available} МБ при пороге '
-                    f'{self.floor_mb} МБ, пик прогона {self.peak_mb} МБ. '
-                    'Закрой браузер и запусти снова.',
+                    f'{self.floor_mb} МБ, пик прогона {self.peak_mb} МБ '
+                    f'(анонимных {self.peak_anon_mb} МБ). Закрой лишнее и запусти снова.',
                     file=sys.stderr, flush=True,
                 )
                 os._exit(3)
@@ -187,7 +210,7 @@ def load_pipeline(base, torch):
     from diffusers import LCMScheduler, StableDiffusionPipeline
 
     pipe = StableDiffusionPipeline.from_pretrained(
-        base, torch_dtype=torch.float32, variant='fp16', unet=None,
+        base, torch_dtype=torch.float32, unet=None,
         safety_checker=None, requires_safety_checker=False,
     )
     pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
@@ -208,37 +231,45 @@ def encode_prompts(pipe, prompt, negative, torch):
 
 
 def attach_unet(pipe, base, lora, torch):
-    """Догружает UNet, впаивает в него LCM-LoRA и переводит свёртки в channels_last.
+    """Догружает UNet и вешает на него LCM-LoRA, не трогая сами веса.
 
-    channels_last даёт на этом процессоре шаг 31 секунды вместо 52.
+    LoRA сознательно не впаивается в веса. Впайка переписывает тензоры на месте,
+    а переписанная страница mmap перестаёт быть файловой и превращается в
+    анонимную копию, то есть ровно в то, от чего мы уходим. Дельты считаются на
+    лету, это несколько процентов времени против трёх с лишним гигабайт памяти.
+
+    Ни channels_last, ни прочая перекладка тензоров тут тоже недопустима: она
+    копирует веса целиком. Экономия памяти куплена ценой шага, см. замеры в
+    docs/rules/text2image-local.md.
+
+    Нарезка внимания (`enable_attention_slicing`) здесь только вредит: на CPU она
+    считает внимание кусками и роняет скорость, а экономит копейки, потому что
+    после перехода на mmap анонимной памяти и так остаётся около половины
+    гигабайта.
     """
     from diffusers import UNet2DConditionModel
 
     pipe.unet = UNet2DConditionModel.from_pretrained(
-        base, subfolder='unet', torch_dtype=torch.float32, variant='fp16',
+        base, subfolder='unet', torch_dtype=torch.float32,
     )
     pipe.load_lora_weights(lora)
-    pipe.fuse_lora()
-    pipe.unload_lora_weights()
-    pipe.unet.to(memory_format=torch.channels_last)
-    pipe.vae.to(memory_format=torch.channels_last)
     gc.collect()
 
 
-def denoise(pipe, scaffold, strength, common):
-    """Гонит диффузию: с болванкой в T-позе поверх неё, без болванки с чистого шума."""
-    if scaffold is None:
+def denoise(pipe, template, strength, common):
+    """Гонит диффузию: с болванкой поверх неё, без болванки с чистого шума."""
+    if template is None:
         return pipe(**common).images
 
     from diffusers import StableDiffusionImg2ImgPipeline
 
     img2img = StableDiffusionImg2ImgPipeline.from_pipe(pipe)
-    return img2img(image=scaffold, strength=strength, **common).images
+    return img2img(image=template, strength=strength, **common).images
 
 
-def planned_steps(steps, scaffold, strength):
+def planned_steps(steps, template, strength):
     """Сколько шагов будет на самом деле: img2img проходит только часть пути."""
-    if scaffold is None:
+    if template is None:
         return steps, steps
     scheduled = ceil(steps / strength)
     return scheduled, int(scheduled * strength)
@@ -269,7 +300,7 @@ def main():
     p.add_argument('--guidance', type=float, default=GUIDANCE,
                    help='ниже 1.1 негативный промпт перестаёт действовать')
     p.add_argument('--side', type=int, default=SIDE, help='сторона квадратного кадра')
-    p.add_argument('--strength', type=float, default=STRENGTH,
+    p.add_argument('--strength', type=float, default=None,
                    help='насколько сильно перерисовывать болванку T-позы, 0.6-0.85')
     p.add_argument('--threads', type=int, default=THREADS)
     p.add_argument('--memory-floor', type=int, default=MEMORY_FLOOR_MB,
@@ -290,25 +321,28 @@ def main():
         return
 
     available = meminfo_available_mb()
-    needed = PEAK_MB + args.memory_floor
+    needed = ANONYMOUS_MB + args.memory_floor
     if available < needed:
-        sys.exit(f'Свободно {available} МБ, а прогону нужно {needed} МБ: пик модели {PEAK_MB} МБ '
-                 f'плюс запас {args.memory_floor} МБ. Закрой браузер и запусти снова.')
+        sys.exit(f'Свободно {available} МБ, а прогону нужно {needed} МБ: своей памяти '
+                 f'{ANONYMOUS_MB} МБ плюс запас {args.memory_floor} МБ. Закрой лишнее и '
+                 'запусти снова.')
 
-    scaffold = None
-    if args.preset == 'character' and not args.no_tpose:
-        scaffold = tpose_template.draw(args.side)
-    scheduled, steps = planned_steps(args.steps, scaffold, args.strength)
+    posed = args.preset == 'character' and not args.no_tpose
+    template = scaffold.character(args.side) if posed else None
+    strength = STRENGTH if args.strength is None else args.strength
+    scheduled, steps = planned_steps(args.steps, template, strength)
 
     total = steps + 3
     start = time.time()
+    cpu_start = time.process_time()
     done = 0
 
     def report(text):
         nonlocal done
         done += 1
-        print(f'[{done}/{total}] {time.time() - start:6.1f}с RSS {self_rss_mb() / 1024:.1f} ГБ '
-              f'| {text}', flush=True)
+        rss, anon = self_memory_mb()
+        print(f'[{done}/{total}] {time.time() - start:6.1f}с RSS {rss / 1024:.1f} ГБ '
+              f'(аноним {anon / 1024:.1f} ГБ) | {text}', flush=True)
 
     import torch
 
@@ -333,15 +367,20 @@ def main():
         generator=torch.Generator('cpu').manual_seed(args.seed),
         callback_on_step_end=on_step, output_type='latent',
     )
-    if scaffold is None:
+    if template is None:
         common |= dict(width=args.side, height=args.side)
-    latents = denoise(pipe, scaffold, args.strength, common)
-    image = decode(pipe, latents, torch)
+    latents = denoise(pipe, template, strength, common)
+    image, cropped = framing.square(decode(pipe, latents, torch))
+    if cropped:
+        print('Предмет упирается в край кадра: часть его не нарисована. '
+              'Для генератора мешей такая картинка не годится, смени --seed.', flush=True)
 
     out = Path(args.output).resolve()
     out.parent.mkdir(parents=True, exist_ok=True)
     image.save(out)
-    report(f'готово: {out} ({out.stat().st_size / 1024:.0f} КБ), пик {guard.peak_mb} МБ')
+    report(f'готово: {out} ({out.stat().st_size / 1024:.0f} КБ), пик {guard.peak_mb} МБ, '
+           f'из них анонимных {guard.peak_anon_mb} МБ, '
+           f'процессорного времени {time.process_time() - cpu_start:.0f}с')
 
 
 if __name__ == '__main__':

@@ -51,8 +51,10 @@
 Промпт для любого генератора, включая чужой веб-интерфейс, печатается оттуда:
 
 ```bash
-tools/gen/text2image_local.py "stack of sandbags" out.png --preset prop --print-prompt
-tools/gen/text2image_local.py "raver in a gas mask" out.png --preset character --print-prompt
+_other/sd-local/venv/bin/python tools/gen/text2image_local.py \
+    "stack of sandbags" out.png --preset prop --print-prompt
+_other/sd-local/venv/bin/python tools/gen/text2image_local.py \
+    "raver in a gas mask" out.png --preset character --print-prompt
 ```
 
 Пользователь описывает только суть и только по-английски: генераторы обучены на
@@ -74,7 +76,7 @@ tools/gen/text2image_local.py "raver in a gas mask" out.png --preset character -
 1. **T-поза.** Динамичная поза = мусорный меш и невозможный авториг. Словами она
    не добивается: диффузионная модель рисует руки вдоль тела, сколько её ни
    проси. Поэтому пресет персонажа рисует поверх болванки в T-позе
-   (`tools/gen/tpose_template.py`) в режиме img2img, и поза наследуется от
+   (`tools/gen/scaffold.py`) в режиме img2img, и поза наследуется от
    геометрии. Полный проверяемый список: `docs/rules/text2image-local.md`.
 2. **Однотонный нейтральный фон** (светло-серый). Не прозрачный градиент, не сцена.
 3. **Всё тело в кадре**, включая ступни. Обрезанные ноги = генератор их выдумает.
@@ -168,8 +170,10 @@ tools/gen/text2image_local.py "raver in a gas mask" out.png --preset character -
 лежат оффлайн — интернет после этого не нужен в принципе.
 
 Шаг 0 тоже есть локальный: `tools/gen/text2image_local.py` рисует саму картинку
-на CPU (SD 1.5 с LCM-LoRA, около четырёх минут и 5 ГБ памяти на кадр, правила в
-`docs/rules/text2image-local.md`). С ним цепочка от слов до меша целиком локальная.
+на CPU (SD 1.5 с LCM-LoRA, правила в `docs/rules/text2image-local.md`). Веса
+подключаются через mmap, как у TripoSR, поэтому анонимной памяти прогон занимает
+около полутора гигабайт и идёт при открытом браузере. С ним цепочка от слов до
+меша целиком локальная.
 
 ### L1: самый слабый ПК (CPU-only, без NVIDIA, текущая машина)
 
@@ -283,7 +287,7 @@ $BLENDER --background --python tools/gen/props.py -- --prop crate \
 ферма (600 треугольников, 43 КБ). Начало координат в центре подошвы, палитра взята из палитры
 игры, постобработка не нужна.
 Новый проп добавляется функцией-билдером и строкой в `PROPS`. Скрипт заодно пишет
-`public/assets/models/props/manifest.json`, из которого страница `/props.html` берёт список,
+`public/assets/models/props/manifest.json`, из которого опись `/toolbox.html` берёт список,
 поэтому новый проп появляется на странице сам.
 
 **Генератор мешей звать только на сложную нерегулярную форму**, где параметризация дороже
@@ -307,7 +311,7 @@ TripoSR выходят заметно лучше персонажей (F-019), �
 2. Выбрать маршрут по дереву раздела 1.
 3. Идти по шагам маршрута; автоматизация в порядке: API/`gradio_client` → Playwright →
    ручная пауза только на login/CAPTCHA (правило из каталога сервисов, раздел 6).
-4. Каждый готовый персонаж: постобработка → проверка в браузере (страница /characters.html
+4. Каждый готовый персонаж: постобработка → проверка в браузере (страница /toolbox.html
    и спавн в игре) → отдельный коммит.
 4b. **Обязательно заполнить `provenance`** в записи NPC (`public/world.json`):
    `model` (кто сгенерировал меш: TRELLIS Space / Tripo / TripoSR local / ...),

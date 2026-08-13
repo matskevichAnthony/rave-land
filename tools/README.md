@@ -74,7 +74,7 @@ node tools/postprocess.mjs <вход.glb> public/models/<имя>-final.glb
 1. `public/world.json` → добавить NPC: `src`, позиция, `data`,
    **обязательно `provenance: { model, rig, animations }`** — выводится
    в карточке NPC для сравнения провайдеров.
-2. Проверить в браузере: `/characters.html` (вьюер клипов) и спавн в игре.
+2. Проверить в браузере: `/toolbox.html` (опись, вьюер с клипами) и спавн в игре.
    В браузере сбросить `localStorage['rave-land-world']`, иначе старый мир.
 3. Отдельный коммит на персонажа. Скриншоты — в `_other/<имя>-rig/`.
 
