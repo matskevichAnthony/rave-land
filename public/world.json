@@ -12,488 +12,1256 @@
     {
       "id": "speaker-1",
       "type": "speaker",
-      "position": [-7, null, -7],
-      "rotation": [0, 0.785, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -7,
+        null,
+        -7
+      ],
+      "rotation": [
+        0,
+        0.785,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "speaker-2",
       "type": "speaker",
-      "position": [7, null, -7],
-      "rotation": [0, -0.785, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        7,
+        null,
+        -7
+      ],
+      "rotation": [
+        0,
+        -0.785,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "lamp-1",
       "type": "lamp",
-      "position": [-10, null, 10],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -10,
+        null,
+        10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "lamp-2",
       "type": "lamp",
-      "position": [10, null, 10],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        10,
+        null,
+        10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "lamp-3",
       "type": "lamp",
-      "position": [-10, null, -10],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -10,
+        null,
+        -10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "lamp-4",
       "type": "lamp",
-      "position": [10, null, -10],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        10,
+        null,
+        -10
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "house-1",
       "type": "house",
-      "position": [22, null, 8],
-      "rotation": [0, -1.2, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        22,
+        null,
+        8
+      ],
+      "rotation": [
+        0,
+        -1.2,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "house-2",
       "type": "house",
-      "position": [-20, null, 14],
-      "rotation": [0, 0.9, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -20,
+        null,
+        14
+      ],
+      "rotation": [
+        0,
+        0.9,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "house-3",
       "type": "house",
-      "position": [4, null, -24],
-      "rotation": [0, 0.2, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        4,
+        null,
+        -24
+      ],
+      "rotation": [
+        0,
+        0.2,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "tree-1",
       "type": "tree",
-      "position": [31, null, -18],
-      "rotation": [0, 0.4, 0],
-      "scale": [1.1, 1.1, 1.1]
+      "position": [
+        31,
+        null,
+        -18
+      ],
+      "rotation": [
+        0,
+        0.4,
+        0
+      ],
+      "scale": [
+        1.1,
+        1.1,
+        1.1
+      ]
     },
     {
       "id": "tree-2",
       "type": "tree",
-      "position": [-34, null, -12],
-      "rotation": [0, 2.1, 0],
-      "scale": [0.9, 0.9, 0.9]
+      "position": [
+        -34,
+        null,
+        -12
+      ],
+      "rotation": [
+        0,
+        2.1,
+        0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ]
     },
     {
       "id": "tree-3",
       "type": "tree",
-      "position": [40, null, 22],
-      "rotation": [0, 1.3, 0],
-      "scale": [1.3, 1.3, 1.3]
+      "position": [
+        40,
+        null,
+        22
+      ],
+      "rotation": [
+        0,
+        1.3,
+        0
+      ],
+      "scale": [
+        1.3,
+        1.3,
+        1.3
+      ]
     },
     {
       "id": "tree-4",
       "type": "tree",
-      "position": [-42, null, 26],
-      "rotation": [0, 5.1, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -42,
+        null,
+        26
+      ],
+      "rotation": [
+        0,
+        5.1,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "tree-5",
       "type": "tree",
-      "position": [12, null, 38],
-      "rotation": [0, 3.3, 0],
-      "scale": [1.2, 1.2, 1.2]
+      "position": [
+        12,
+        null,
+        38
+      ],
+      "rotation": [
+        0,
+        3.3,
+        0
+      ],
+      "scale": [
+        1.2,
+        1.2,
+        1.2
+      ]
     },
     {
       "id": "tree-6",
       "type": "tree",
-      "position": [-16, null, 42],
-      "rotation": [0, 0.7, 0],
-      "scale": [0.8, 0.8, 0.8]
+      "position": [
+        -16,
+        null,
+        42
+      ],
+      "rotation": [
+        0,
+        0.7,
+        0
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
     },
     {
       "id": "tree-7",
       "type": "tree",
-      "position": [52, null, -6],
-      "rotation": [0, 1.9, 0],
-      "scale": [1.4, 1.4, 1.4]
+      "position": [
+        52,
+        null,
+        -6
+      ],
+      "rotation": [
+        0,
+        1.9,
+        0
+      ],
+      "scale": [
+        1.4,
+        1.4,
+        1.4
+      ]
     },
     {
       "id": "tree-8",
       "type": "tree",
-      "position": [-50, null, 2],
-      "rotation": [0, 2.8, 0],
-      "scale": [1.1, 1.1, 1.1]
+      "position": [
+        -50,
+        null,
+        2
+      ],
+      "rotation": [
+        0,
+        2.8,
+        0
+      ],
+      "scale": [
+        1.1,
+        1.1,
+        1.1
+      ]
     },
     {
       "id": "tree-9",
       "type": "tree",
-      "position": [26, null, -40],
-      "rotation": [0, 4.2, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        26,
+        null,
+        -40
+      ],
+      "rotation": [
+        0,
+        4.2,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "tree-10",
       "type": "tree",
-      "position": [-28, null, -36],
-      "rotation": [0, 0.1, 0],
-      "scale": [1.2, 1.2, 1.2]
+      "position": [
+        -28,
+        null,
+        -36
+      ],
+      "rotation": [
+        0,
+        0.1,
+        0
+      ],
+      "scale": [
+        1.2,
+        1.2,
+        1.2
+      ]
     },
     {
       "id": "tree-11",
       "type": "tree",
-      "position": [6, null, -52],
-      "rotation": [0, 2.4, 0],
-      "scale": [0.9, 0.9, 0.9]
+      "position": [
+        6,
+        null,
+        -52
+      ],
+      "rotation": [
+        0,
+        2.4,
+        0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ]
     },
     {
       "id": "tree-12",
       "type": "tree",
-      "position": [-8, null, 58],
-      "rotation": [0, 1.6, 0],
-      "scale": [1.3, 1.3, 1.3]
+      "position": [
+        -8,
+        null,
+        58
+      ],
+      "rotation": [
+        0,
+        1.6,
+        0
+      ],
+      "scale": [
+        1.3,
+        1.3,
+        1.3
+      ]
     },
     {
       "id": "rock-1",
       "type": "rock",
-      "position": [16, null, 16],
-      "rotation": [0, 0.6, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        16,
+        null,
+        16
+      ],
+      "rotation": [
+        0,
+        0.6,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "rock-2",
       "type": "rock",
-      "position": [-14, null, -16],
-      "rotation": [0, 1.8, 0],
-      "scale": [1.4, 1.4, 1.4]
+      "position": [
+        -14,
+        null,
+        -16
+      ],
+      "rotation": [
+        0,
+        1.8,
+        0
+      ],
+      "scale": [
+        1.4,
+        1.4,
+        1.4
+      ]
     },
     {
       "id": "rock-3",
       "type": "rock",
-      "position": [36, null, 4],
-      "rotation": [0, 3.1, 0],
-      "scale": [0.8, 0.8, 0.8]
+      "position": [
+        36,
+        null,
+        4
+      ],
+      "rotation": [
+        0,
+        3.1,
+        0
+      ],
+      "scale": [
+        0.8,
+        0.8,
+        0.8
+      ]
     },
     {
       "id": "rock-4",
       "type": "rock",
-      "position": [-30, null, 30],
-      "rotation": [0, 0.3, 0],
-      "scale": [1.2, 1.2, 1.2]
+      "position": [
+        -30,
+        null,
+        30
+      ],
+      "rotation": [
+        0,
+        0.3,
+        0
+      ],
+      "scale": [
+        1.2,
+        1.2,
+        1.2
+      ]
     },
     {
       "id": "rock-5",
       "type": "rock",
-      "position": [-2, null, -34],
-      "rotation": [0, 2.2, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -2,
+        null,
+        -34
+      ],
+      "rotation": [
+        0,
+        2.2,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-truss-left",
       "type": "model",
       "src": "assets/models/props/truss-tower.glb",
-      "position": [-6.5, null, -11.5],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -6.5,
+        null,
+        -11.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-truss-right",
       "type": "model",
       "src": "assets/models/props/truss-tower.glb",
-      "position": [6.5, null, -11.5],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        6.5,
+        null,
+        -11.5
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-stack-left",
       "type": "model",
       "src": "assets/models/props/speaker-stack.glb",
-      "position": [-4.2, null, -11.8],
-      "rotation": [0, 0.18, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -4.2,
+        null,
+        -11.8
+      ],
+      "rotation": [
+        0,
+        0.18,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-stack-right",
       "type": "model",
       "src": "assets/models/props/speaker-stack.glb",
-      "position": [4.2, null, -11.8],
-      "rotation": [0, -0.18, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        4.2,
+        null,
+        -11.8
+      ],
+      "rotation": [
+        0,
+        -0.18,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-stage-light-left",
       "type": "model",
       "src": "assets/models/props/stage-light.glb",
-      "position": [-8.6, null, -10.4],
-      "rotation": [0, 0.69, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -8.6,
+        null,
+        -10.4
+      ],
+      "rotation": [
+        0,
+        0.69,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-stage-light-right",
       "type": "model",
       "src": "assets/models/props/stage-light.glb",
-      "position": [8.6, null, -10.4],
-      "rotation": [0, -0.69, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        8.6,
+        null,
+        -10.4
+      ],
+      "rotation": [
+        0,
+        -0.69,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-stage-light-south",
       "type": "model",
       "src": "assets/models/props/stage-light.glb",
-      "position": [6.6, null, 6.6],
-      "rotation": [0, -2.36, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        6.6,
+        null,
+        6.6
+      ],
+      "rotation": [
+        0,
+        -2.36,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-pit-barrier-1",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [-4, null, -9.6],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -4,
+        null,
+        -9.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-pit-barrier-2",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [-2, null, -9.6],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -2,
+        null,
+        -9.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-pit-barrier-3",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [0, null, -9.6],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        0,
+        null,
+        -9.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-pit-barrier-4",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [2, null, -9.6],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        2,
+        null,
+        -9.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-pit-barrier-5",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [4, null, -9.6],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        4,
+        null,
+        -9.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-floor-barrier-1",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [-6.6, null, 1],
-      "rotation": [0, 1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -6.6,
+        null,
+        1
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-floor-barrier-2",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [-6.6, null, 3.1],
-      "rotation": [0, 1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -6.6,
+        null,
+        3.1
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar",
       "type": "model",
       "src": "assets/models/props/bar-counter.glb",
-      "position": [11.5, null, 2],
-      "rotation": [0, -1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        11.5,
+        null,
+        2
+      ],
+      "rotation": [
+        0,
+        -1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-crate-1",
       "type": "model",
       "src": "assets/models/props/crate.glb",
-      "position": [13.6, null, 4.4],
-      "rotation": [0, 0.6, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        13.6,
+        null,
+        4.4
+      ],
+      "rotation": [
+        0,
+        0.6,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-crate-2",
       "type": "model",
       "src": "assets/models/props/crate.glb",
-      "position": [13.3, null, 0.1],
-      "rotation": [0, 2.1, 0],
-      "scale": [0.9, 0.9, 0.9]
+      "position": [
+        13.3,
+        null,
+        0.1
+      ],
+      "rotation": [
+        0,
+        2.1,
+        0
+      ],
+      "scale": [
+        0.9,
+        0.9,
+        0.9
+      ]
     },
     {
       "id": "prop-bar-barrel-1",
       "type": "model",
       "src": "assets/models/props/barrel.glb",
-      "position": [12.5, null, 5.9],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        12.5,
+        null,
+        5.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-barrel-2",
       "type": "model",
       "src": "assets/models/props/barrel.glb",
-      "position": [14.2, null, 5.4],
-      "rotation": [0, 0.9, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        14.2,
+        null,
+        5.4
+      ],
+      "rotation": [
+        0,
+        0.9,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-pallet",
       "type": "model",
       "src": "assets/models/props/pallet.glb",
-      "position": [14.3, null, 2.6],
-      "rotation": [0, 0.3, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        14.3,
+        null,
+        2.6
+      ],
+      "rotation": [
+        0,
+        0.3,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-spool",
       "type": "model",
       "src": "assets/models/props/cable-spool.glb",
-      "position": [9.4, null, 5.2],
-      "rotation": [0, 0.4, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        9.4,
+        null,
+        5.2
+      ],
+      "rotation": [
+        0,
+        0.4,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-bin",
       "type": "model",
       "src": "assets/models/props/trash-bin.glb",
-      "position": [8.6, null, 3],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        8.6,
+        null,
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-bar-trash",
       "type": "model",
       "src": "assets/models/props/trash-pile.glb",
-      "position": [15.2, null, 6.6],
-      "rotation": [0, 2.4, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        15.2,
+        null,
+        6.6
+      ],
+      "rotation": [
+        0,
+        2.4,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-toilet-1",
       "type": "model",
       "src": "assets/models/props/porta-toilet.glb",
-      "position": [-13.5, null, 5.4],
-      "rotation": [0, 1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -13.5,
+        null,
+        5.4
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-toilet-2",
       "type": "model",
       "src": "assets/models/props/porta-toilet.glb",
-      "position": [-13.5, null, 7.2],
-      "rotation": [0, 1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -13.5,
+        null,
+        7.2
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-graffiti",
       "type": "model",
       "src": "assets/models/props/graffiti-board.glb",
-      "position": [-12.5, null, -1.5],
-      "rotation": [0, 1.571, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -12.5,
+        null,
+        -1.5
+      ],
+      "rotation": [
+        0,
+        1.571,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-west-trash",
       "type": "model",
       "src": "assets/models/props/trash-pile.glb",
-      "position": [-11, null, 9.4],
-      "rotation": [0, 0.8, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -11,
+        null,
+        9.4
+      ],
+      "rotation": [
+        0,
+        0.8,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-west-pallet",
       "type": "model",
       "src": "assets/models/props/pallet.glb",
-      "position": [-12.6, null, 2.4],
-      "rotation": [0, 1.1, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -12.6,
+        null,
+        2.4
+      ],
+      "rotation": [
+        0,
+        1.1,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-west-crate",
       "type": "model",
       "src": "assets/models/props/crate.glb",
-      "position": [-11.8, null, 3.6],
-      "rotation": [0, 0.4, 0],
-      "scale": [1.05, 1.05, 1.05]
+      "position": [
+        -11.8,
+        null,
+        3.6
+      ],
+      "rotation": [
+        0,
+        0.4,
+        0
+      ],
+      "scale": [
+        1.05,
+        1.05,
+        1.05
+      ]
     },
     {
       "id": "prop-entrance-sign",
       "type": "model",
       "src": "assets/models/props/road-sign.glb",
-      "position": [2.6, null, 14.8],
-      "rotation": [0, -0.35, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        2.6,
+        null,
+        14.8
+      ],
+      "rotation": [
+        0,
+        -0.35,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-entrance-barrier-left",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [-4, null, 13],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -4,
+        null,
+        13
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-entrance-barrier-right",
       "type": "model",
       "src": "assets/models/props/barrier.glb",
-      "position": [4, null, 13],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        4,
+        null,
+        13
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-entrance-bin",
       "type": "model",
       "src": "assets/models/props/trash-bin.glb",
-      "position": [5.4, null, 12.4],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        5.4,
+        null,
+        12.4
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-entrance-trash",
       "type": "model",
       "src": "assets/models/props/trash-pile.glb",
-      "position": [-6.4, null, 12.6],
-      "rotation": [0, 2.4, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -6.4,
+        null,
+        12.6
+      ],
+      "rotation": [
+        0,
+        2.4,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-entrance-barrel",
       "type": "model",
       "src": "assets/models/props/barrel.glb",
-      "position": [-6.9, null, 10.9],
-      "rotation": [0, 0, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -6.9,
+        null,
+        10.9
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-sandbags-1",
       "type": "model",
       "src": "assets/models/sandbags.glb",
-      "position": [-2.4, null, 8.6],
-      "rotation": [0, 0.2, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -2.4,
+        null,
+        8.6
+      ],
+      "rotation": [
+        0,
+        0.2,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-sandbags-2",
       "type": "model",
       "src": "assets/models/sandbags.glb",
-      "position": [-0.9, null, 8.9],
-      "rotation": [0, -0.15, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        -0.9,
+        null,
+        8.9
+      ],
+      "rotation": [
+        0,
+        -0.15,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     },
     {
       "id": "prop-sandbags-3",
       "type": "model",
       "src": "assets/models/sandbags.glb",
-      "position": [9.2, null, -4.2],
-      "rotation": [0, 1.35, 0],
-      "scale": [1, 1, 1]
+      "position": [
+        9.2,
+        null,
+        -4.2
+      ],
+      "rotation": [
+        0,
+        1.35,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
     }
   ],
   "npcs": [
@@ -502,7 +1270,11 @@
       "name": "Берлинец",
       "src": "assets/models/character-animated.glb",
       "seed": 202,
-      "position": [8, null, 14],
+      "position": [
+        8,
+        null,
+        14
+      ],
       "data": {
         "роль": "первый полностью заригованный",
         "скелет": "17 костей"
@@ -518,7 +1290,11 @@
       "name": "Техно-рейвер",
       "src": "assets/models/techno-raver.glb",
       "seed": 303,
-      "position": [5, null, -3],
+      "position": [
+        5,
+        null,
+        -3
+      ],
       "data": {
         "роль": "первый персонаж целиком из облачного маршрута",
         "скелет": "17 костей",
@@ -535,7 +1311,11 @@
       "name": "Фейсконтроль",
       "src": "assets/models/masked-raver.glb",
       "seed": 404,
-      "position": [-3, null, -6],
+      "position": [
+        -3,
+        null,
+        -6
+      ],
       "data": {
         "роль": "стоит у танцпола и смотрит",
         "скелет": "17 костей",
@@ -553,7 +1333,11 @@
       "name": "Пришелец",
       "src": "assets/models/trellis-npc.glb",
       "seed": 101,
-      "position": [-4, null, 12],
+      "position": [
+        -4,
+        null,
+        12
+      ],
       "data": {
         "роль": "первый гость из TRELLIS"
       },
@@ -568,7 +1352,11 @@
       "name": "DJ Север",
       "archetype": "raver",
       "seed": 11,
-      "position": [3, null, 6],
+      "position": [
+        3,
+        null,
+        6
+      ],
       "data": {
         "роль": "диджей",
         "настроение": "в потоке",
@@ -581,7 +1369,11 @@
       "name": "Мара",
       "archetype": "goth",
       "seed": 23,
-      "position": [-8, null, 4],
+      "position": [
+        -8,
+        null,
+        4
+      ],
       "data": {
         "роль": "завсегдатай",
         "настроение": "меланхолия",
@@ -593,7 +1385,11 @@
       "name": "Тихий",
       "archetype": "stalker",
       "seed": 37,
-      "position": [14, null, -10],
+      "position": [
+        14,
+        null,
+        -10
+      ],
       "data": {
         "роль": "неизвестно",
         "настроение": "наблюдает",
@@ -606,7 +1402,11 @@
       "name": "Ballas",
       "src": "assets/models/gta-ballas.glb",
       "seed": 505,
-      "position": [11, null, 8],
+      "position": [
+        11,
+        null,
+        8
+      ],
       "data": {
         "роль": "первый персонаж с чужим скелетом",
         "скелет": "родной San Andreas, 32 кости",
@@ -616,14 +1416,20 @@
         "model": "ballas1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py: меш, скелет, веса, текстуры из .txd",
         "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
         "animations": "ped.ifp из GTA San Andreas, наложены напрямую по bone id. Ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
-      }
+      },
+      "team": "ballas",
+      "weapon": "pistol"
     },
     {
       "id": "npc-gta-grove",
       "name": "Grove Street",
       "src": "assets/models/gta-grove.glb",
       "seed": 506,
-      "position": [-11, null, -8],
+      "position": [
+        -11,
+        null,
+        -8
+      ],
       "data": {
         "роль": "зелёная банда с другого конца города",
         "скелет": "родной San Andreas, 32 кости",
@@ -633,14 +1439,20 @@
         "model": "fam1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
         "rig": "родной скелет San Andreas, 32 кости",
         "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
-      }
+      },
+      "team": "grove",
+      "weapon": "ak47"
     },
     {
       "id": "npc-gta-cop",
       "name": "Мент",
       "src": "assets/models/gta-cop.glb",
       "seed": 507,
-      "position": [0, null, -13],
+      "position": [
+        0,
+        null,
+        -13
+      ],
       "data": {
         "роль": "стоит на краю поляны и делает вид, что не при делах",
         "скелет": "родной San Andreas, 32 кости",
@@ -650,7 +1462,166 @@
         "model": "lapd1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
         "rig": "родной скелет San Andreas, 32 кости",
         "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      },
+      "team": "cops",
+      "weapon": "shotgun"
+    },
+    {
+      "id": "npc-ballas-2",
+      "name": "Ballas · Смоук",
+      "src": "assets/models/gta-ballas.glb",
+      "seed": 515,
+      "position": [
+        18,
+        null,
+        4
+      ],
+      "team": "ballas",
+      "weapon": "ak47",
+      "data": {
+        "роль": "боец арены",
+        "скелет": "родной San Andreas, 32 кости"
+      },
+      "provenance": {
+        "model": "ballas1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py: меш, скелет, веса, текстуры из .txd",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp из GTA San Andreas, наложены напрямую по bone id. Ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
       }
+    },
+    {
+      "id": "npc-ballas-3",
+      "name": "Ballas · Кид",
+      "src": "assets/models/gta-ballas.glb",
+      "seed": 525,
+      "position": [
+        15,
+        null,
+        14
+      ],
+      "team": "ballas",
+      "weapon": "pistol",
+      "data": {
+        "роль": "боец арены",
+        "скелет": "родной San Andreas, 32 кости"
+      },
+      "provenance": {
+        "model": "ballas1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py: меш, скелет, веса, текстуры из .txd",
+        "rig": "родной скелет San Andreas, 32 кости, заново ничего не строилось",
+        "animations": "ped.ifp из GTA San Andreas, наложены напрямую по bone id. Ассеты Rockstar: локальный прототип, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-grove-2",
+      "name": "Grove · Райдер",
+      "src": "assets/models/gta-grove.glb",
+      "seed": 516,
+      "position": [
+        -17,
+        null,
+        -3
+      ],
+      "team": "grove",
+      "weapon": "pistol",
+      "data": {
+        "роль": "боец арены",
+        "скелет": "родной San Andreas, 32 кости"
+      },
+      "provenance": {
+        "model": "fam1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости",
+        "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-grove-3",
+      "name": "Grove · Биг Дог",
+      "src": "assets/models/gta-grove.glb",
+      "seed": 526,
+      "position": [
+        -14,
+        null,
+        -14
+      ],
+      "team": "grove",
+      "weapon": "shotgun",
+      "data": {
+        "роль": "боец арены",
+        "скелет": "родной San Andreas, 32 кости"
+      },
+      "provenance": {
+        "model": "fam1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости",
+        "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      }
+    },
+    {
+      "id": "npc-cop-2",
+      "name": "Патруль",
+      "src": "assets/models/gta-cop.glb",
+      "seed": 517,
+      "position": [
+        4,
+        null,
+        -19
+      ],
+      "team": "cops",
+      "weapon": "ak47",
+      "data": {
+        "роль": "боец арены",
+        "скелет": "родной San Andreas, 32 кости"
+      },
+      "provenance": {
+        "model": "lapd1.dff из GTA San Andreas, свой импортёр tools/gta/dff2glb.py",
+        "rig": "родной скелет San Andreas, 32 кости",
+        "animations": "ped.ifp из GTA San Andreas, по bone id без ретаргета. Ассеты Rockstar, публикация запрещена, см. F-041"
+      }
+    }
+  ],
+  "spawns": [
+    {
+      "team": "ballas",
+      "x": 20,
+      "z": 10
+    },
+    {
+      "team": "ballas",
+      "x": 13,
+      "z": 18
+    },
+    {
+      "team": "ballas",
+      "x": 22,
+      "z": -2
+    },
+    {
+      "team": "grove",
+      "x": -20,
+      "z": -10
+    },
+    {
+      "team": "grove",
+      "x": -13,
+      "z": -18
+    },
+    {
+      "team": "grove",
+      "x": -22,
+      "z": 2
+    },
+    {
+      "team": "cops",
+      "x": 2,
+      "z": -22
+    },
+    {
+      "team": "cops",
+      "x": -6,
+      "z": -20
+    },
+    {
+      "team": "cops",
+      "x": 10,
+      "z": -19
     }
   ]
 }

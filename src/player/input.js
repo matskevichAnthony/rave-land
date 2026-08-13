@@ -1,6 +1,8 @@
 const pressed = new Set();
+const axis = { x: 0, z: 0 };
 
-const isTyping = (event) => ['INPUT', 'TEXTAREA'].includes(event.target.tagName);
+/** Набирают текст, а не играют: горячие клавиши в поле ввода не срабатывают. */
+export const isTyping = (event) => ['INPUT', 'TEXTAREA'].includes(event.target.tagName);
 
 window.addEventListener('keydown', (event) => {
   if (!isTyping(event)) pressed.add(event.code);
@@ -16,11 +18,13 @@ export const input = {
     if (pressed.has('ShiftLeft') || pressed.has('ShiftRight')) return 'runSpeed';
     return 'walkSpeed';
   },
+  // Объект оси живёт один на всю игру: его спрашивают каждый кадр, а мусорщик на этой машине
+  // даёт заметные провалы кадра.
   axis() {
-    const x = (pressed.has('KeyD') || pressed.has('ArrowRight') ? 1 : 0)
+    axis.x = (pressed.has('KeyD') || pressed.has('ArrowRight') ? 1 : 0)
       - (pressed.has('KeyA') || pressed.has('ArrowLeft') ? 1 : 0);
-    const z = (pressed.has('KeyW') || pressed.has('ArrowUp') ? 1 : 0)
+    axis.z = (pressed.has('KeyW') || pressed.has('ArrowUp') ? 1 : 0)
       - (pressed.has('KeyS') || pressed.has('ArrowDown') ? 1 : 0);
-    return { x, z };
+    return axis;
   },
 };

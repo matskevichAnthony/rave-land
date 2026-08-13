@@ -13,6 +13,7 @@ import catalog from './weapons.json';
 
 const SKILL = 'std';
 const CLIP_FPS = 30;
+const AUTO_FIRE_CYCLE = 0.2;
 
 const OURS = {
   PISTOL: { id: 'pistol', name: 'Пистолет', model: 'assets/models/weapons/pistol.glb',
@@ -28,11 +29,14 @@ const OURS = {
 function build(datName, ours) {
   const skills = catalog[datName].skills;
   const stats = skills[SKILL] ?? Object.values(skills)[0];
-  const { start, end, fire } = stats.animLoop;
+  const { start, end } = stats.animLoop;
   return {
     ...ours,
     damage: stats.damage,
     range: stats.weaponRange,
+    // Дальность боя и дальность пули в San Andreas разные числа: с targetRange ИИ открывает
+    // огонь, до weaponRange пуля вообще летит. У пистолета это 30 и 35.
+    targetRange: stats.targetRange,
     magazine: stats.magazine,
     accuracy: stats.accuracy,
     moveSpeedFactor: stats.moveSpeed,
@@ -41,7 +45,6 @@ function build(datName, ours) {
     aimTime: start / CLIP_FPS,
     fireFrom: start / CLIP_FPS,
     fireTo: end / CLIP_FPS,
-    shotTime: fire / CLIP_FPS,
   };
 }
 
@@ -49,4 +52,24 @@ export const WEAPONS = Object.entries(OURS).map(([datName, ours]) => build(datNa
 
 export function weaponByKey(code) {
   return WEAPONS.find((weapon) => weapon.key === code) ?? null;
+}
+
+export function weaponById(id) {
+  return WEAPONS.find((weapon) => weapon.id === id) ?? WEAPONS[0];
+}
+
+/** Секунды на цикл выстрела: отрезок клипа, который игра проигрывает на каждый патрон. */
+export function fireCycle(weapon) {
+  return weapon.fireTo - weapon.fireFrom;
+}
+
+/**
+ * Очередь при зажатой кнопке.
+ *
+ * Флаг continuousFire в поставляемом weapon.dat не выставлен ни у одного ствола (F-051),
+ * поэтому очередь читается ещё и по длине петли клипа: у АК петля в четыре кадра, это уже
+ * очередь, а не одиночный выстрел с доводкой.
+ */
+export function isAutomatic(weapon) {
+  return weapon.flags.continuousFire || fireCycle(weapon) <= AUTO_FIRE_CYCLE;
 }

@@ -8,7 +8,11 @@ const CORPSE_COLLISION_GROUPS = (CORPSE_MEMBERSHIP << 16) | (0xffff & ~CORPSE_ME
 const FRICTION = 0.7;
 const IMPULSE_PER_TOTAL_MASS = 3;
 const UPWARD_KICK = 0.35;
-const MAX_CORPSES = 20;
+// Труп это 14-17 динамических тел с шарнирами, самая дорогая вещь на сцене. В перестрелке
+// они появляются пачками, поэтому и потолок ниже, и улёгшиеся замораживаются.
+const MAX_CORPSES = 8;
+const SETTLE_SECONDS = 5;
+const SETTLE_SPEED = 0.12;
 const MIN_SEGMENT_LENGTH = 0.06;
 const MIN_CAPSULE_HALF_HEIGHT = 0.015;
 const DEFAULT_LEAF_LENGTH = 0.12;
@@ -198,18 +202,46 @@ export function createSkinnedRagdolls({ RAPIER, physicsWorld, scene }) {
       .multiplyScalar(totalMass * IMPULSE_PER_TOTAL_MASS);
     struck.body.applyImpulse(kick, true);
 
-    corpses.push({ root: characterRoot, parts });
+    corpses.push({ root: characterRoot, parts, age: 0, frozen: false });
     if (corpses.length > MAX_CORPSES) removeCorpse(corpses.shift());
     return true;
   }
 
   function removeCorpse(corpse) {
-    for (const part of corpse.parts) physicsWorld.removeRigidBody(part.body);
+    if (!corpse.frozen) {
+      for (const part of corpse.parts) physicsWorld.removeRigidBody(part.body);
+    }
     scene.remove(corpse.root);
   }
 
-  function update() {
+  /**
+   * Улёгшийся труп теряет физику и остаётся позированным мешем.
+   *
+   * Кости уже стоят там, где их оставила симуляция, поэтому картинка не меняется вовсе, а
+   * из мира уходят полтора десятка тел с шарнирами на каждого убитого. На арене с респавном
+   * это главная экономия кадра.
+   */
+  function freeze(corpse) {
+    corpse.frozen = true;
+    for (const part of corpse.parts) physicsWorld.removeRigidBody(part.body);
+  }
+
+  function settled(corpse) {
+    for (const part of corpse.parts) {
+      const { x, y, z } = part.body.linvel();
+      if (Math.hypot(x, y, z) > SETTLE_SPEED) return false;
+    }
+    return true;
+  }
+
+  function update(dt = 0) {
     for (const corpse of corpses) {
+      if (corpse.frozen) continue;
+      corpse.age += dt;
+      if (corpse.age > SETTLE_SECONDS && settled(corpse)) {
+        freeze(corpse);
+        continue;
+      }
       for (const part of corpse.parts) {
         const rotation = part.body.rotation();
         workQuaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);

@@ -6,3 +6,6 @@
 @import './crosshair.css';
 @import './combat-hud.css';
 @import './killfeed.css';
+@import './battle.css';
+@import './vitals.css';
+@import './damage.css';

@@ -19,8 +19,28 @@
 
   <div class="killfeed" data-killfeed></div>
 
+  <div class="damage" aria-hidden="true">
+    <span class="damage__flash" data-damage-flash></span>
+    <div class="damage__arrows" data-damage-arrows></div>
+  </div>
+
+  <div class="battle" data-battle hidden>
+    <div class="battle__title">Перестрелка</div>
+    <div class="battle__score" data-score></div>
+  </div>
+
+  <div class="vitals" data-vitals hidden>
+    <div class="vitals__bar"><span class="vitals__fill" data-health-fill></span></div>
+    <div class="vitals__line">
+      <b class="vitals__hp" data-health-value>100</b>
+      <span class="vitals__frags">фраги <b data-frags>0</b></span>
+    </div>
+    <div class="vitals__dead" data-dead hidden>
+      Тебя убили. Возрождение через <b data-respawn>5</b>
+    </div>
+  </div>
+
   <div class="combat" data-combat hidden>
-    <div class="combat__frags">Фраги <b data-frags>0</b></div>
     <div class="combat__weapon" data-weapon-name></div>
     <div class="combat__ammo" data-ammo>
       <b class="combat__mag" data-ammo-mag>0</b>
@@ -34,7 +54,7 @@
     <div class="hud__hints">
       Клик захватывает мышь, WASD ходьба, Alt шагом, Shift бег, Space прыжок,
       G оружие, 1-4 выбор ствола, ЛКМ огонь, R перезарядка,
-      колесо зум, Tab открывает редактор
+      B режим перестрелки, колесо зум, Tab открывает редактор
     </div>
   </div>
 

@@ -9,6 +9,9 @@ const CAPSULE_HALF_HEIGHT = 0.55;
 const BODY_CENTER_Y = CAPSULE_HALF_HEIGHT + CAPSULE_RADIUS;
 const LANDING_SECONDS = 0.23;
 const TURN_RATE = 12;
+// Мирная поза для редактора: оружия нет, стрельбы нет, счётчики стоят.
+const IDLE_COMBAT = { aiming: false, aimPitch: 0, shotId: 0, reloadId: 0, weapon: null,
+                      dead: false, hitT: 0 };
 
 /** Кратчайшая разница двух азимутов, со знаком. */
 function angleDiff(target, current) {
@@ -45,16 +48,14 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
   let facingOverride = null;
   let airTime = 0;
   let landingLeft = 0;
-  let shotId = 0;
-  let reloadId = 0;
-  let reloadLeft = 0;
-  let weapon = null;
+  let planarSpeed = 0;
   const moveDirection = new THREE.Vector3();
   const localMove = new THREE.Vector3();
-  // Поза живёт одна на всё время: аниматор читает её и в кадре, и вне кадра, когда бой
-  // просит начать перезарядку.
+  // Поза живёт одна на всё время: аниматор читает её каждый кадр, а заводить объект в кадре
+  // значит кормить мусорщик.
   const pose = { speed: 0, aiming: false, moveDir: { x: 0, z: 1 }, airborne: false, jumpTime: 0,
-                 landing: false, aimYaw: 0, aimPitch: 0, shotId, reloadId, weapon };
+                 landing: false, aimYaw: 0, aimPitch: 0, shotId: 0, reloadId: 0, weapon: null,
+                 dead: false, hitT: 0 };
 
   function turnToward(targetYaw, dt) {
     yaw += angleDiff(targetYaw, yaw) * Math.min(1, dt * TURN_RATE);
@@ -64,23 +65,26 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
    * Поза для аниматора: движение в системе персонажа, фазы прыжка, углы наведения.
    *
    * aimYaw это остаток разворота: ноги догоняют азимут камеры с ограниченной скоростью, а
-   * разницу отыгрывают корпус и рука, иначе ствол всё время смотрит мимо цели.
+   * разницу отыгрывают корпус и рука, иначе ствол всё время смотрит мимо цели. Счётчики
+   * выстрела и перезарядки приходят из реестра бойцов: патроны считает бой, а не походка.
    */
-  function poseFor(speed, aiming, aimPitch) {
+  function poseFor(speed, combat) {
     localMove.copy(moveDirection).applyAxisAngle(THREE.Object3D.DEFAULT_UP, -yaw);
     const length = Math.hypot(localMove.x, localMove.z) || 1;
     pose.speed = speed;
-    pose.aiming = aiming;
+    pose.aiming = combat.aiming;
     pose.moveDir.x = localMove.x / length;
     pose.moveDir.z = localMove.z / length;
     pose.airborne = airTime > 0;
     pose.jumpTime = airTime;
     pose.landing = landingLeft > 0;
     pose.aimYaw = facingOverride === null ? 0 : angleDiff(facingOverride, yaw);
-    pose.aimPitch = aimPitch;
-    pose.shotId = shotId;
-    pose.reloadId = reloadId;
-    pose.weapon = weapon;
+    pose.aimPitch = combat.aimPitch;
+    pose.shotId = combat.shotId;
+    pose.reloadId = combat.reloadId;
+    pose.weapon = combat.weapon;
+    pose.dead = combat.dead;
+    pose.hitT = combat.hitT;
     return pose;
   }
 
@@ -91,16 +95,16 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
    * weapon.dat. Бег остаётся бегом: в San Andreas ствол наизготовку мешает ходить, а не
    * бегать, и на бегу играет свой клип.
    */
-  function speedFor(aiming) {
+  function speedFor(combat) {
     const gait = input.gait();
     const speed = PLAYER[gait];
-    if (!aiming || gait === 'runSpeed') return speed;
-    return Math.min(speed, PLAYER.aimSpeed * (weapon?.moveSpeedFactor ?? 1));
+    if (!combat.aiming || gait === 'runSpeed') return speed;
+    return Math.min(speed, PLAYER.aimSpeed * (combat.weapon?.moveSpeedFactor ?? 1));
   }
 
-  function move(dt, cameraAzimuth, aiming = false, aimPitch = 0) {
+  function move(dt, cameraAzimuth, combat) {
     const { x, z } = input.axis();
-    const speed = speedFor(aiming);
+    const speed = combat.dead ? 0 : speedFor(combat);
 
     const forwardX = -Math.sin(cameraAzimuth);
     const forwardZ = -Math.cos(cameraAzimuth);
@@ -126,7 +130,6 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     if (grounded && airTime > 0) landingLeft = LANDING_SECONDS;
     airTime = grounded ? 0 : airTime + dt;
     landingLeft = Math.max(0, landingLeft - dt);
-    reloadLeft = Math.max(0, reloadLeft - dt);
 
     const movement = controller.computedMovement();
     const current = body.translation();
@@ -143,8 +146,8 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
     } else if (moveDirection.lengthSq() > 0) {
       turnToward(Math.atan2(moveDirection.x, moveDirection.z), dt);
     }
-    const planarSpeed = dt > 0 ? Math.hypot(movement.x, movement.z) / dt : 0;
-    character.update(dt, poseFor(planarSpeed, aiming, aimPitch));
+    planarSpeed = dt > 0 ? Math.hypot(movement.x, movement.z) / dt : 0;
+    character.update(dt, poseFor(planarSpeed, combat));
   }
 
   function sync() {
@@ -159,21 +162,8 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
 
   function idle(dt) {
     moveDirection.set(0, 0, 0);
-    character.update(dt, poseFor(0, false, 0));
-  }
-
-  /**
-   * Запустить клип перезарядки и сказать, сколько он длится.
-   *
-   * Длительность знает только аниматор, поэтому поза уходит ему сразу же: боезапас ждёт
-   * ответа в тот же кадр, а не со следующего.
-   */
-  function reload() {
-    if (reloadLeft > 0) return 0;
-    reloadId += 1;
-    pose.reloadId = reloadId;
-    reloadLeft = character.update(0, pose) ?? 0;
-    return reloadLeft;
+    planarSpeed = 0;
+    character.update(dt, poseFor(0, IDLE_COMBAT));
   }
 
   function teleport(x, z) {
@@ -184,20 +174,18 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
 
   return {
     mesh,
+    collider,
     move,
     sync,
     idle,
-    reload,
     teleport,
     setFacing: (value) => {
       facingOverride = value;
     },
-    setWeapon: (next) => {
-      weapon = next;
-    },
-    kick: () => {
-      shotId += 1;
-    },
+    // Тело игрока стоит в физике капсулой, а зоны попадания считаются от стоп: разница нужна
+    // и реестру бойцов, и тому, кто рисует.
+    feetOffset: BODY_CENTER_Y,
+    speed: () => planarSpeed,
     position: () => body.translation(),
   };
 }

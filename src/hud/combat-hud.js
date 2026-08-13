@@ -1,8 +1,12 @@
-import { createKillfeed } from './killfeed.js';
-
 const LOW_AMMO_SHARE = 0.25;
 
-/** HUD боя: ствол, боезапас, фраги и киллфид. Разметка лежит в index.html. */
+/**
+ * Панель ствола: оружие, боезапас, перезарядка. Разметка лежит в index.html.
+ *
+ * Значения приходят каждый кадр, а в DOM уезжают только изменившиеся: запись в textContent
+ * заставляет браузер пересчитывать разметку, и делать это шестьдесят раз в секунду ради
+ * одного и того же числа не за что.
+ */
 export function createCombatHud() {
   const element = document.querySelector('[data-combat]');
   const weaponName = element.querySelector('[data-weapon-name]');
@@ -10,9 +14,7 @@ export function createCombatHud() {
   const magazine = element.querySelector('[data-ammo-mag]');
   const reserve = element.querySelector('[data-ammo-reserve]');
   const reloading = element.querySelector('[data-reloading]');
-  const frags = element.querySelector('[data-frags]');
-  const killfeed = createKillfeed();
-  let killed = 0;
+  const shown = { mag: null, reserve: null, low: null, reloading: null };
 
   return {
     setArmed(armed) {
@@ -22,18 +24,21 @@ export function createCombatHud() {
       weaponName.textContent = weapon.name;
     },
     setAmmo({ mag, reserve: left, capacity }) {
-      magazine.textContent = mag;
-      reserve.textContent = left;
-      ammo.classList.toggle('combat__ammo--low', mag <= capacity * LOW_AMMO_SHARE);
+      if (mag !== shown.mag) magazine.textContent = shown.mag = mag;
+      if (left !== shown.reserve) reserve.textContent = shown.reserve = left;
+      const low = mag <= capacity * LOW_AMMO_SHARE;
+      if (low === shown.low) return;
+      shown.low = low;
+      ammo.classList.toggle('combat__ammo--low', low);
     },
     setReloading(active) {
+      if (active === shown.reloading) return;
+      shown.reloading = active;
       reloading.hidden = !active;
       element.classList.toggle('combat--reloading', active);
     },
-    addKill(victim) {
-      killed += 1;
-      frags.textContent = killed;
-      killfeed.push(victim);
+    setDead(dead) {
+      element.classList.toggle('combat--dead', dead);
     },
   };
 }

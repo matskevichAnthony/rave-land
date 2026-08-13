@@ -6,17 +6,25 @@ import { createTerrain } from './terrain/terrain.js';
 import { createRegistry } from './objects/registry.js';
 import { registerBlobUrl } from './objects/gltf.js';
 import { createPlayer } from './player/player.js';
+import { isTyping } from './player/input.js';
 import { createFollowCamera } from './player/follow-camera.js';
 import { createEditor } from './editor/editor.js';
 import { createNpcSystem } from './npc/system.js';
 import { createRagdolls } from './combat/ragdoll.js';
-import { createCombat } from './combat/weapon.js';
+import { createArena } from './combat/arena.js';
+import { createPlayerCombat } from './combat/weapon.js';
+import { createBattleHud } from './hud/battle-hud.js';
 import { createBattleAudio } from './audio/battle.js';
 import { loadWorld } from './world/manifest.js';
 import { toast } from './ui/toast.js';
 import { TERRAIN_DEFAULTS } from './config.js';
 
 const MAX_FRAME_DT = 1 / 20;
+const BATTLE_KEY = 'KeyB';
+// Поза игрока для аниматора собирается в один и тот же объект: новый объект каждый кадр это
+// мусор ровно в самом горячем месте.
+const playerPose = { aiming: false, aimPitch: 0, shotId: 0, reloadId: 0, weapon: null,
+                     dead: false, hitT: 0 };
 
 async function boot() {
   await RAPIER.init();
@@ -39,8 +47,6 @@ async function boot() {
   await Promise.allSettled((worldState.objects ?? []).map((entry) => registry.add(entry)));
 
   const npcSystem = createNpcSystem({ scene, camera, terrain, renderer });
-  await Promise.allSettled((worldState.npcs ?? []).map((entry) => npcSystem.add(entry)));
-
   const player = await createPlayer({ RAPIER, physicsWorld, terrain, scene });
   const followCam = createFollowCamera(camera, renderer.domElement, terrain);
   followCam.snapTo(player.position());
@@ -58,16 +64,46 @@ async function boot() {
 
   const ragdolls = createRagdolls({ RAPIER, physicsWorld, scene });
   const battleAudio = createBattleAudio({ camera });
-  const combat = createCombat({
+  const arena = createArena({
+    RAPIER,
+    physicsWorld,
     scene,
-    camera,
-    renderer,
+    terrain,
     npcSystem,
     ragdolls,
-    player,
     audio: battleAudio,
+    coverObjects: registry.objects,
+    playerCollider: player.collider,
+  });
+  npcSystem.attachArena(arena);
+  arena.setSpawns(worldState.spawns ?? []);
+  await Promise.allSettled((worldState.npcs ?? []).map((entry) => npcSystem.add(entry)));
+
+  const combat = createPlayerCombat({
+    camera,
+    renderer,
+    player,
+    followCam,
+    arena,
+    npcSystem,
     isEditing: () => editor.editing,
   });
+  const battleHud = createBattleHud({
+    camera,
+    scoreboard: arena.scoreboard,
+    playerFighter: combat.fighter,
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.code !== BATTLE_KEY || editor.editing || isTyping(event)) return;
+    toast(toggleBattle() ? 'Режим перестрелки включён' : 'Перестрелка выключена');
+  });
+
+  function toggleBattle() {
+    arena.toggle();
+    battleHud.setActive(arena.active);
+    return arena.active;
+  }
 
   setupModelDrop(editor);
 
@@ -81,7 +117,14 @@ async function boot() {
       terrain: terrain.params,
       objects: registry.serializeEntries(),
       npcs: npcSystem.serialize(),
+      spawns: worldState.spawns ?? [],
     }),
+    battle: {
+      toggle: toggleBattle,
+      stats: () => arena.stats(),
+      fighters: () => arena.fighters.all().map(({ id, team, hp, stance, alive, ammo }) =>
+        ({ id, team, hp, stance, alive, ammo })),
+    },
     addObject: (entry) => registry.add({ id: crypto.randomUUID(), ...entry }),
     removeObject: (id) => registry.remove(id),
     addNpc: (entry) => npcSystem.add({ id: crypto.randomUUID(), ...entry }),
@@ -107,20 +150,30 @@ async function boot() {
   renderer.setAnimationLoop(() => {
     const dt = Math.min(clock.getDelta(), MAX_FRAME_DT);
 
+    const fighter = combat.fighter;
     const aiming = combat.armed && !editor.editing;
     followCam.setAiming(aiming);
     player.setFacing(aiming ? followCam.azimuth() + Math.PI : null);
+    playerPose.aiming = aiming;
+    playerPose.aimPitch = followCam.aimPitch();
+    playerPose.shotId = fighter.shotId;
+    playerPose.reloadId = fighter.reloadId;
+    playerPose.weapon = fighter.weapon;
+    playerPose.dead = !fighter.alive;
+    playerPose.hitT = fighter.hitT;
     if (editor.editing) {
       player.idle(dt);
     } else {
-      player.move(dt, followCam.azimuth(), aiming, followCam.aimPitch());
+      player.move(dt, followCam.azimuth(), playerPose);
     }
     physicsWorld.timestep = dt;
     physicsWorld.step();
     player.sync();
     stage.focusShadow(player.mesh.position);
-    ragdolls.update();
+    ragdolls.update(dt);
     combat.update(dt);
+    arena.update(editor.editing ? 0 : dt);
+    battleHud.update(dt);
 
     if (editor.editing) {
       followCam.update();

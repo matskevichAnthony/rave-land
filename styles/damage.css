@@ -1,0 +1,49 @@
+/* Попадание по игроку: вспышка по краям кадра и стрелка в сторону стрелявшего. */
+
+.damage {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.damage__flash {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 30, 90, 0) 45%,
+    rgba(255, 30, 90, 0.55) 100%
+  );
+}
+
+.damage__flash--on {
+  opacity: 1;
+  transition: opacity 0.05s ease-in;
+}
+
+.damage__arrows {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+}
+
+/*
+ * Стрелка стоит на окружности вокруг перекрестья и повёрнута туда же, куда указывает:
+ * нулевой угол это прямо перед камерой, поэтому попадание в спину уводит её вниз.
+ */
+.damage__arrow {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  transform: rotate(var(--damage-angle)) translateY(-120px);
+  background: conic-gradient(from -45deg, rgba(255, 40, 90, 0.9) 0 90deg, transparent 90deg);
+  clip-path: polygon(50% 0, 100% 100%, 50% 74%, 0 100%);
+  filter: drop-shadow(0 0 6px rgba(255, 40, 90, 0.7));
+}

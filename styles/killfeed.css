@@ -1,11 +1,20 @@
+/* Под табло счёта: в перестрелке они стоят один под другим и не наезжают. */
 .killfeed {
   position: fixed;
   right: 16px;
-  top: 16px;
+  top: 128px;
   display: grid;
   gap: 4px;
   justify-items: end;
   pointer-events: none;
+}
+
+.killfeed__name {
+  font-weight: 600;
+}
+
+.killfeed__row--mine {
+  border-left-color: var(--accent);
 }
 
 .killfeed__row {

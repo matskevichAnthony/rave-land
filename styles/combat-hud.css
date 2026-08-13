@@ -7,16 +7,8 @@
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
 }
 
-.combat__frags {
-  color: var(--muted);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-size: 12px;
-}
-
-.combat__frags b {
-  color: var(--accent);
-  font-size: 16px;
+.combat--dead {
+  opacity: 0.3;
 }
 
 .combat__weapon {

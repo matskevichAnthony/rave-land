@@ -8,7 +8,7 @@ const ANGULAR_DAMPING = 0.9;
 const FRICTION = 0.8;
 const IMPULSE_PER_MASS = 6;
 const UPWARD_KICK = 0.35;
-const MAX_CORPSES = 20;
+const MAX_CORPSES = 8;
 
 function collectSegments(root) {
   const rootSegment = { node: root, meshes: [], parent: null };
@@ -168,9 +168,9 @@ export function createRagdolls(context) {
     segmented.spawn(characterRoot, hit);
   }
 
-  function update() {
+  function update(dt) {
     segmented.update();
-    skinned.update();
+    skinned.update(dt);
   }
 
   return { spawn, update };
