@@ -1,0 +1,18 @@
+/* Выход из игры в мастерскую: единственный угол экрана, не занятый боевым HUD. */
+.exit {
+  position: fixed;
+  left: 16px;
+  top: 16px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--muted);
+  text-decoration: none;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+.exit:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
