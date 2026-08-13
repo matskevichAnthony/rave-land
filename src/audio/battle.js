@@ -57,7 +57,19 @@ export function createBattleAudio({ camera, context = null }) {
 
     reload(weapon, position) {
       const gun = gunCharacter(weapon);
-      play(position, MECH_SEND, (ctx, out, t0) => reloadSequence(ctx, out, t0, gun));
+      playRecorded(position, MECH_SEND, 'reload',
+        (ctx, out, t0) => reloadSequence(ctx, out, t0, gun));
+    },
+
+    /**
+     * Голос раненого. Синтеза для него нет: крик это либо запись, либо тишина.
+     *
+     * Поэтому это единственный звук боя, которого может не быть вовсе, пока файлы ещё
+     * декодируются. Молчание первых секунд дешевле синтетического стона.
+     */
+    pain(position, dead) {
+      const voice = samples.voice(dead ? 'death' : 'hurt');
+      if (voice) play(position, IMPACT_SEND, voice);
     },
 
     impact(position, kind) {

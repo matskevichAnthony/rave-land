@@ -118,12 +118,14 @@ export function createArena({
     const rng = rngOf(fighter);
     let shot = null;
     let struck = false;
+    let victim = null;
     for (let bullet = 0; bullet < fighter.weapon.bullets; bullet += 1) {
       shot = resolveShot(
         { ray, shooter: fighter, origin: shotOrigin, aim: shotAim, targets, rng });
       tracers.spawn(shotOrigin, shot.point);
       if (!shot.target) continue;
       struck = true;
+      victim = shot.target;
       applyDamage(fighters, {
         attackerId: fighter.id,
         targetId: shot.target.id,
@@ -139,6 +141,9 @@ export function createArena({
     // Звук попадания один на выстрел, а не на каждую картечину: восемь щелчков подряд
     // слышны как треск, а не как попадание.
     audio.impact(shot.point, struck ? 'body' : 'ground');
+    // Крик тоже один на выстрел и идёт от груди раненого: восемь картечин это одно попадание
+    // для того, в кого попали, а голос у него один.
+    if (victim) audio.pain(gunPointOf(victim), !victim.alive);
     emit('shot', { fighter, point: shot.point });
   }
 
