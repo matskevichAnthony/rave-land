@@ -10,8 +10,6 @@ import { envelope, noiseBurst, sweep } from './dsp.js';
  */
 
 const REFERENCE_DAMAGE = 25;
-// В weapon.dat у дробовика записан урон одной дробины, а из ствола их вылетает горсть.
-const SHOTGUN_PELLETS = 8;
 const BLAST_HZ = 210;
 const BLAST_BY_WEIGHT = 0.6;
 const CRACK_HZ = 1400;
@@ -46,7 +44,9 @@ export function gunCharacter(weapon) {
   // Помпа узнаётся по данным: магазин на один патрон и нет флага перезарядки, значит
   // патрон досылают руками, а не меняют магазин.
   const pumpAction = weapon.magazine === 1 && !weapon.flags.reload;
-  const charge = weapon.damage * (pumpAction ? SHOTGUN_PELLETS : 1);
+  // В weapon.dat у дробовика записан урон одной дробины, а из ствола их вылетает горсть:
+  // вес заряда считается по всему выстрелу, поэтому число дробин берётся из самого ствола.
+  const charge = weapon.damage * weapon.bullets;
   const weight = Math.sqrt(charge / REFERENCE_DAMAGE);
   return {
     pumpAction,

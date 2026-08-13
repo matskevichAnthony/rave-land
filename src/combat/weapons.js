@@ -47,6 +47,8 @@ function build(datName, ours) {
   const { start, end } = stats.animLoop;
   return {
     ...ours,
+    // Группа из weapon.dat: ею сама игра различала звук кольта, помпы и винтовки.
+    group: stats.group,
     damage: stats.damage,
     range: stats.weaponRange,
     // Дальность боя и дальность пули в San Andreas разные числа: с targetRange ИИ открывает
