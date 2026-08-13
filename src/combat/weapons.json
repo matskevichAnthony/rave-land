@@ -535,5 +535,42 @@
         }
       }
     }
+  },
+  "COUNTRYRIFLE": {
+    "fireType": "INSTANT_HIT",
+    "skills": {
+      "std": {
+        "group": "sniper",
+        "targetRange": 55.0,
+        "weaponRange": 100.0,
+        "magazine": 1,
+        "damage": 75,
+        "fireOffset": [
+          0.7,
+          -0.05,
+          0.2
+        ],
+        "accuracy": 1.0,
+        "moveSpeed": 1.2,
+        "animLoop": {
+          "start": 6,
+          "end": 17,
+          "fire": 7
+        },
+        "flags": {
+          "canAim": false,
+          "aimWithArm": false,
+          "firstPerson": false,
+          "moveAim": false,
+          "moveFire": false,
+          "throw": false,
+          "heavy": false,
+          "continuousFire": false,
+          "twinPistol": false,
+          "reload": false,
+          "crouchFire": true
+        }
+      }
+    }
   }
 }

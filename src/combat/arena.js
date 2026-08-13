@@ -99,9 +99,10 @@ export function createArena({
    */
   function fire(fighter) {
     // Бот, которого ещё не собрал респавн, стрелять не может: пули у него нет, значит и
-    // выстрела не было.
+    // выстрела не было. Мёртвый молчит по той же причине: убить его мог тот же самый шаг,
+    // в котором он нажал спуск.
     const source = fighter.isPlayer ? player : npcSystem.combatant(fighter.id);
-    if (!source) return;
+    if (!source || !fighter.alive) return;
     shotsFired += 1;
     source.muzzle(shotOrigin);
     source.aim(shotAim);
@@ -111,24 +112,34 @@ export function createArena({
         targets.push(other);
       }
     }
-    const shot = resolveShot(
-      { ray, shooter: fighter, origin: shotOrigin, aim: shotAim, targets, rng: rngOf(fighter) });
 
-    tracers.spawn(shotOrigin, shot.point);
+    // Картечь это тот же выстрел, посчитанный несколько раз: разброс каждой пуле считается
+    // заново, поэтому облако получается само собой, без отдельного кода на дробовик.
+    const rng = rngOf(fighter);
+    let shot = null;
+    let struck = false;
+    for (let bullet = 0; bullet < fighter.weapon.bullets; bullet += 1) {
+      shot = resolveShot(
+        { ray, shooter: fighter, origin: shotOrigin, aim: shotAim, targets, rng });
+      tracers.spawn(shotOrigin, shot.point);
+      if (!shot.target) continue;
+      struck = true;
+      applyDamage(fighters, {
+        attackerId: fighter.id,
+        targetId: shot.target.id,
+        zone: shot.zone,
+        weapon: fighter.weapon,
+        direction: shot.direction,
+        point: shot.point,
+      });
+    }
+
     source.flash();
     audio.shot(fighter.weapon, shotOrigin);
-    audio.impact(shot.point, shot.target ? 'body' : 'ground');
+    // Звук попадания один на выстрел, а не на каждую картечину: восемь щелчков подряд
+    // слышны как треск, а не как попадание.
+    audio.impact(shot.point, struck ? 'body' : 'ground');
     emit('shot', { fighter, point: shot.point });
-
-    if (!shot.target) return;
-    applyDamage(fighters, {
-      attackerId: fighter.id,
-      targetId: shot.target.id,
-      zone: shot.zone,
-      weapon: fighter.weapon,
-      direction: shot.direction,
-      point: shot.point,
-    });
   }
 
   on('death', ({ target, direction, point }) => {

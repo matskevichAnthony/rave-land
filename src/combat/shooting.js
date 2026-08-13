@@ -38,7 +38,8 @@ function spreadFor(fighter) {
   const moving = fighter.speed > COMBAT.movingThreshold ? COMBAT.movingSpreadFactor : 1;
   const fresh = fighter.aimedFor < COMBAT.freshTargetSeconds ? COMBAT.freshTargetSpreadFactor : 1;
   const hand = fighter.isPlayer ? COMBAT.playerSpreadFactor : 1;
-  return (SPREAD_UNIT / fighter.weapon.accuracy) * moving * fresh * hand;
+  const { accuracy, spreadFactor } = fighter.weapon;
+  return (SPREAD_UNIT / accuracy) * spreadFactor * moving * fresh * hand;
 }
 
 /** Симметричный разброс: два независимых случайных числа дают нормальное облако вокруг оси. */

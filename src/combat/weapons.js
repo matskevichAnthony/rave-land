@@ -14,16 +14,31 @@ import catalog from './weapons.json';
 const SKILL = 'std';
 const CLIP_FPS = 30;
 const AUTO_FIRE_CYCLE = 0.2;
+const SINGLE_BULLET = 1;
 
+/**
+ * Дробь и кучность в weapon.dat не описаны: San Andreas держит их в коде движка, а не в
+ * данных. Поэтому число картечин и множитель разброса живут здесь, рядом с моделью и
+ * клипом, то есть среди прочего, чего в игровых данных нет.
+ */
 const OURS = {
   PISTOL: { id: 'pistol', name: 'Пистолет', model: 'assets/models/weapons/pistol.glb',
             fireClip: 'colt45_fire', reloadClip: 'colt45_reload', key: 'Digit1' },
   DESERT_EAGLE: { id: 'deagle', name: 'Desert Eagle', model: 'assets/models/weapons/deagle.glb',
                   fireClip: 'python_fire', reloadClip: 'python_reload', key: 'Digit2' },
   SHOTGUN: { id: 'shotgun', name: 'Дробовик', model: 'assets/models/weapons/shotgun.glb',
-             fireClip: 'shotgun_fire', reloadClip: null, key: 'Digit3' },
+             fireClip: 'shotgun_fire', reloadClip: null, key: 'Digit3',
+             bullets: 8, spreadFactor: 3.4 },
   AK47: { id: 'ak47', name: 'АК-47', model: 'assets/models/weapons/ak47.glb',
           fireClip: 'RIFLE_fire', reloadClip: 'RIFLE_load', key: 'Digit4' },
+  M4: { id: 'm4', name: 'M4', model: 'assets/models/weapons/m4.glb',
+        fireClip: 'RIFLE_fire', reloadClip: 'RIFLE_load', key: 'Digit5' },
+  // У винтовки в данных снят canAim: в San Andreas она целится только через оптику от
+  // первого лица. Оптики у нас нет, а стрелять из неё надо, поэтому целится она как все,
+  // по кадру из клипа выстрела. Это единственное место, где мы спорим с weapon.dat.
+  COUNTRYRIFLE: { id: 'rifle', name: 'Винтовка', model: 'assets/models/weapons/rifle.glb',
+                  fireClip: 'RIFLE_fire', reloadClip: 'RIFLE_load', key: 'Digit6',
+                  spreadFactor: 0.4, flags: { canAim: true } },
 };
 
 function build(datName, ours) {
@@ -40,7 +55,9 @@ function build(datName, ours) {
     magazine: stats.magazine,
     accuracy: stats.accuracy,
     moveSpeedFactor: stats.moveSpeed,
-    flags: stats.flags,
+    flags: { ...stats.flags, ...ours.flags },
+    bullets: ours.bullets ?? SINGLE_BULLET,
+    spreadFactor: ours.spreadFactor ?? 1,
     // Кадры переводятся в секунды один раз здесь: аниматор работсо временем, не с кадрами.
     aimTime: start / CLIP_FPS,
     fireFrom: start / CLIP_FPS,
