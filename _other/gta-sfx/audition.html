@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Звуки San Andreas: кандидаты на бой</title>
+<style>
+  body { margin: 0; padding: 2rem 1.5rem 4rem; background: #14161a; color: #dfe3ea;
+         font: 15px/1.5 system-ui, sans-serif; }
+  h1 { font-size: 1.4rem; margin: 0 0 .4rem; }
+  h2 { font-size: 1.05rem; margin: 0 0 .4rem; color: #ffd479; }
+  .lead, .group__note { max-width: 62ch; color: #98a2b3; margin: 0 0 1rem; }
+  .group { margin: 2.5rem 0 0; }
+  .clips { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem;
+            grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); }
+  .clip { background: #1c1f26; border: 1px solid #2a2f3a; border-radius: 8px; padding: .7rem .8rem; }
+  .clip__id { font-weight: 600; margin-bottom: .4rem; }
+  .clip__meta { color: #98a2b3; font-size: .85rem; margin-top: .4rem; }
+  .clip__path { color: #5f6875; font-size: .78rem; font-family: ui-monospace, monospace; }
+  audio { width: 100%; height: 34px; }
+</style>
+</head>
+<body>
+<h1>Звуки San Andreas: кандидаты на бой</h1>
+<p class="lead">Распаковано скриптом <code>tools/gta/sfx.py</code> по официальной таблице
+<code>audio/config/banklkup.dat</code>: GENRL 137 банков и 652 звука, PAIN_A 3 банка и 401 крик,
+FEET 7 банков и 38 шагов, SCRIPT 218 банков и 6851 звук. Ниже отобранные кандидаты по
+предполагаемой роли. Имён у банков в архиве нет, роль выведена из формы огибающей и спектра,
+так что финальный выбор за ухом.</p>
+    <section class="group">
+      <h2>Выстрелы: GENRL банк 20 (глобальный банк 27)</h2>
+      <p class="group__note">Границы банков теперь взяты из audio/config/banklkup.dat, и мой прежний скан совпал с официальной таблицей по всем 137 банкам байт в байт. Имён банков в конфиге нет, поэтому «оружейный» это по-прежнему вывод из звука, а не из подписи. Банк 20 единственный, где все 24 звука короткие, одноразовые и с ударной атакой, а частоты 26000 и 26600 Гц самые высокие в архиве после четырёх спецбанков на 44100.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 0</div>
+        <audio controls preload="none" src="genrl/bank020/000.wav"></audio>
+        <div class="clip__meta">0.53 с, 26600 Гц</div>
+        <div class="clip__path">genrl/bank020/000.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 1</div>
+        <audio controls preload="none" src="genrl/bank020/001.wav"></audio>
+        <div class="clip__meta">0.07 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/001.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 2</div>
+        <audio controls preload="none" src="genrl/bank020/002.wav"></audio>
+        <div class="clip__meta">0.06 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/002.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 3</div>
+        <audio controls preload="none" src="genrl/bank020/003.wav"></audio>
+        <div class="clip__meta">0.09 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/003.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 4</div>
+        <audio controls preload="none" src="genrl/bank020/004.wav"></audio>
+        <div class="clip__meta">0.29 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/004.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 5</div>
+        <audio controls preload="none" src="genrl/bank020/005.wav"></audio>
+        <div class="clip__meta">0.30 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/005.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 6</div>
+        <audio controls preload="none" src="genrl/bank020/006.wav"></audio>
+        <div class="clip__meta">0.32 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/006.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 7</div>
+        <audio controls preload="none" src="genrl/bank020/007.wav"></audio>
+        <div class="clip__meta">0.27 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/007.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 8</div>
+        <audio controls preload="none" src="genrl/bank020/008.wav"></audio>
+        <div class="clip__meta">0.33 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/008.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 9</div>
+        <audio controls preload="none" src="genrl/bank020/009.wav"></audio>
+        <div class="clip__meta">0.36 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/009.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 10</div>
+        <audio controls preload="none" src="genrl/bank020/010.wav"></audio>
+        <div class="clip__meta">0.53 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/010.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 11</div>
+        <audio controls preload="none" src="genrl/bank020/011.wav"></audio>
+        <div class="clip__meta">0.47 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/011.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 12</div>
+        <audio controls preload="none" src="genrl/bank020/012.wav"></audio>
+        <div class="clip__meta">0.47 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/012.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 13</div>
+        <audio controls preload="none" src="genrl/bank020/013.wav"></audio>
+        <div class="clip__meta">0.62 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/013.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 14</div>
+        <audio controls preload="none" src="genrl/bank020/014.wav"></audio>
+        <div class="clip__meta">0.41 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/014.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 15</div>
+        <audio controls preload="none" src="genrl/bank020/015.wav"></audio>
+        <div class="clip__meta">0.63 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/015.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 16</div>
+        <audio controls preload="none" src="genrl/bank020/016.wav"></audio>
+        <div class="clip__meta">0.32 с, 21000 Гц</div>
+        <div class="clip__path">genrl/bank020/016.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 17</div>
+        <audio controls preload="none" src="genrl/bank020/017.wav"></audio>
+        <div class="clip__meta">0.33 с, 21600 Гц</div>
+        <div class="clip__path">genrl/bank020/017.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 18</div>
+        <audio controls preload="none" src="genrl/bank020/018.wav"></audio>
+        <div class="clip__meta">0.39 с, 22000 Гц</div>
+        <div class="clip__path">genrl/bank020/018.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 19</div>
+        <audio controls preload="none" src="genrl/bank020/019.wav"></audio>
+        <div class="clip__meta">0.21 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/019.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 20</div>
+        <audio controls preload="none" src="genrl/bank020/020.wav"></audio>
+        <div class="clip__meta">0.15 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/020.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 21</div>
+        <audio controls preload="none" src="genrl/bank020/021.wav"></audio>
+        <div class="clip__meta">0.14 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank020/021.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 22</div>
+        <audio controls preload="none" src="genrl/bank020/022.wav"></audio>
+        <div class="clip__meta">0.14 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/022.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 23</div>
+        <audio controls preload="none" src="genrl/bank020/023.wav"></audio>
+        <div class="clip__meta">0.19 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/023.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Тихая тройка того же банка: похоже на глушитель</h2>
+      <p class="group__note">Те же 0.3 секунды и та же форма, но RMS втрое ниже соседей и частота на 4-5 кГц меньше.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 16</div>
+        <audio controls preload="none" src="genrl/bank020/016.wav"></audio>
+        <div class="clip__meta">0.32 с, 21000 Гц</div>
+        <div class="clip__path">genrl/bank020/016.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 17</div>
+        <audio controls preload="none" src="genrl/bank020/017.wav"></audio>
+        <div class="clip__meta">0.33 с, 21600 Гц</div>
+        <div class="clip__path">genrl/bank020/017.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 18</div>
+        <audio controls preload="none" src="genrl/bank020/018.wav"></audio>
+        <div class="clip__meta">0.39 с, 22000 Гц</div>
+        <div class="clip__path">genrl/bank020/018.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Перезарядка: лязг магазина и затвора</h2>
+      <p class="group__note">Вот чего мне не хватало в прошлый раз. Это не SCRIPT (он почти целиком речь на 8 кГц), а те же неавтомобильные банки GENRL. Форма ровно та, что нужна: два-четыре разделённых тишиной металлических щелчка на 21000-24600 Гц с высоким zcr. Из них собирается связка «магазин вышел, магазин вошёл, затвор».</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 31</div>
+        <audio controls preload="none" src="genrl/bank136/031.wav"></audio>
+        <div class="clip__meta">0.38 с, 23000 Гц</div>
+        <div class="clip__path">genrl/bank136/031.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 32</div>
+        <audio controls preload="none" src="genrl/bank136/032.wav"></audio>
+        <div class="clip__meta">0.19 с, 23000 Гц</div>
+        <div class="clip__path">genrl/bank136/032.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 51</div>
+        <audio controls preload="none" src="genrl/bank136/051.wav"></audio>
+        <div class="clip__meta">0.22 с, 24600 Гц</div>
+        <div class="clip__path">genrl/bank136/051.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 69</div>
+        <audio controls preload="none" src="genrl/bank136/069.wav"></audio>
+        <div class="clip__meta">0.33 с, 21000 Гц</div>
+        <div class="clip__path">genrl/bank136/069.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 72</div>
+        <audio controls preload="none" src="genrl/bank136/072.wav"></audio>
+        <div class="clip__meta">0.33 с, 22000 Гц</div>
+        <div class="clip__path">genrl/bank136/072.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 52, звук 20</div>
+        <audio controls preload="none" src="genrl/bank052/020.wav"></audio>
+        <div class="clip__meta">0.18 с, 23000 Гц</div>
+        <div class="clip__path">genrl/bank052/020.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 52, звук 21</div>
+        <audio controls preload="none" src="genrl/bank052/021.wav"></audio>
+        <div class="clip__meta">0.17 с, 23000 Гц</div>
+        <div class="clip__path">genrl/bank052/021.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 52, звук 22</div>
+        <audio controls preload="none" src="genrl/bank052/022.wav"></audio>
+        <div class="clip__meta">0.23 с, 23000 Гц</div>
+        <div class="clip__path">genrl/bank052/022.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 11</div>
+        <audio controls preload="none" src="genrl/bank032/011.wav"></audio>
+        <div class="clip__meta">0.57 с, 18000 Гц</div>
+        <div class="clip__path">genrl/bank032/011.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 47</div>
+        <audio controls preload="none" src="genrl/bank032/047.wav"></audio>
+        <div class="clip__meta">0.31 с, 18000 Гц</div>
+        <div class="clip__path">genrl/bank032/047.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 48</div>
+        <audio controls preload="none" src="genrl/bank032/048.wav"></audio>
+        <div class="clip__meta">0.33 с, 18000 Гц</div>
+        <div class="clip__path">genrl/bank032/048.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Щелчок по пустому</h2>
+      <p class="group__note">Десять щелчков по 6-17 мс на 24000 Гц, вся энергия выше 3 кГц. Годится и на пустой магазин, и на кнопку интерфейса, разница слышна только на слух.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 2</div>
+        <audio controls preload="none" src="genrl/bank098/002.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/002.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 3</div>
+        <audio controls preload="none" src="genrl/bank098/003.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/003.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 4</div>
+        <audio controls preload="none" src="genrl/bank098/004.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/004.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 5</div>
+        <audio controls preload="none" src="genrl/bank098/005.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/005.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 6</div>
+        <audio controls preload="none" src="genrl/bank098/006.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/006.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 7</div>
+        <audio controls preload="none" src="genrl/bank098/007.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/007.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 8</div>
+        <audio controls preload="none" src="genrl/bank098/008.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/008.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 9</div>
+        <audio controls preload="none" src="genrl/bank098/009.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/009.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 10</div>
+        <audio controls preload="none" src="genrl/bank098/010.wav"></audio>
+        <div class="clip__meta">0.01 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/010.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 98, звук 11</div>
+        <audio controls preload="none" src="genrl/bank098/011.wav"></audio>
+        <div class="clip__meta">0.02 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank098/011.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Звяк металла: гильза или рикошет</h2>
+      <p class="group__note">97 процентов энергии выше 5.5 кГц, мгновенная атака.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 22</div>
+        <audio controls preload="none" src="genrl/bank020/022.wav"></audio>
+        <div class="clip__meta">0.14 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/022.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 20, звук 23</div>
+        <audio controls preload="none" src="genrl/bank020/023.wav"></audio>
+        <div class="clip__meta">0.19 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank020/023.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 33</div>
+        <audio controls preload="none" src="genrl/bank136/033.wav"></audio>
+        <div class="clip__meta">0.18 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank136/033.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 52</div>
+        <audio controls preload="none" src="genrl/bank136/052.wav"></audio>
+        <div class="clip__meta">0.14 с, 28000 Гц</div>
+        <div class="clip__path">genrl/bank136/052.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 76</div>
+        <audio controls preload="none" src="genrl/bank136/076.wav"></audio>
+        <div class="clip__meta">0.03 с, 44100 Гц</div>
+        <div class="clip__path">genrl/bank136/076.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 53</div>
+        <audio controls preload="none" src="genrl/bank032/053.wav"></audio>
+        <div class="clip__meta">0.67 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank032/053.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Удары: попадание в тело или в поверхность</h2>
+      <p class="group__note">Пары 3/4, 6/7, 21/22, 26/27 в банке 136 это варианты одного удара, как игра обычно раскладывает попадания по материалам.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 3</div>
+        <audio controls preload="none" src="genrl/bank136/003.wav"></audio>
+        <div class="clip__meta">0.10 с, 22000 Гц</div>
+        <div class="clip__path">genrl/bank136/003.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 4</div>
+        <audio controls preload="none" src="genrl/bank136/004.wav"></audio>
+        <div class="clip__meta">0.10 с, 22000 Гц</div>
+        <div class="clip__path">genrl/bank136/004.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 6</div>
+        <audio controls preload="none" src="genrl/bank136/006.wav"></audio>
+        <div class="clip__meta">0.15 с, 26600 Гц</div>
+        <div class="clip__path">genrl/bank136/006.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 7</div>
+        <audio controls preload="none" src="genrl/bank136/007.wav"></audio>
+        <div class="clip__meta">0.15 с, 26600 Гц</div>
+        <div class="clip__path">genrl/bank136/007.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 21</div>
+        <audio controls preload="none" src="genrl/bank136/021.wav"></audio>
+        <div class="clip__meta">0.19 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank136/021.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 22</div>
+        <audio controls preload="none" src="genrl/bank136/022.wav"></audio>
+        <div class="clip__meta">0.19 с, 26000 Гц</div>
+        <div class="clip__path">genrl/bank136/022.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 26</div>
+        <audio controls preload="none" src="genrl/bank136/026.wav"></audio>
+        <div class="clip__meta">0.26 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank136/026.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 27</div>
+        <audio controls preload="none" src="genrl/bank136/027.wav"></audio>
+        <div class="clip__meta">0.26 с, 24000 Гц</div>
+        <div class="clip__path">genrl/bank136/027.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 59</div>
+        <audio controls preload="none" src="genrl/bank136/059.wav"></audio>
+        <div class="clip__meta">0.28 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank136/059.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 62</div>
+        <audio controls preload="none" src="genrl/bank136/062.wav"></audio>
+        <div class="clip__meta">0.29 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank136/062.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 136, звук 75</div>
+        <audio controls preload="none" src="genrl/bank136/075.wav"></audio>
+        <div class="clip__meta">0.31 с, 18000 Гц</div>
+        <div class="clip__path">genrl/bank136/075.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 12</div>
+        <audio controls preload="none" src="genrl/bank032/012.wav"></audio>
+        <div class="clip__meta">0.18 с, 12000 Гц</div>
+        <div class="clip__path">genrl/bank032/012.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 13</div>
+        <audio controls preload="none" src="genrl/bank032/013.wav"></audio>
+        <div class="clip__meta">0.24 с, 12000 Гц</div>
+        <div class="clip__path">genrl/bank032/013.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 14</div>
+        <audio controls preload="none" src="genrl/bank032/014.wav"></audio>
+        <div class="clip__meta">0.10 с, 15000 Гц</div>
+        <div class="clip__path">genrl/bank032/014.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Боль, низкий голос: попадание</h2>
+      <p class="group__note">Пак PAIN_A, три банка, 401 крик. Пол определён по оценке основного тона, а не по подписи: подписей в архиве нет. На крике тон уезжает вверх у всех, так что деление приблизительное и требует уха.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 0, звук 38</div>
+        <audio controls preload="none" src="pain_a/bank000/038.wav"></audio>
+        <div class="clip__meta">0.37 с, 8000 Гц, основной тон 76 Гц</div>
+        <div class="clip__path">pain_a/bank000/038.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 84</div>
+        <audio controls preload="none" src="pain_a/bank001/084.wav"></audio>
+        <div class="clip__meta">0.29 с, 12000 Гц, основной тон 78 Гц</div>
+        <div class="clip__path">pain_a/bank001/084.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 2, звук 63</div>
+        <audio controls preload="none" src="pain_a/bank002/063.wav"></audio>
+        <div class="clip__meta">0.21 с, 12000 Гц, основной тон 78 Гц</div>
+        <div class="clip__path">pain_a/bank002/063.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 0, звук 109</div>
+        <audio controls preload="none" src="pain_a/bank000/109.wav"></audio>
+        <div class="clip__meta">0.23 с, 15000 Гц, основной тон 83 Гц</div>
+        <div class="clip__path">pain_a/bank000/109.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 44</div>
+        <audio controls preload="none" src="pain_a/bank001/044.wav"></audio>
+        <div class="clip__meta">0.39 с, 12000 Гц, основной тон 83 Гц</div>
+        <div class="clip__path">pain_a/bank001/044.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Боль, низкий голос: смерть</h2>
+      <p class="group__note">Те же банки, но длиннее секунды и с падающим тоном в конце.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 108</div>
+        <audio controls preload="none" src="pain_a/bank001/108.wav"></audio>
+        <div class="clip__meta">1.06 с, 12000 Гц, основной тон 71 Гц</div>
+        <div class="clip__path">pain_a/bank001/108.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 104</div>
+        <audio controls preload="none" src="pain_a/bank001/104.wav"></audio>
+        <div class="clip__meta">1.07 с, 12000 Гц, основной тон 73 Гц</div>
+        <div class="clip__path">pain_a/bank001/104.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 109</div>
+        <audio controls preload="none" src="pain_a/bank001/109.wav"></audio>
+        <div class="clip__meta">1.01 с, 12000 Гц, основной тон 73 Гц</div>
+        <div class="clip__path">pain_a/bank001/109.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 107</div>
+        <audio controls preload="none" src="pain_a/bank001/107.wav"></audio>
+        <div class="clip__meta">1.17 с, 12000 Гц, основной тон 74 Гц</div>
+        <div class="clip__path">pain_a/bank001/107.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 2, звук 80</div>
+        <audio controls preload="none" src="pain_a/bank002/080.wav"></audio>
+        <div class="clip__meta">2.09 с, 12000 Гц, основной тон 77 Гц</div>
+        <div class="clip__path">pain_a/bank002/080.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Боль, высокий голос: попадание</h2>
+      <p class="group__note">Оценка тона 360 Гц и выше. Это может быть и женщина, и высокий мужской крик.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 8</div>
+        <audio controls preload="none" src="pain_a/bank001/008.wav"></audio>
+        <div class="clip__meta">0.53 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/008.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 42</div>
+        <audio controls preload="none" src="pain_a/bank001/042.wav"></audio>
+        <div class="clip__meta">0.41 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/042.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 69</div>
+        <audio controls preload="none" src="pain_a/bank001/069.wav"></audio>
+        <div class="clip__meta">0.26 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/069.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 70</div>
+        <audio controls preload="none" src="pain_a/bank001/070.wav"></audio>
+        <div class="clip__meta">0.20 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/070.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 120</div>
+        <audio controls preload="none" src="pain_a/bank001/120.wav"></audio>
+        <div class="clip__meta">0.47 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/120.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Боль, высокий голос: смерть</h2>
+      <p class="group__note">Длинные крики того же тонового диапазона.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 0</div>
+        <audio controls preload="none" src="pain_a/bank001/000.wav"></audio>
+        <div class="clip__meta">1.37 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/000.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 9</div>
+        <audio controls preload="none" src="pain_a/bank001/009.wav"></audio>
+        <div class="clip__meta">1.63 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/009.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 17</div>
+        <audio controls preload="none" src="pain_a/bank001/017.wav"></audio>
+        <div class="clip__meta">0.94 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/017.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 19</div>
+        <audio controls preload="none" src="pain_a/bank001/019.wav"></audio>
+        <div class="clip__meta">1.22 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/019.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">PAIN_A, банк 1, звук 89</div>
+        <audio controls preload="none" src="pain_a/bank001/089.wav"></audio>
+        <div class="clip__meta">1.78 с, 12000 Гц, основной тон 364 Гц</div>
+        <div class="clip__path">pain_a/bank001/089.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Запасной кандидат на выстрел: GENRL банк 32, звуки 20-28</h2>
+      <p class="group__note">Девять однородных громких звуков по 0.5-0.65 с. Атака резкая, но дальше держится плато на треть секунды, чего у выстрела обычно нет.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 20</div>
+        <audio controls preload="none" src="genrl/bank032/020.wav"></audio>
+        <div class="clip__meta">0.60 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/020.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 21</div>
+        <audio controls preload="none" src="genrl/bank032/021.wav"></audio>
+        <div class="clip__meta">0.57 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/021.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 22</div>
+        <audio controls preload="none" src="genrl/bank032/022.wav"></audio>
+        <div class="clip__meta">0.56 с, 21000 Гц</div>
+        <div class="clip__path">genrl/bank032/022.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 23</div>
+        <audio controls preload="none" src="genrl/bank032/023.wav"></audio>
+        <div class="clip__meta">0.54 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/023.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 24</div>
+        <audio controls preload="none" src="genrl/bank032/024.wav"></audio>
+        <div class="clip__meta">0.62 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/024.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 25</div>
+        <audio controls preload="none" src="genrl/bank032/025.wav"></audio>
+        <div class="clip__meta">0.54 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/025.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 26</div>
+        <audio controls preload="none" src="genrl/bank032/026.wav"></audio>
+        <div class="clip__meta">0.65 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/026.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 27</div>
+        <audio controls preload="none" src="genrl/bank032/027.wav"></audio>
+        <div class="clip__meta">0.47 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/027.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 32, звук 28</div>
+        <audio controls preload="none" src="genrl/bank032/028.wav"></audio>
+        <div class="clip__meta">0.60 с, 22100 Гц</div>
+        <div class="clip__path">genrl/bank032/028.wav</div>
+      </li>
+      </ul>
+    </section>
+    <section class="group">
+      <h2>Запасной кандидат: GENRL банк 121</h2>
+      <p class="group__note">Пять почти одинаковых звуков по 0.5-0.7 с на 22050 Гц. Подходит и под глухой выстрел, и под далёкий взрыв.</p>
+      <ul class="clips">
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 121, звук 0</div>
+        <audio controls preload="none" src="genrl/bank121/000.wav"></audio>
+        <div class="clip__meta">0.58 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank121/000.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 121, звук 1</div>
+        <audio controls preload="none" src="genrl/bank121/001.wav"></audio>
+        <div class="clip__meta">0.70 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank121/001.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 121, звук 2</div>
+        <audio controls preload="none" src="genrl/bank121/002.wav"></audio>
+        <div class="clip__meta">0.63 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank121/002.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 121, звук 3</div>
+        <audio controls preload="none" src="genrl/bank121/003.wav"></audio>
+        <div class="clip__meta">0.50 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank121/003.wav</div>
+      </li>
+      <li class="clip">
+        <div class="clip__id">GENRL, банк 121, звук 4</div>
+        <audio controls preload="none" src="genrl/bank121/004.wav"></audio>
+        <div class="clip__meta">0.58 с, 22050 Гц</div>
+        <div class="clip__path">genrl/bank121/004.wav</div>
+      </li>
+      </ul>
+    </section>
+</body>
+</html>
