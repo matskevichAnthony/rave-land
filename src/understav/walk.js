@@ -19,6 +19,9 @@ import { PLAYER } from '../config.js';
  * Физика поднимается только здесь, при первом входе в режим: афише она не нужна, а модуль
  * грузится динамическим импортом из `main.js`. Кто именно ходит по сцене, решают данные
  * события, а не этот файл: сюда приходит готовый список моделей.
+ *
+ * Зал сцена приносит с собой: точка входа, разворот на герой-предмет и твёрдые тела
+ * приходят параметрами, а значения по умолчанию описывают неф UNDERSTAV.
  */
 
 const GRAVITY = { x: 0, y: -9.81, z: 0 };
@@ -34,8 +37,8 @@ const SPAWN = { x: 0, z: 16 };
 const APPEARANCE = { src: 'assets/models/gta-triad.glb' };
 // Игрок ходит в модели триады, значит и фракция его та же: свои не стреляют по своим.
 const PLAYER_TEAM = 'triads';
-// Алтарь стоит в начале координат, поэтому взгляд на него это разворот вдоль -Z.
-const ALTAR_FACING = Math.PI;
+// Алтарь UNDERSTAV стоит в начале координат, поэтому взгляд на него это разворот вдоль -Z.
+const HOME_FACING = Math.PI;
 
 const GUEST_SEED = 'ca57';
 const GUEST_NAME = 'Гость';
@@ -46,20 +49,29 @@ const SPAWNS_PER_TEAM = 3;
 const pose = { aiming: false, aimPitch: 0, shotId: 0, reloadId: 0, weapon: null,
                dead: false, hitT: 0 };
 
-export async function createWalk({ scene, camera, renderer, grab, cast }) {
+export async function createWalk({
+  scene,
+  camera,
+  renderer,
+  grab,
+  cast,
+  spawn = SPAWN,
+  facing = HOME_FACING,
+  colliders = null,
+}) {
   await RAPIER.init();
   const physicsWorld = new RAPIER.World(GRAVITY);
-  const { createColliders } = await loadColliders();
-  createColliders({ RAPIER, physicsWorld });
+  const buildColliders = colliders ?? (await loadColliders()).createColliders;
+  buildColliders({ RAPIER, physicsWorld });
 
   // Внешность и точка спавна живут в общем конфиге, потому что `createPlayer` читает его
   // напрямую: своя копия сборки игрока ради двух чисел завела бы вторую правду.
-  Object.assign(PLAYER, { spawn: SPAWN, appearance: APPEARANCE, team: PLAYER_TEAM });
+  Object.assign(PLAYER, { spawn, appearance: APPEARANCE, team: PLAYER_TEAM });
 
   const player = await createPlayer({ RAPIER, physicsWorld, terrain: FLAT_FLOOR, scene });
   const followCam = createFollowCamera(camera, grab, FLAT_FLOOR);
   followCam.snapTo(player.position());
-  player.setFacing(ALTAR_FACING);
+  player.setFacing(facing);
 
   const npcSystem = createNpcSystem({ scene, camera, terrain: FLAT_FLOOR, renderer });
   const ragdolls = createRagdolls({ RAPIER, physicsWorld, scene });
@@ -138,7 +150,7 @@ export async function createWalk({ scene, camera, renderer, grab, cast }) {
     followCam.setAiming(aiming);
     // До первого шага персонаж держит лицо к алтарю, дальше разворотом правит ход или прицел.
     if (facingHeld && player.speed() > 0) facingHeld = false;
-    player.setFacing(aiming ? followCam.azimuth() + Math.PI : (facingHeld ? ALTAR_FACING : null));
+    player.setFacing(aiming ? followCam.azimuth() + Math.PI : (facingHeld ? facing : null));
     pose.aiming = aiming;
     pose.aimPitch = followCam.aimPitch();
     pose.shotId = fighter.shotId;

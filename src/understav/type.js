@@ -371,9 +371,15 @@ function breath(elapsed, omega) {
   return Math.pow(0.5 + 0.5 * Math.sin(elapsed * omega), BREATH_SHARPNESS);
 }
 
-export async function createTypography({ event, rng, bounds }) {
+/**
+ * Набор афиши в готовую коробку.
+ *
+ * Коробку можно принести свою: `{ width, top, height }` в метрах мира. Сцена, у которой
+ * место под текст выбрано архитектурой, отдаёт его сюда, а не подгоняет габариты зала так,
+ * чтобы вывод совпал. Без неё коробка выводится из габаритов, как и раньше.
+ */
+export async function createTypography({ event, rng, bounds, box = resolveBox(bounds) }) {
   requireEventFields(event);
-  const box = resolveBox(bounds);
   const shared = {
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),

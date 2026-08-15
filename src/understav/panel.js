@@ -27,7 +27,18 @@ const formatValue = (value) => (Number.isInteger(value) ? String(value) : value.
 const meters = (value) => `${value.toFixed(1)} м`;
 const datasetKey = (hook) => `js${hook[0].toUpperCase()}${hook.slice(1)}`;
 
-export function createPanel({ root, opener, event, budget, controls, view, actions }) {
+export function createPanel({
+  root,
+  opener,
+  event,
+  budget,
+  controls,
+  view,
+  actions,
+  // Своя камера у каждой сцены, а пульт один: имя события приходит от того рига, чей
+  // кадр показан. По умолчанию это риг UNDERSTAV, и его вызов остаётся прежним.
+  spotEvent = CAMERA_SPOT_EVENT,
+}) {
   const pick = (hook) => root.querySelector(`[data-js-${hook}]`);
 
   pick('event').textContent = event.event;
@@ -38,7 +49,7 @@ export function createPanel({ root, opener, event, budget, controls, view, actio
   const spot = pick('spot');
   // Найденный руками кадр повторяют по трём числам, поэтому в свободном режиме пульт
   // показывает, где стоит камера.
-  window.addEventListener(CAMERA_SPOT_EVENT, (domEvent) => showSpot(domEvent.detail));
+  window.addEventListener(spotEvent, (domEvent) => showSpot(domEvent.detail));
 
   const stats = mountStats(pick('stats'));
   mountKnobs(pick('knobs'), controls);
