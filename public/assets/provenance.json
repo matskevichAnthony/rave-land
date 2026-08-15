@@ -153,6 +153,30 @@
       "license": "CC BY 4.0",
       "url": "https://commons.wikimedia.org/wiki/File:Thingiverse_-_Bastet.stl",
       "note": "Скан с Викисклада, прорежен с 16 520 до 2 999 треугольников и приведён к высоте 2.6 м."
+    },
+    "assets/models/egypt/sekhmet.glb": {
+      "title": "Сехмет, львиноголовая (скан музея)",
+      "source": "egypt",
+      "author": "Rama, Musee d art et d histoire de Geneve",
+      "license": "CC BY-SA 3.0 FR",
+      "url": "https://commons.wikimedia.org/wiki/File:Sekhmet-MAHG_20926-High_poly-001.stl",
+      "note": "Скан прорежен с 330 027 до 4 995 треугольников, высота 8 м. Лицензия с наследованием: производное от модели распространяется на тех же условиях, для промо это решение владельца."
+    },
+    "assets/models/egypt/amarna-princess.glb": {
+      "title": "Принцесса из Амарны (скан музея)",
+      "source": "egypt",
+      "author": "Statens Museum for Kunst",
+      "license": "Public domain",
+      "url": "https://commons.wikimedia.org/wiki/File:Ubekendt,_Prinsesse_fra_Amarna,_,_KAS2226,_Statens_Museum_for_Kunst,_3D_model.stl",
+      "note": "Скан прорежен с 999 998 до 5 000 треугольников, высота 7 м. Общественное достояние, ограничений нет."
+    },
+    "assets/models/egypt/ramesses-bust.glb": {
+      "title": "Рамсес II, бюст (скан музея)",
+      "source": "egypt",
+      "author": "Rama, Musee d art et d histoire de Geneve",
+      "license": "CC BY-SA 3.0 FR",
+      "url": "https://commons.wikimedia.org/wiki/File:Ramesses_II-MAHG_8934-High_poly-001.stl",
+      "note": "Скан прорежен с 363 598 до 4 996 треугольников, высота 6.5 м. Лицензия с наследованием."
     }
   }
 }
