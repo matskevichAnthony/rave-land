@@ -3,6 +3,7 @@ import { clone as cloneWithSkeleton } from 'three/addons/utils/SkeletonUtils.js'
 import { loadModelData } from '../objects/gltf.js';
 import { clipCoverage, createCharacterAnimator } from '../anim/character-animator.js';
 import { detectProfile } from '../anim/skeleton-profile.js';
+import { createSkinBounds } from '../anim/skin-bounds.js';
 
 const TARGET_HEIGHT = 1.75;
 
@@ -52,11 +53,19 @@ export async function buildGltfCharacter(src) {
       : 'недоступны'}`
     + `, ролей не найдено: ${coverage.missing.join(', ') || 'ни одной'}`);
 
+  // Границы идут следом за позой: их считает не аниматор, но обновлять их имеет смысл ровно
+  // тогда, когда поза изменилась, в том числе на прореженном шаге дальнего персонажа.
+  const updateBounds = createSkinBounds(model);
+
   return {
     object: root,
     model,
     profile,
-    update: animator.update,
+    update: (dt, pose) => {
+      const reloadSeconds = animator.update(dt, pose);
+      updateBounds();
+      return reloadSeconds;
+    },
     stopAnimation: () => animator.mixer.stopAllAction(),
   };
 }

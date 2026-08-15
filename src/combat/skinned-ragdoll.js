@@ -3,11 +3,23 @@ import * as THREE from 'three';
 const BODY_DENSITY = 700;
 const LINEAR_DAMPING = 0.35;
 const ANGULAR_DAMPING = 0.6;
-const CORPSE_MEMBERSHIP = 0x0002;
-const CORPSE_COLLISION_GROUPS = (CORPSE_MEMBERSHIP << 16) | (0xffff & ~CORPSE_MEMBERSHIP);
+// Части трупа не сталкивались между собой вовсе, поэтому нога свободно уходила внутрь груди и
+// тело складывалось само в себя. Туловище и конечности разведены по двум группам: нога
+// встречает грудь, но не вторую ногу, а сегменты туловища не распирают друг друга. Каждая
+// группа не сталкивается сама с собой и сталкивается со всем остальным миром.
+const TORSO_GROUP = 0x0002;
+const LIMB_GROUP = 0x0004;
+const TORSO_COLLISION_GROUPS = (TORSO_GROUP << 16) | (0xffff & ~TORSO_GROUP);
+const LIMB_COLLISION_GROUPS = (LIMB_GROUP << 16) | (0xffff & ~LIMB_GROUP);
 const FRICTION = 0.7;
-const IMPULSE_PER_TOTAL_MASS = 3;
+// Толчок мерится скоростью задетой части, поэтому импульс берётся от её массы. От общей
+// массы кисть весом в треть килограмма получала под сотню метров в секунду и за один шаг
+// физики оказывалась под рельефом, утаскивая шарнирами половину трупа.
+const IMPULSE_SPEED = 6;
 const UPWARD_KICK = 0.35;
+// Рельеф это трёхмерная сетка без толщины: провалившаяся сквозь неё капсула наружу уже не
+// вернётся. Мягкий CCD смотрит вперёд по пути тела и стоит куда меньше полного.
+const SOFT_CCD_PREDICTION = 0.3;
 // Труп это 14-17 динамических тел с шарнирами, самая дорогая вещь на сцене. В перестрелке
 // они появляются пачками, поэтому и потолок ниже, и улёгшиеся замораживаются.
 const MAX_CORPSES = 8;
@@ -54,11 +66,15 @@ function classifySlot(name) {
   return null;
 }
 
+// Сторону в скелетах пишут по-разному: LeftHand, Hand.L, L_Hand. Последний вариант здесь не
+// читался, а часть без стороны в ragdoll не попадает вовсе: руки и ноги оставались без тел и
+// торчали из лежащего трупа в позе стоя, то есть наполовину уходили под рельеф.
+const SIDE_LEFT = /left|l[._-]?$|(^|[^a-z])l([^a-z]|$)/;
+const SIDE_RIGHT = /right|r[._-]?$|(^|[^a-z])r([^a-z]|$)/;
+
 function sideOf(name) {
-  if (/left/.test(name)) return 'L';
-  if (/right/.test(name)) return 'R';
-  if (/l[._-]?$/.test(name)) return 'L';
-  if (/r[._-]?$/.test(name)) return 'R';
+  if (SIDE_LEFT.test(name)) return 'L';
+  if (SIDE_RIGHT.test(name)) return 'R';
   return '';
 }
 
@@ -147,13 +163,16 @@ export function createSkinnedRagdolls({ RAPIER, physicsWorld, scene }) {
         .setTranslation(center.x, center.y, center.z)
         .setRotation(quaternion)
         .setLinearDamping(LINEAR_DAMPING)
-        .setAngularDamping(ANGULAR_DAMPING),
+        .setAngularDamping(ANGULAR_DAMPING)
+        .setSoftCcdPrediction(SOFT_CCD_PREDICTION),
     );
+    // Конечность это то, чего у тела по две, поэтому отдельного списка конечностей не нужно.
+    const limb = SIDED_SLOTS.has(part.slot);
     physicsWorld.createCollider(
       RAPIER.ColliderDesc.capsule(halfHeight, radius)
         .setDensity(BODY_DENSITY)
         .setFriction(FRICTION)
-        .setCollisionGroups(CORPSE_COLLISION_GROUPS),
+        .setCollisionGroups(limb ? LIMB_COLLISION_GROUPS : TORSO_COLLISION_GROUPS),
       body,
     );
 
@@ -189,17 +208,20 @@ export function createSkinnedRagdolls({ RAPIER, physicsWorld, scene }) {
         toBodyLocal(part.position, parentPart.center, parentPart.quaternion),
         toBodyLocal(part.position, part.center, part.quaternion),
       );
-      physicsWorld.createImpulseJoint(joint, parentPart.body, part.body, true);
+      // Соседи по шарниру перекрываются по построению: бедро начинается внутри таза. Держит
+      // их шарнир, и контакты им только мешают, расталкивая тело изнутри.
+      physicsWorld
+        .createImpulseJoint(joint, parentPart.body, part.body, true)
+        .setContactsEnabled(false);
     }
 
     const struck =
       (hitPoint && nearestPart(parts, hitPoint)) ??
       parts.find((part) => part.slot === 'chest') ??
       parts[0];
-    const totalMass = parts.reduce((sum, part) => sum + part.body.mass(), 0);
     const kick = new THREE.Vector3(impulse.x, impulse.y + UPWARD_KICK, impulse.z)
       .normalize()
-      .multiplyScalar(totalMass * IMPULSE_PER_TOTAL_MASS);
+      .multiplyScalar(struck.body.mass() * IMPULSE_SPEED);
     struck.body.applyImpulse(kick, true);
 
     corpses.push({ root: characterRoot, parts, age: 0, frozen: false });
