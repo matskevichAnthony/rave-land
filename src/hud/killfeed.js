@@ -1,8 +1,11 @@
 import { teamColor } from '../combat/teams.js';
+import { ensure } from '../ui/dom.js';
 
 const ROW_LIFETIME_MS = 5000;
 const MAX_ROWS = 4;
 const KILL_MARK = '✕';
+
+const MARKUP = '<div class="killfeed" data-killfeed></div>';
 
 /**
  * Кто кого убил. Пустой киллфид не занимает места, поэтому прятать его отдельно не нужно.
@@ -11,7 +14,7 @@ const KILL_MARK = '✕';
  * говорят, а цвет читается краем глаза.
  */
 export function createKillfeed() {
-  const element = document.querySelector('[data-killfeed]');
+  const element = ensure('[data-killfeed]', MARKUP);
 
   function nameOf(fighter) {
     const span = document.createElement('span');

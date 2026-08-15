@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { on } from '../combat/events.js';
 import { teamColor, teamName } from '../combat/teams.js';
 import { createKillfeed } from './killfeed.js';
+import { ensure } from '../ui/dom.js';
 
 /**
  * Что игрок должен видеть про бой: своё здоровье, откуда прилетело и как идёт счёт.
@@ -16,17 +17,47 @@ const ARROW_SECONDS = 1.4;
 const FLASH_SECONDS = 0.35;
 const HEALTH_LOW_SHARE = 0.35;
 
+const BATTLE_MARKUP = `
+  <div class="battle" data-battle hidden>
+    <div class="battle__title">Перестрелка</div>
+    <div class="battle__score" data-score></div>
+  </div>
+`;
+
+const VITALS_MARKUP = `
+  <div class="vitals" data-vitals hidden>
+    <div class="vitals__bar"><span class="vitals__fill" data-health-fill></span></div>
+    <div class="vitals__line">
+      <b class="vitals__hp" data-health-value>100</b>
+      <span class="vitals__frags">фраги <b data-frags>0</b></span>
+    </div>
+    <div class="vitals__dead" data-dead hidden>
+      Тебя убили. Возрождение через <b data-respawn>5</b>
+    </div>
+  </div>
+`;
+
+// Слой попаданий берётся целиком: сквозной клик и обрезка по краям кадра держатся на обёртке,
+// а без неё вспышка накрыла бы страницу и съела мышь.
+const DAMAGE_MARKUP = `
+  <div class="damage" aria-hidden="true">
+    <span class="damage__flash" data-damage-flash></span>
+    <div class="damage__arrows" data-damage-arrows></div>
+  </div>
+`;
+
 export function createBattleHud({ camera, scoreboard, playerFighter }) {
-  const root = document.querySelector('[data-battle]');
+  const root = ensure('[data-battle]', BATTLE_MARKUP);
   const scoreRows = root.querySelector('[data-score]');
-  const vitals = document.querySelector('[data-vitals]');
+  const vitals = ensure('[data-vitals]', VITALS_MARKUP);
   const fill = vitals.querySelector('[data-health-fill]');
   const value = vitals.querySelector('[data-health-value]');
   const frags = vitals.querySelector('[data-frags]');
   const dead = vitals.querySelector('[data-dead]');
   const respawn = vitals.querySelector('[data-respawn]');
-  const flash = document.querySelector('[data-damage-flash]');
-  const arrowsRoot = document.querySelector('[data-damage-arrows]');
+  const damage = ensure('.damage', DAMAGE_MARKUP);
+  const flash = damage.querySelector('[data-damage-flash]');
+  const arrowsRoot = damage.querySelector('[data-damage-arrows]');
   const killfeed = createKillfeed();
 
   const arrows = Array.from({ length: ARROW_COUNT }, () => {
