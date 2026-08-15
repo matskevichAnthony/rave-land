@@ -40,7 +40,7 @@ const SCENE_MODULES = [
   { name: 'createEffects', file: 'effects.js', load: () => import('./effects.js') },
 ];
 
-const view = { mode: 'still', framing: 'story', countdown: true };
+const view = { mode: 'still', framing: 'full', countdown: false };
 
 boot().catch(showError);
 

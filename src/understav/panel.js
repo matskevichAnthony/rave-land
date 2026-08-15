@@ -48,9 +48,10 @@ export function createPanel({ root, opener, event, budget, controls, view, actio
   opener.addEventListener('click', toggleDeck);
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('copy-seed').addEventListener('click', actions.copySeed);
-  pick('countdown').addEventListener('change', (domEvent) => {
-    actions.setCountdown(domEvent.target.checked);
-  });
+  // Галочку ставит вид, а не разметка: иначе состояние отсчёта живёт в двух местах и разъезжается.
+  const countdown = pick('countdown');
+  countdown.checked = view.countdown;
+  countdown.addEventListener('change', () => actions.setCountdown(countdown.checked));
   pick('shoot').addEventListener('click', () => actions.shoot(takeSeconds()));
   pick('capture').addEventListener('click', actions.capture);
   pick('guest').addEventListener('click', actions.guest);
