@@ -137,6 +137,22 @@
       "license": "CC-BY 3.0",
       "url": "https://poly.pizza/m/0wynxxLgrpX",
       "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 7.0 м."
+    },
+    "assets/models/egypt/colossus-ramesses.glb": {
+      "title": "Колосс Рамсеса II (скан)",
+      "source": "egypt",
+      "author": "Dejp3",
+      "license": "CC BY 4.0",
+      "url": "https://commons.wikimedia.org/wiki/File:Colossal_sculpture_of_Ramesses_II.stl",
+      "note": "Фотограмметрический скан с Викисклада, прорежен с 500 586 до 4 490 треугольников и приведён к высоте 9 м."
+    },
+    "assets/models/egypt/bastet.glb": {
+      "title": "Бастет (скан)",
+      "source": "egypt",
+      "author": "Gargi",
+      "license": "CC BY 4.0",
+      "url": "https://commons.wikimedia.org/wiki/File:Thingiverse_-_Bastet.stl",
+      "note": "Скан с Викисклада, прорежен с 16 520 до 2 999 треугольников и приведён к высоте 2.6 м."
     }
   }
 }
