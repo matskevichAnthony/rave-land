@@ -29,7 +29,7 @@ function clampToWorld(point, worldRadius) {
   return { x: point.x * scale, z: point.z * scale };
 }
 
-export function createWanderer({ seed, home: rawHome, worldRadius }) {
+export function createWanderer({ seed, home: rawHome, worldRadius, pathFree }) {
   const random = mulberry32(seed);
   const home = clampToWorld(rawHome, worldRadius);
   const position = { x: home.x, z: home.z };
@@ -94,8 +94,17 @@ export function createWanderer({ seed, home: rawHome, worldRadius }) {
     }
 
     const step = Math.min(speed * dt, distance);
-    position.x += (dx / distance) * step;
-    position.z += (dz / distance) * step;
+    const dirX = dx / distance;
+    const dirZ = dz / distance;
+    // Мир один на всех: гуляющий обязан упираться в ту же геометрию, что держит игрока,
+    // иначе он проходит сквозь колонну у него на глазах. Уперся, значит гулять тут некуда.
+    const free = pathFree ? pathFree(position.x, position.z, dirX, dirZ, step) : step;
+    if (free <= 0) {
+      startIdle();
+      return snapshot();
+    }
+    position.x += dirX * free;
+    position.z += dirZ * free;
     yaw = lerpAngle(yaw, Math.atan2(dx, dz), Math.min(YAW_TURN_RATE * dt, 1));
     return snapshot();
   }
