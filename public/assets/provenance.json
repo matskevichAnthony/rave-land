@@ -97,6 +97,46 @@
       "model": "модели стволов из GTA San Andreas, свой импортёр .dff и .txd",
       "rig": "нет, ствол это статичная модель в руке персонажа",
       "license": "ассеты Rockstar: локальный прототип, публикация запрещена (F-041)"
+    },
+    "assets/models/egypt/anubis-statue.glb": {
+      "title": "Статуя Анубиса",
+      "source": "egypt",
+      "author": "Zach Miller",
+      "license": "CC-BY 3.0",
+      "url": "https://poly.pizza/m/9iPeQxL30oq",
+      "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 6.0 м."
+    },
+    "assets/models/egypt/step-pyramid.glb": {
+      "title": "Ступенчатая пирамида",
+      "source": "egypt",
+      "author": "Jarlan Perez",
+      "license": "CC-BY 3.0",
+      "url": "https://poly.pizza/m/5fksyItujX1",
+      "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 14.0 м."
+    },
+    "assets/models/egypt/stone-statue.glb": {
+      "title": "Каменная статуя",
+      "source": "egypt",
+      "author": "Zsky",
+      "license": "CC-BY 3.0",
+      "url": "https://poly.pizza/m/0Mkdl3SJDT",
+      "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 3.0 м."
+    },
+    "assets/models/egypt/camel.glb": {
+      "title": "Верблюд",
+      "source": "egypt",
+      "author": "Poly by Google",
+      "license": "CC-BY 3.0",
+      "url": "https://poly.pizza/m/1IBKBalN1yt",
+      "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 2.2 м."
+    },
+    "assets/models/egypt/palm.glb": {
+      "title": "Пальма",
+      "source": "egypt",
+      "author": "Poly by Google",
+      "license": "CC-BY 3.0",
+      "url": "https://poly.pizza/m/0wynxxLgrpX",
+      "note": "Скачано с poly.pizza, атрибуция обязательна. Габарит в файле не в метрах, ставить с целевой высотой 7.0 м."
     }
   }
 }
