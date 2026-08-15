@@ -63,8 +63,8 @@ BVH (Mesh2Motion, Quaternius, CMU) — см. `docs/research/3d-services-2026.md`
 ## Шаг 4. Постобработка (обязательно)
 
 ```bash
-cd tools && npm i   # один раз
-node tools/postprocess.mjs <вход.glb> public/models/<имя>-final.glb
+(cd tools && npm i)   # один раз
+node tools/postprocess.mjs <вход.glb> public/assets/models/<имя>-final.glb
 ```
 
 Без неё GLB весит десятки МБ; после — webp-текстуры + квантизация.
@@ -90,7 +90,8 @@ $BLENDER --background --python tools/gen/props.py -- --prop barrel \
     --out public/assets/models/props/barrel.glb --seed 7 --render barrel.png
 ```
 
-Пропы: `speaker-stack`, `crate`, `barrel`, `barrier`. Сид меняет пропорции и оттенки.
+Список пропов держит `public/assets/models/props/manifest.json`, его пишет сам `props.py`:
+второго перечня рядом заводить не надо. Сид меняет пропорции и оттенки.
 В мир кладутся записью `type: model` в `public/world.json`, коллайдер считается по bbox.
 Подробности и когда вместо скрипта звать генератор мешей: `docs/PIPELINE.md` §4.6, F-020.
 
