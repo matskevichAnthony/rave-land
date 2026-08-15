@@ -119,7 +119,7 @@ export const BOUNDS = { radius: 26, height: 26 };
  * держит вершину ниже нулевого градуса, то есть под самой надписью.
  */
 export const VIEW = {
-  poster: { position: [36, 15.5, 48], target: [-4, 13, -26] },
+  poster: { position: [17, 14.5, 52], target: [3, 12, -22] },
   entry: { position: [28, 7, 62], target: [-2, 12, -30] },
   walk: { position: [12, 0, 26], heading: Math.PI },
 };

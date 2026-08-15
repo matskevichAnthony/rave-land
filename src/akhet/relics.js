@@ -82,7 +82,7 @@ const RELICS = [
     model: 'ramesses-bust.glb', stone: 'granite', height: 9.5, x: 34, z: -34,
     turn: -0.08, sink: 0.06, fire: true,
   },
-  { model: 'bastet.glb', stone: 'granite', height: 7, x: 4, z: -4, turn: 1.6, sink: 0.04 },
+  { model: 'bastet.glb', stone: 'granite', height: 7, x: 12, z: 5, turn: 2.9, sink: 0.04 },
 
   { model: 'anubis-statue.glb', height: 22, x: 37, z: -10, turn: -0.6, fire: true },
   { model: 'anubis-statue.glb', height: 13, x: -3, z: -20, turn: 0.7, sink: 0.15, fire: true },
