@@ -50,6 +50,18 @@ async function boot() {
   const player = await createPlayer({ RAPIER, physicsWorld, terrain, scene });
   const followCam = createFollowCamera(camera, renderer.domElement, terrain);
   followCam.snapTo(player.position());
+
+  // Мир сериализуется одной функцией на всех. Пока их было две, редактор не знал про точки
+  // респавна и стирал их при каждом сохранении, а консоль теряла версию и время суток.
+  const worldSnapshot = () => ({
+    version: 1,
+    timeOfDay: stage.timeOfDay,
+    terrain: terrain.params,
+    objects: registry.serializeEntries(),
+    npcs: npcSystem.serialize(),
+    spawns: worldState.spawns ?? [],
+  });
+
   const editor = createEditor({
     scene,
     camera,
@@ -60,6 +72,7 @@ async function boot() {
     player,
     npcSystem,
     stage,
+    worldSnapshot,
   });
 
   const ragdolls = createRagdolls({ RAPIER, physicsWorld, scene });
@@ -81,7 +94,7 @@ async function boot() {
 
   const combat = createPlayerCombat({
     camera,
-    renderer,
+    domElement: renderer.domElement,
     player,
     followCam,
     arena,
@@ -113,12 +126,7 @@ async function boot() {
     playerMesh: player.mesh,
     playerPosition: () => player.position(),
     heightAt: (x, z) => terrain.heightAt(x, z),
-    world: () => ({
-      terrain: terrain.params,
-      objects: registry.serializeEntries(),
-      npcs: npcSystem.serialize(),
-      spawns: worldState.spawns ?? [],
-    }),
+    world: worldSnapshot,
     battle: {
       toggle: toggleBattle,
       stats: () => arena.stats(),

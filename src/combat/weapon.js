@@ -20,12 +20,12 @@ const WEAPON_KEY = 'KeyG';
 const TARGET_SCAN_INTERVAL = 0.1;
 
 export function createPlayerCombat({
-  camera, renderer, player, followCam, arena, npcSystem, isEditing,
+  camera, domElement, player, followCam, arena, npcSystem, isEditing,
 }) {
   const mount = createGunMount(player.mesh);
   const hud = createCombatHud();
   const crosshair = createCrosshair();
-  const input = createPlayerIntent({ domElement: renderer.domElement, isEditing });
+  const input = createPlayerIntent({ domElement, isEditing });
   const muzzlePoint = new THREE.Vector3();
   const lookDirection = new THREE.Vector3();
   const lookPoint = new THREE.Vector3();
@@ -58,7 +58,7 @@ export function createPlayerCombat({
   }
 
   function refreshCrosshair() {
-    crosshair.setActive(armed && document.pointerLockElement === renderer.domElement);
+    crosshair.setActive(armed && document.pointerLockElement === domElement);
   }
 
   function setArmed(next) {
