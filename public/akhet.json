@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "event": "AKHET",
+  "tagline": "++ SUN INSIDE THE STONE ++",
+  "date": "2026-10-31",
+  "dateLabel": "31.10.2026",
+  "todayLabel": "СЕГОДНЯ",
+  "lineup": [
+    "ANTON+MATZKAIM",
+    "MARK OG",
+    "ALL NIGHT LONG"
+  ],
+  "cast": {
+    "crowd": 6,
+    "radius": [8, 16],
+    "teams": ["cops", "aztecas"],
+    "spawnRadius": 12,
+    "pool": [
+      "assets/models/gta-lady.glb",
+      "assets/models/gta-dj.glb",
+      "assets/models/gta-jogger.glb",
+      "assets/models/gta-triad.glb",
+      "assets/models/bold-raver.glb",
+      "assets/models/masked-raver.glb",
+      "assets/models/techno-raver.glb"
+    ]
+  },
+  "seed": "e7c41a0b",
+  "style": "sun-cut-dark"
+}
