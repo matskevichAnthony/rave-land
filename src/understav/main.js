@@ -72,6 +72,7 @@ async function boot() {
 
   const panel = createPanel({
     root: document.querySelector('[data-js-deck]'),
+    opener: document.querySelector('[data-js-deck-toggle]'),
     event,
     budget: FRAME_BUDGET,
     controls: effects.controls,

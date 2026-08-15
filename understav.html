@@ -14,7 +14,15 @@
     <p class="stage__error" data-js-error hidden></p>
   </main>
 
-  <aside class="deck" data-js-deck>
+  <button
+    type="button"
+    class="deck-toggle"
+    data-js-deck-toggle
+    aria-controls="deck"
+    aria-expanded="true"
+  >Скрыть</button>
+
+  <aside class="deck" id="deck" data-js-deck>
     <header class="deck__head">
       <h1 class="deck__title" data-js-event></h1>
       <p class="deck__line" data-js-tagline></p>
@@ -110,8 +118,8 @@
     </nav>
 
     <p class="deck__hint">
-      Пульт прячется клавишей H. Запись идёт с холста, поэтому ни пульт, ни замер в файл
-      не попадают.
+      Пульт прячется кнопкой в углу и клавишей H. Запись идёт с холста, поэтому ни пульт,
+      ни замер в файл не попадают.
     </p>
   </aside>
 

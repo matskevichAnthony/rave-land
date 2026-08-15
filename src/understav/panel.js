@@ -19,6 +19,7 @@ const KNOB_DEFAULTS = { min: 0, max: 1, step: 0.01 };
 const DEFAULT_TAKE_SECONDS = 8;
 const MAX_TAKE_SECONDS = 60;
 const HIDDEN_CLASS = 'deck--hidden';
+const TOGGLE_LABEL = { shown: 'Скрыть', hidden: 'Пульт' };
 const LOCKED_WHILE_RECORDING = '[data-js-framing], [data-js-new-seed]';
 const OVER_CLASS = 'meter__value--over';
 
@@ -26,7 +27,7 @@ const formatValue = (value) => (Number.isInteger(value) ? String(value) : value.
 const meters = (value) => `${value.toFixed(1)} м`;
 const datasetKey = (hook) => `js${hook[0].toUpperCase()}${hook.slice(1)}`;
 
-export function createPanel({ root, event, budget, controls, view, actions }) {
+export function createPanel({ root, opener, event, budget, controls, view, actions }) {
   const pick = (hook) => root.querySelector(`[data-js-${hook}]`);
 
   pick('event').textContent = event.event;
@@ -44,6 +45,7 @@ export function createPanel({ root, event, budget, controls, view, actions }) {
   wireChoice('mode', view.mode, actions.setMode);
   wireChoice('framing', view.framing, actions.setFraming);
 
+  opener.addEventListener('click', toggleDeck);
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('copy-seed').addEventListener('click', actions.copySeed);
   pick('countdown').addEventListener('change', (domEvent) => {
@@ -53,6 +55,12 @@ export function createPanel({ root, event, budget, controls, view, actions }) {
   pick('capture').addEventListener('click', actions.capture);
   pick('guest').addEventListener('click', actions.guest);
   pick('battle').addEventListener('click', actions.battle);
+
+  function toggleDeck() {
+    const hidden = root.classList.toggle(HIDDEN_CLASS);
+    opener.textContent = hidden ? TOGGLE_LABEL.hidden : TOGGLE_LABEL.shown;
+    opener.setAttribute('aria-expanded', String(!hidden));
+  }
 
   function showSpot(place) {
     spot.hidden = !place;
@@ -110,9 +118,7 @@ export function createPanel({ root, event, budget, controls, view, actions }) {
       // этого не переживает, поэтому на время записи кнопки закрыты.
       for (const locked of root.querySelectorAll(LOCKED_WHILE_RECORDING)) locked.disabled = active;
     },
-    toggle() {
-      root.classList.toggle(HIDDEN_CLASS);
-    },
+    toggle: toggleDeck,
   };
 }
 
