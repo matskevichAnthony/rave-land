@@ -1,14 +1,27 @@
+import { ensure } from '../ui/dom.js';
+
 const LOW_AMMO_SHARE = 0.25;
 
+const MARKUP = `
+  <div class="combat" data-combat hidden>
+    <div class="combat__weapon" data-weapon-name></div>
+    <div class="combat__ammo" data-ammo>
+      <b class="combat__mag" data-ammo-mag>0</b>
+      <span class="combat__reserve" data-ammo-reserve>0</span>
+    </div>
+    <div class="combat__state" data-reloading hidden>Перезарядка</div>
+  </div>
+`;
+
 /**
- * Панель ствола: оружие, боезапас, перезарядка. Разметка лежит в index.html.
+ * Панель ствола: оружие, боезапас, перезарядка. Разметку берёт со страницы или заводит сам.
  *
  * Значения приходят каждый кадр, а в DOM уезжают только изменившиеся: запись в textContent
  * заставляет браузер пересчитывать разметку, и делать это шестьдесят раз в секунду ради
  * одного и того же числа не за что.
  */
 export function createCombatHud() {
-  const element = document.querySelector('[data-combat]');
+  const element = ensure('[data-combat]', MARKUP);
   const weaponName = element.querySelector('[data-weapon-name]');
   const ammo = element.querySelector('[data-ammo]');
   const magazine = element.querySelector('[data-ammo-mag]');

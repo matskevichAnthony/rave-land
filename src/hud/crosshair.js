@@ -1,4 +1,15 @@
 import { PLAYER } from '../config.js';
+import { ensure } from '../ui/dom.js';
+
+const MARKUP = `
+  <div class="crosshair" data-crosshair hidden>
+    <span class="crosshair__dash crosshair__dash--up"></span>
+    <span class="crosshair__dash crosshair__dash--down"></span>
+    <span class="crosshair__dash crosshair__dash--left"></span>
+    <span class="crosshair__dash crosshair__dash--right"></span>
+    <span class="crosshair__marker"></span>
+  </div>
+`;
 
 const REFERENCE_RANGE = 35;
 const MIN_SPREAD = 5;
@@ -22,7 +33,7 @@ function baseSpread({ accuracy, range }) {
 }
 
 export function createCrosshair() {
-  const element = document.querySelector('[data-crosshair]');
+  const element = ensure('[data-crosshair]', MARKUP);
   let base = 0;
   let motion = 0;
   let shot = 0;
