@@ -1,0 +1,83 @@
+/* Экранное управление прогулкой: стик и кнопки поверх кадра, полупрозрачные, чтобы сцена
+   читалась сквозь них. Слой ловит касания сам, поэтому страница под пальцем не едет. */
+.touch-pad {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-pad__stick {
+  position: absolute;
+  left: var(--stick-x);
+  top: var(--stick-y);
+  width: calc(var(--stick-radius) * 2);
+  height: calc(var(--stick-radius) * 2);
+  margin: calc(var(--stick-radius) * -1) 0 0 calc(var(--stick-radius) * -1);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(5, 5, 10, 0.24);
+}
+
+.touch-pad__knob {
+  --knob-size: 46px;
+
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--knob-size);
+  height: var(--knob-size);
+  margin: calc(var(--knob-size) / -2) 0 0 calc(var(--knob-size) / -2);
+  transform: translate(var(--knob-x, 0), var(--knob-y, 0));
+  border: 1px solid var(--bone);
+  border-radius: 50%;
+  background: rgba(203, 194, 178, 0.2);
+}
+
+.touch-pad__bank {
+  position: absolute;
+  right: 20px;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.touch-pad__button {
+  --edge: var(--line);
+
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  border: 1px solid var(--edge);
+  border-radius: 50%;
+  background: rgba(5, 5, 10, 0.34);
+  color: var(--bone);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Наведения на телефоне нет: базовое правило кнопок красит рамку после касания и оставляет
+   её висеть, поэтому пад светится только настоящим нажатием. */
+.touch-pad__button:hover {
+  border-color: var(--edge);
+}
+
+.touch-pad__button--fire {
+  --edge: rgba(255, 77, 13, 0.4);
+
+  width: 88px;
+  height: 88px;
+  font-size: 13px;
+}
+
+.touch-pad__button--pressed {
+  --edge: var(--ember);
+
+  background: rgba(255, 77, 13, 0.18);
+  color: var(--ember);
+}

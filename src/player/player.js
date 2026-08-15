@@ -121,7 +121,7 @@ export async function createPlayer({ RAPIER, physicsWorld, terrain, scene }) {
       .multiplyScalar(x || z ? speed * dt : 0);
 
     const groundedBefore = controller.computedGrounded();
-    if (groundedBefore && input.isDown('Space')) {
+    if (groundedBefore && input.jumping()) {
       verticalVelocity = PLAYER.jumpSpeed;
       airTime = Number.EPSILON;
     }

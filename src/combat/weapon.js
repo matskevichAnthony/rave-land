@@ -5,6 +5,7 @@ import { createCombatHud } from '../hud/combat-hud.js';
 import { createCrosshair } from '../hud/crosshair.js';
 import { createPlayerIntent } from '../player/intent.js';
 import { isTyping } from '../player/input.js';
+import { isPointerLocked, pointerLockSupported } from '../player/pointer-lock.js';
 import { isHostile } from './teams.js';
 import { on } from './events.js';
 
@@ -32,6 +33,7 @@ export function createPlayerCombat({
   const aimDirection = new THREE.Vector3(0, 0, 1);
   let weapon = WEAPONS[0];
   let armed = false;
+  let padAim = false;
   let scanLeft = 0;
   let underCrosshair = null;
 
@@ -57,8 +59,14 @@ export function createPlayerCombat({
     });
   }
 
+  /**
+   * Перекрестье видно, когда взгляд заперт в центре кадра.
+   *
+   * С захватом мыши это сам захват. Там, где Pointer Lock нет, камера всё равно крутится
+   * только перетаскиванием по слою обзора, и центр кадра остаётся точкой прицела.
+   */
   function refreshCrosshair() {
-    crosshair.setActive(armed && document.pointerLockElement === domElement);
+    crosshair.setActive(armed && (!pointerLockSupported() || isPointerLocked(domElement)));
   }
 
   function setArmed(next) {
@@ -157,8 +165,21 @@ export function createPlayerCombat({
 
   equip(weapon);
 
+  /**
+   * Кнопки виртуального пада: прицел ведёт ствол, спуск стреляет.
+   *
+   * Ствол берётся и убирается только на смене состояния кнопки, а не каждый кадр: иначе пад
+   * перебивал бы клавишу на планшете с клавиатурой.
+   */
+  function setPadButtons({ fire, aim }) {
+    if (aim !== padAim) setArmed(aim && fighter.alive);
+    padAim = aim;
+    input.setPadTrigger(fire && armed);
+  }
+
   return {
     update,
+    setPadButtons,
     fighter,
     get armed() {
       return armed && fighter.alive;

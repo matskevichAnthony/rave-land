@@ -16,9 +16,12 @@ export function createPlayerIntent({ domElement, isEditing }) {
   let triggerHeld = false;
   let triggerPressed = false;
   let reloadPressed = false;
+  let padHeld = false;
 
   domElement.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0 || isEditing()) return;
+    // Палец по слою обзора крутит камеру и жмёт кнопки пада, спуск на сенсоре только на паде:
+    // иначе каждый доворот взгляда уходил бы в очередь.
+    if (event.button !== 0 || event.pointerType === 'touch' || isEditing()) return;
     triggerHeld = true;
     triggerPressed = true;
   });
@@ -40,12 +43,23 @@ export function createPlayerIntent({ domElement, isEditing }) {
    */
   function write(intent, { armed, automatic, aimPitch }) {
     intent.aim = armed;
-    intent.fire = armed && (automatic ? triggerHeld : triggerPressed);
+    intent.fire = armed && (automatic ? triggerHeld || padHeld : triggerPressed);
     intent.reload = armed && reloadPressed;
     intent.aimPitch = aimPitch;
     triggerPressed = false;
     reloadPressed = false;
   }
 
-  return { write };
+  /**
+   * Спуск с кнопки виртуального пада.
+   *
+   * Удержание живёт отдельно от мышиного: отпускание пальца где-то на слое обзора приходит
+   * тем же `pointerup` и гасило бы очередь, хотя кнопку никто не отпускал.
+   */
+  function setPadTrigger(held) {
+    if (held && !padHeld) triggerPressed = true;
+    padHeld = held;
+  }
+
+  return { write, setPadTrigger };
 }

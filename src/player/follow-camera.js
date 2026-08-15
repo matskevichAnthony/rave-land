@@ -1,8 +1,17 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CAMERA } from '../config.js';
+import {
+  exitPointerLock,
+  isPointerLocked,
+  pointerLockSupported,
+  requestPointerLock,
+} from './pointer-lock.js';
 
-const SENSITIVITY = 0.0026;
+const MOUSE_SENSITIVITY = 0.0026;
+// Радиан на пиксель перетаскивания: свайп во всю ширину телефона разворачивает примерно на
+// пол-оборота, полный оборот выходит за два свайпа.
+const DRAG_SENSITIVITY = 0.007;
 const PITCH_MIN = -0.5;
 const PITCH_MAX = 1.25;
 const START_PITCH = 0.42;
@@ -34,17 +43,51 @@ export function createFollowCamera(camera, domElement, terrain) {
   orbit.maxDistance = 200;
   orbit.enabled = false;
 
-  domElement.addEventListener('click', () => {
-    if (!editing && document.pointerLockElement !== domElement) {
-      domElement.requestPointerLock();
-    }
-  });
+  function turn(deltaX, deltaY, sensitivity) {
+    yaw -= deltaX * sensitivity;
+    pitch = clamp(pitch + deltaY * sensitivity, PITCH_MIN, PITCH_MAX);
+  }
 
-  window.addEventListener('mousemove', (event) => {
-    if (editing || document.pointerLockElement !== domElement) return;
-    yaw -= event.movementX * SENSITIVITY;
-    pitch = clamp(pitch + event.movementY * SENSITIVITY, PITCH_MIN, PITCH_MAX);
-  });
+  function listenLock() {
+    domElement.addEventListener('click', () => {
+      if (!editing && !isPointerLocked(domElement)) requestPointerLock(domElement);
+    });
+    window.addEventListener('mousemove', (event) => {
+      if (editing || !isPointerLocked(domElement)) return;
+      turn(event.movementX, event.movementY, MOUSE_SENSITIVITY);
+    });
+  }
+
+  /** Там, где захвата мыши нет, взгляд крутится перетаскиванием по самому слою обзора. */
+  function listenDrag() {
+    let dragId = null;
+    let lastX = 0;
+    let lastY = 0;
+
+    domElement.addEventListener('pointerdown', (event) => {
+      // Кнопки виртуального пада лежат внутри слоя: нажатие по ним взгляд не крутит.
+      if (editing || dragId !== null || event.target !== domElement) return;
+      dragId = event.pointerId;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      domElement.setPointerCapture(dragId);
+    });
+    domElement.addEventListener('pointermove', (event) => {
+      if (event.pointerId !== dragId) return;
+      turn(event.clientX - lastX, event.clientY - lastY, DRAG_SENSITIVITY);
+      lastX = event.clientX;
+      lastY = event.clientY;
+    });
+    const release = (event) => {
+      if (event.pointerId !== dragId) return;
+      domElement.releasePointerCapture(dragId);
+      dragId = null;
+    };
+    domElement.addEventListener('pointerup', release);
+    domElement.addEventListener('pointercancel', release);
+  }
+
+  if (pointerLockSupported()) listenLock(); else listenDrag();
 
   window.addEventListener('wheel', (event) => {
     if (editing) return;
@@ -85,7 +128,7 @@ export function createFollowCamera(camera, domElement, terrain) {
     editing = nextEditing;
     orbit.enabled = editing;
     if (editing) {
-      document.exitPointerLock();
+      exitPointerLock();
       orbit.target.copy(target);
     } else {
       offset.subVectors(camera.position, orbit.target);
@@ -100,6 +143,10 @@ export function createFollowCamera(camera, domElement, terrain) {
     follow,
     snapTo,
     setEditMode,
+    // Сдвиг взгляда с виртуального пада приходит в тех же пикселях, что и перетаскивание.
+    dragLook: (deltaX, deltaY) => {
+      if (!editing) turn(deltaX, deltaY, DRAG_SENSITIVITY);
+    },
     setAiming: (next) => {
       aiming = next;
     },

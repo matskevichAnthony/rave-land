@@ -9,6 +9,7 @@ import { createInfoCard } from './info-card.js';
 import { createGunMount } from '../combat/gun-mount.js';
 import { CIVIL } from '../combat/teams.js';
 import { STANCE } from '../combat/fighters.js';
+import { isPointerLocked } from '../player/pointer-lock.js';
 import { COMBAT } from '../config.js';
 
 const WORLD_RADIUS_FACTOR = 0.45;
@@ -281,7 +282,7 @@ export function createNpcSystem({ scene, camera, terrain, renderer }) {
 
   renderer.domElement.addEventListener('pointerdown', (event) => {
     if (event.button !== 0 || !cardEnabled) return;
-    const locked = document.pointerLockElement === renderer.domElement;
+    const locked = isPointerLocked(renderer.domElement);
     const npc = locked
       ? npcAt(window.innerWidth / 2, window.innerHeight / 2)
       : npcAt(event.clientX, event.clientY);
