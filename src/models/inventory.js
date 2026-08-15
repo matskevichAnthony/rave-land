@@ -15,6 +15,9 @@ import { mulberry32 } from '../terrain/heightfield.js';
 
 const INVENTORY = 'assets/inventory.json';
 const PREVIEW_SEED = 7;
+// Ставить в мир предметом можно не всё, что лежит моделью: персонажи приходят своей кнопкой,
+// а оружие берётся из рук, а не с земли.
+const PLACEABLE = ['props', 'generated'];
 
 const GROUPS = {
   props: {
@@ -64,6 +67,30 @@ export async function collectInventory() {
       items: [],
     }, ...codeGroups];
   }
+}
+
+/**
+ * Предметы мастерской, готовые к постановке в мир, теми же группами.
+ *
+ * Опись одна на редактор и на страницу мастерской, поэтому свежий прогон генератора
+ * появляется в редакторе сам, как только его файл лёг на диск.
+ */
+export async function collectPlaceable() {
+  const assets = await loadAssets();
+  return Object.entries(GROUPS)
+    .filter(([id]) => PLACEABLE.includes(id))
+    .map(([id, group]) => ({
+      title: group.title,
+      items: assets
+        .filter((asset) => asset.source === id && asset.src)
+        .map((asset) => ({
+          src: asset.src,
+          title: asset.title,
+          preview: asset.preview ?? null,
+          facts: `${asset.triangles} тр, ${asset.kilobytes} КБ`,
+        })),
+    }))
+    .filter((group) => group.items.length);
 }
 
 async function loadAssets() {

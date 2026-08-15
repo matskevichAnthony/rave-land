@@ -12,8 +12,11 @@ const VIEW_DIRECTION = new THREE.Vector3(0.9, 0.5, 1.2).normalize();
  * Контекстов у браузера единицы, а карточек десятки, поэтому рисует всех один
  * рендерер, а карточка получает готовую картинку копией в свой 2D-канвас.
  * Модель грузится, когда карточка доезжает до экрана, и сразу освобождается.
+ *
+ * `shared` говорит, что сборщик отдаёт модели из общего кэша: освобождать их
+ * нельзя, иначе превью заберёт геометрию у того, кто держит на неё ссылку.
  */
-export function createThumbnails() {
+export function createThumbnails({ shared = false } = {}) {
   const pixelRatio = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
   const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(pixelRatio);
@@ -50,7 +53,7 @@ export function createThumbnails() {
       try {
         const object = await build();
         draw(object, canvas);
-        release(object);
+        if (!shared) release(object);
         settle();
       } catch (error) {
         fail(error);

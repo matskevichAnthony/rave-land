@@ -4,10 +4,11 @@ import * as THREE from 'three';
 import { findingsMentioning, STATUS_LABELS } from '../docs/findings.js';
 import { renderMarkdown } from '../docs/markdown.js';
 import { collectInventory } from '../models/inventory.js';
+import { createThumbnails } from '../models/thumbnails.js';
 import { createViewer, measure } from '../model-viewer/scene.js';
+import { create } from '../ui/dom.js';
 import { collectDocuments } from './documents.js';
 import { RUNTIME_SYSTEMS } from './runtime.js';
-import { createThumbnails } from './thumbnails.js';
 import { collectTools } from './tools.js';
 
 const PROVENANCE_LABELS = {
@@ -331,11 +332,4 @@ function closeViewer() {
   statsRoot.replaceChildren();
   clipsRoot.replaceChildren();
   provenanceRoot.replaceChildren();
-}
-
-function create(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (text !== undefined) node.textContent = text;
-  return node;
 }
