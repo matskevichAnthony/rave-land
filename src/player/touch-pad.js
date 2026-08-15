@@ -23,7 +23,7 @@ const BUTTONS = [
 ];
 
 /** Сенсор определяется возможностями указателя, а не строкой user-agent: её легко подменить. */
-const isTouchDevice = () =>
+export const isTouchDevice = () =>
   navigator.maxTouchPoints > 0 && window.matchMedia('(pointer: coarse)').matches;
 
 export function createTouchPad({ root }) {
@@ -39,10 +39,6 @@ export function createTouchPad({ root }) {
   // одному на пад, иначе мусорщик собирает их в горячем месте.
   const look = { dx: 0, dy: 0 };
   const taken = { dx: 0, dy: 0 };
-
-  const stopper = new AbortController();
-  const listen = (node, type, handler) =>
-    node.addEventListener(type, handler, { signal: stopper.signal });
 
   const stick = create('div', 'touch-pad__stick');
   stick.hidden = true;
@@ -64,7 +60,7 @@ export function createTouchPad({ root }) {
   let lastX = 0;
   let lastY = 0;
 
-  listen(pad, 'pointerdown', (event) => {
+  pad.addEventListener('pointerdown', (event) => {
     const box = pad.getBoundingClientRect();
     if (event.clientX - box.left < box.width * STICK_ZONE_SHARE) grabStick(event, box);
     else grabLook(event);
@@ -73,7 +69,7 @@ export function createTouchPad({ root }) {
     event.stopPropagation();
   });
 
-  listen(pad, 'pointermove', (event) => {
+  pad.addEventListener('pointermove', (event) => {
     if (event.pointerId === stickId) dragStick(event);
     else if (event.pointerId === lookId) dragLook(event);
   });
@@ -82,11 +78,11 @@ export function createTouchPad({ root }) {
     if (event.pointerId === stickId) dropStick();
     else if (event.pointerId === lookId) lookId = null;
   };
-  listen(pad, 'pointerup', release);
-  listen(pad, 'pointercancel', release);
+  pad.addEventListener('pointerup', release);
+  pad.addEventListener('pointercancel', release);
   // Касание пада не должно оборачиваться кликом по слою захвата: тот просит захват указателя.
-  listen(pad, 'click', (event) => event.stopPropagation());
-  listen(window, 'blur', reset);
+  pad.addEventListener('click', (event) => event.stopPropagation());
+  window.addEventListener('blur', reset);
 
   function grabStick(event, box) {
     if (stickId !== null) return;
@@ -143,7 +139,7 @@ export function createTouchPad({ root }) {
     node.type = 'button';
     node.dataset.jsTouchButton = name;
     node.setAttribute('aria-pressed', 'false');
-    listen(node, 'pointerdown', (event) => {
+    node.addEventListener('pointerdown', (event) => {
       node.setPointerCapture(event.pointerId);
       press(node, latching ? !buttons[name] : true);
       event.preventDefault();
@@ -153,8 +149,8 @@ export function createTouchPad({ root }) {
     const drop = () => {
       if (!latching) press(node, false);
     };
-    listen(node, 'pointerup', drop);
-    listen(node, 'pointercancel', drop);
+    node.addEventListener('pointerup', drop);
+    node.addEventListener('pointercancel', drop);
     return node;
   }
 
@@ -187,10 +183,6 @@ export function createTouchPad({ root }) {
       pad.hidden = !on;
       if (!on) reset();
     },
-    dispose() {
-      stopper.abort();
-      pad.replaceChildren();
-    },
   };
 }
 
@@ -204,6 +196,5 @@ function idlePad() {
     buttons: { jump: false, fire: false, aim: false },
     takeLook: () => IDLE_LOOK,
     setActive() {},
-    dispose() {},
   };
 }
