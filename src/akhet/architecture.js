@@ -60,26 +60,37 @@ const FIELD_DRIFT = 60;
  *
  * Пирамиды разведены по своим габаритам: у стометровой основание в полтораста метров, и
  * пары соседок, стоявших в сотне метров друг от друга, врастали одна в другую.
+ *
+ * Ближний кластер уехал вправо на четырнадцать метров против прежнего. Афишная камера
+ * садится на середину типографики, и всё, что стояло левее дороги, приходилось ровно на
+ * буквы: с этой точки монумент имени и стелы лайнапа закрывают полосу шириной в тридцать
+ * пять градусов, а фигуры в шестидесяти метрах занимали её середину. Четырнадцать метров
+ * это тот вынос, на котором силуэты выходят из-за букв и ещё не уезжают за правый край
+ * кадра. Вещи, которым сдвиг пришёлся ровно на ряд сфинксов, перешагнули ряд и встали в
+ * самой аллее: полоса дороги в этом кадре и есть то место, где их видно.
+ *
+ * Пилон и стоящий обелиск при сдвиге остались на месте: по ним ставят лестницу и коллайдер
+ * порога, и уехавшие ворота оторвались бы от собственных ступеней.
  */
 const LANDMARKS = [
-  { prop: 'pyramid', x: -190, z: -250, height: 105, turn: 0.2, stone: 'prop', drift: FIELD_DRIFT },
-  { prop: 'pyramid', x: 30, z: -330, height: 84, turn: -0.3, stone: 'prop', drift: FIELD_DRIFT },
-  { prop: 'pyramid', x: 180, z: -250, height: 62, turn: 0.5, stone: 'prop', drift: FIELD_DRIFT },
-  { prop: 'pyramid', x: -70, z: -150, height: 46, turn: 0.1, stone: 'prop', drift: FIELD_DRIFT },
-  { prop: 'pyramid', x: 105, z: -160, height: 38, turn: -0.4, stone: 'prop', drift: FIELD_DRIFT },
+  { prop: 'pyramid', x: -296, z: -162, height: 84, turn: 0.2, stone: 'prop', drift: FIELD_DRIFT },
+  { prop: 'pyramid', x: -185, z: -179, height: 46, turn: -0.3, stone: 'prop', drift: FIELD_DRIFT },
+  { prop: 'pyramid', x: -170, z: -343, height: 105, turn: 0.5, stone: 'prop', drift: FIELD_DRIFT },
+  { prop: 'pyramid', x: 18, z: -312, height: 62, turn: 0.1, stone: 'prop', drift: FIELD_DRIFT },
+  { prop: 'pyramid', x: 55, z: -232, height: 38, turn: -0.4, stone: 'prop', drift: FIELD_DRIFT },
 
   { prop: 'pylon', x: 0, z: -51, height: DOOR.top, turn: 0, stone: 'prop' },
   { prop: 'obelisk', x: -11.5, z: -40, height: 23, turn: 0, stone: 'prop' },
-  { prop: 'obelisk', x: 16, z: 4, height: 19, turn: 0.7, stone: 'prop', fallen: 0.42 },
-  { prop: 'stela', x: -18, z: -18, height: 4.6, turn: -0.5, stone: 'prop', sink: 0.2 },
-  { prop: 'stela', x: 24, z: -14, height: 6, turn: 0.9, stone: 'prop', sink: 0.34 },
+  { prop: 'obelisk', x: 30, z: 4, height: 19, turn: 0.7, stone: 'prop', fallen: 0.42 },
+  { prop: 'stela', x: -5, z: -16, height: 4.6, turn: -0.5, stone: 'prop', sink: 0.2 },
+  { prop: 'stela', x: 39, z: -16, height: 6, turn: 0.9, stone: 'prop', sink: 0.34 },
   { prop: 'offeringTable', x: -16.5, z: -6, height: 1.4, turn: 0.3, stone: 'prop' },
   { prop: 'canopicJar', x: -18, z: -4.6, height: 1.1, turn: 1.2, stone: 'prop' },
   { prop: 'canopicJar', x: -15.2, z: -4, height: 1, turn: -0.6, stone: 'prop', sink: 0.15 },
 
-  { prop: 'buriedBase', x: -2, z: -8, height: 3.4, turn: 0.5, stone: 'prop' },
-  { prop: 'buriedBase', x: 16, z: -30, height: 4.2, turn: -0.4, stone: 'prop' },
-  { prop: 'solarBarque', x: -23, z: -13, height: 4.2, turn: 2.1, stone: 'prop', sink: 0.38 },
+  { prop: 'buriedBase', x: 14, z: -4, height: 3.4, turn: 0.5, stone: 'prop' },
+  { prop: 'buriedBase', x: 30, z: -30, height: 4.2, turn: -0.4, stone: 'prop' },
+  { prop: 'solarBarque', x: 17, z: -13, height: 4.2, turn: 2.1, stone: 'prop', sink: 0.38 },
 ];
 
 /** Лестница перед воротами: три уступа по числам порога, тем же, что у коллайдеров. */
@@ -96,6 +107,33 @@ const SCATTER = {
     { x: -12, z: -16, radius: 24, share: 0.4 },
   ],
   sink: 0.35,
+};
+
+/**
+ * Гряда на горизонте слева: те же обломки, только величиной со скалу.
+ *
+ * Левый край кадра держит воздух под типографику, и крупному вблизи там не место. Глубину
+ * ему даёт даль: тот же кусок породы, что валяется под ногами, отнесённый на сто и триста
+ * метров и разросшийся до уступа. Отрисовка от этого не дорожает, гряда идёт тем же
+ * инстансом, что и мелочь у ног.
+ *
+ * Блоки стоят тремя группами с провалами между ними и мельчают вглубь: ровная сыпь по
+ * горизонту читается забором, а не рельефом. Бледность приходит сама, маревом: за двести
+ * метров оно съедает пятую часть тона, за триста треть, и дальняя группа не спорит с
+ * буквами по светлоте.
+ *
+ * Место берётся у общего плана занятости, поэтому поле пирамид расходится с грядой, а не
+ * прорастает сквозь неё.
+ */
+const RIDGE = {
+  sink: 0.22,
+  tilt: 0.12,
+  drift: 25,
+  blocks: [
+    [-80, -30, 12], [-96, -23, 8], [-89, -5, 6],
+    [-131, -84, 20], [-156, -74, 14], [-147, -44, 10],
+    [-197, -115, 26], [-207, -79, 17],
+  ],
 };
 
 /** Мелкие фигурки, летящие в вихре: те же сфинксы, только величиной с ладонь. */
@@ -243,12 +281,14 @@ function buildAvenue({ rng, materials, dunes }) {
 }
 
 /**
- * Обломки: то, что вихрь уже выбросил, и то, что осыпалось само.
+ * Обломки: то, что вихрь уже выбросил, то, что осыпалось само, и гряда у горизонта.
  *
  * Поля разной плотности вокруг воронки, ворот и ближнего плана. Половина ушла в песок:
- * камень, лежащий на поверхности целиком, выглядит вываленным минуту назад.
+ * камень, лежащий на поверхности целиком, выглядит вываленным минуту назад. Гряда идёт тем
+ * же куском породы в другом масштабе и сидит в песке мельче: уступу положено стоять
+ * стеной, а не лежать боком.
  */
-function buildScatter({ rng, dunes }) {
+function buildScatter({ rng, dunes, plan }) {
   const chunk = propGeometry('rubble', { rng, height: 1 });
   const pieces = [];
   for (const field of SCATTER.fields) {
@@ -265,13 +305,34 @@ function buildScatter({ rng, dunes }) {
         size: between(rng, ...SCATTER.size),
         turn: rng() * TAU,
         tilt: between(rng, -0.4, 0.4),
+        sink: SCATTER.sink,
       });
     }
   }
 
+  for (const [x, z, size] of RIDGE.blocks) {
+    const stand = plan.place({
+      x,
+      z,
+      radius: planRadius(size, size),
+      drift: RIDGE.drift,
+      skippable: true,
+    });
+    if (!stand) continue;
+    pieces.push({
+      x: stand.x,
+      z: stand.z,
+      y: dunes.heightAt(stand.x, stand.z),
+      size,
+      turn: rng() * TAU,
+      tilt: between(rng, -RIDGE.tilt, RIDGE.tilt),
+      sink: RIDGE.sink,
+    });
+  }
+
   const mesh = buildInstanced(chunk, propMaterial(rng), pieces.length, (draft, index) => {
     const piece = pieces[index];
-    draft.position.set(piece.x, piece.y - piece.size * SCATTER.sink, piece.z);
+    draft.position.set(piece.x, piece.y - piece.size * piece.sink, piece.z);
     draft.rotation.set(piece.tilt, piece.turn, piece.tilt * 0.7);
     draft.scale.setScalar(piece.size);
   });
