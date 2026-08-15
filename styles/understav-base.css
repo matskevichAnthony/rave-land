@@ -1,0 +1,60 @@
+/* Токены и сброс страницы съёмки: цвета те же, что у сцены, чтобы подложка не спорила с кадром. */
+:root {
+  --void: #05050a;
+  --iron: #14151b;
+  --concrete: #2a2b33;
+  --bone: #cbc2b2;
+  --ember: #ff4d0d;
+  --trip: #9b30ff;
+  --muted: #7d7a86;
+  --line: rgba(203, 194, 178, 0.18);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--void);
+  color: var(--bone);
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+}
+
+button {
+  font: inherit;
+  color: var(--bone);
+  background: rgba(203, 194, 178, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--ember);
+}
+
+button:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+input {
+  font: inherit;
+  color: var(--bone);
+  accent-color: var(--ember);
+}
+
+input[type='number'] {
+  background: rgba(203, 194, 178, 0.06);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 4px 6px;
+  width: 100%;
+}

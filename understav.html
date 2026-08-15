@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Промо-сцена UNDERSTAV</title>
+  <link rel="stylesheet" href="./styles/understav.css" />
+</head>
+<body>
+  <main class="stage">
+    <div class="stage__frame" data-js-mount>
+      <div class="stage__grab" data-js-walk-grab hidden></div>
+    </div>
+    <p class="stage__error" data-js-error hidden></p>
+  </main>
+
+  <aside class="deck" data-js-deck>
+    <header class="deck__head">
+      <h1 class="deck__title" data-js-event></h1>
+      <p class="deck__line" data-js-tagline></p>
+      <p class="deck__line" data-js-date></p>
+      <p class="deck__line" data-js-lineup></p>
+    </header>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Сид</h2>
+      <output class="deck__seed" data-js-seed></output>
+      <div class="deck__row">
+        <button type="button" data-js-new-seed>Новый сид</button>
+        <button type="button" data-js-copy-seed>Скопировать</button>
+      </div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Камера</h2>
+      <div class="deck__row">
+        <button type="button" data-js-mode="still">Афиша</button>
+        <button type="button" data-js-mode="orbit">Петля</button>
+        <button type="button" data-js-mode="descend">Спуск</button>
+        <button type="button" data-js-mode="approach">Пролёт</button>
+        <button type="button" data-js-mode="free">Свободная</button>
+        <button type="button" data-js-mode="walk">Прогулка</button>
+      </div>
+      <div class="deck__row">
+        <button type="button" data-js-guest>Позвать гостя</button>
+        <button type="button" data-js-battle>Перестрелка</button>
+      </div>
+      <output class="deck__spot" data-js-spot hidden></output>
+      <p class="deck__hint">
+        Свободная: левая кнопка вращает вокруг алтаря, колесо приближает, правая кнопка
+        или Shift с левой двигают точку взгляда.
+      </p>
+      <p class="deck__hint">
+        Прогулка: щелчок по кадру берёт мышь, WASD ведут, Shift бежит, Space прыгает,
+        колесо отводит камеру, Esc отпускает мышь.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Кадр</h2>
+      <div class="deck__row">
+        <button type="button" data-js-framing="square">1:1</button>
+        <button type="button" data-js-framing="story">9:16</button>
+        <button type="button" data-js-framing="wide">16:9</button>
+        <button type="button" data-js-framing="full">Во всё окно</button>
+      </div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Отсчёт</h2>
+      <label class="deck__toggle">
+        <input type="checkbox" data-js-countdown checked />
+        <span>Показать отсчёт: <b data-js-days></b> дн.</span>
+      </label>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Эффекты</h2>
+      <div class="deck__knobs" data-js-knobs></div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Съёмка</h2>
+      <label class="deck__field">
+        <span>Секунд в отрезке</span>
+        <input
+          type="number"
+          min="1"
+          max="60"
+          step="1"
+          value="8"
+          data-js-duration
+        />
+      </label>
+      <div class="deck__row">
+        <button type="button" data-js-shoot>Снять</button>
+        <button type="button" data-js-capture>Кадр</button>
+      </div>
+      <p class="deck__note" data-js-note></p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Замер</h2>
+      <dl class="meter" data-js-stats></dl>
+    </section>
+
+    <nav class="deck__nav">
+      <a href="./index.html">В мир</a>
+      <a href="./toolbox.html">Мастерская</a>
+    </nav>
+
+    <p class="deck__hint">
+      Пульт прячется клавишей H. Запись идёт с холста, поэтому ни пульт, ни замер в файл
+      не попадают.
+    </p>
+  </aside>
+
+  <script type="module" src="./src/understav/main.js"></script>
+</body>
+</html>

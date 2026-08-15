@@ -1,0 +1,21 @@
+/* Замер кадра в пульте: вышедшее за бюджет число светится углём, чтобы просадку было видно на съёмке. */
+.meter {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 10px;
+}
+
+.meter__name {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.meter__value {
+  color: var(--bone);
+  font-family: ui-monospace, monospace;
+  text-align: right;
+}
+
+.meter__value--over {
+  color: var(--ember);
+}

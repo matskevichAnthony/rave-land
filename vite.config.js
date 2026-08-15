@@ -32,6 +32,7 @@ export default defineConfig({
         generator: resolve(import.meta.dirname, 'generator.html'),
         status: resolve(import.meta.dirname, 'status.html'),
         toolbox: resolve(import.meta.dirname, 'toolbox.html'),
+        understav: resolve(import.meta.dirname, 'understav.html'),
       },
     },
   },

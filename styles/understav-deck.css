@@ -1,0 +1,166 @@
+/* Пульт съёмки: колонка у правого края, прячется клавишей H и в запись не попадает. */
+.deck {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: 268px;
+  overflow-y: auto;
+  background: rgba(20, 21, 27, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  padding: 14px;
+}
+
+.deck--hidden {
+  display: none;
+}
+
+.deck__head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.deck__title {
+  color: var(--ember);
+  font-size: 18px;
+  letter-spacing: 0.14em;
+}
+
+.deck__line {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+
+.deck__block {
+  margin-bottom: 14px;
+}
+
+.deck__label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.deck__seed {
+  display: block;
+  color: var(--trip);
+  font-family: ui-monospace, monospace;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  margin-bottom: 6px;
+}
+
+.deck__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.deck__row button.is-active {
+  border-color: var(--ember);
+  color: var(--ember);
+}
+
+.deck__row button.is-recording {
+  background: var(--ember);
+  border-color: var(--ember);
+  color: var(--void);
+}
+
+.deck__spot:not([hidden]) {
+  display: block;
+  color: var(--trip);
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-top: 6px;
+}
+
+.deck__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.deck__field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.deck__field input {
+  width: 72px;
+}
+
+.deck__knobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.deck__note {
+  color: var(--trip);
+  line-height: 1.4;
+  margin-top: 8px;
+  min-height: 16px;
+}
+
+.deck__hint {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.deck__nav {
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-bottom: 10px;
+}
+
+.deck__nav a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.deck__nav a:hover {
+  color: var(--ember);
+}
+
+.knob {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.knob__name {
+  color: var(--muted);
+}
+
+.knob__value {
+  color: var(--bone);
+  font-family: ui-monospace, monospace;
+  font-weight: 400;
+}
+
+.knob__slider {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.knob__switch {
+  justify-self: end;
+}

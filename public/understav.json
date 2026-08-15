@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "event": "UNDERSTAV",
+  "tagline": "++ INDUSTRIAL GOTHIC RITUAL ++",
+  "date": "2026-09-25",
+  "dateLabel": "25.09.2026",
+  "todayLabel": "СЕГОДНЯ",
+  "lineup": [
+    "LESTAI",
+    "ANTON+MATZKAIM",
+    "CATHEARTSIS",
+    "ANA-WIR",
+    "PRIZRAK"
+  ],
+  "cast": {
+    "crowd": 7,
+    "radius": [
+      7,
+      15
+    ],
+    "teams": [
+      "grove",
+      "aztecas"
+    ],
+    "spawnRadius": 11,
+    "pool": [
+      "assets/models/gta-aztecas.glb",
+      "assets/models/gta-ballas.glb",
+      "assets/models/gta-cop.glb",
+      "assets/models/gta-dj.glb",
+      "assets/models/gta-grove.glb",
+      "assets/models/gta-jogger.glb",
+      "assets/models/gta-lady.glb",
+      "assets/models/gta-swat.glb",
+      "assets/models/gta-triad.glb",
+      "assets/models/bold-raver.glb",
+      "assets/models/masked-raver.glb",
+      "assets/models/techno-raver.glb"
+    ]
+  },
+  "seed": "b7d3e1f2",
+  "style": "industrial-gothic"
+}
