@@ -3,6 +3,7 @@ import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { OBJECT_LABELS } from '../objects/library.js';
 import { saveLocal, clearLocal, exportFile } from '../world/manifest.js';
 import { toast } from '../ui/toast.js';
+import { createWorkshop } from './workshop.js';
 
 const TRANSFORM_MODES = { Digit1: 'translate', Digit2: 'rotate', Digit3: 'scale' };
 
@@ -16,6 +17,7 @@ export function createEditor({
   player,
   npcSystem,
   stage,
+  worldSnapshot,
 }) {
   let editing = false;
   let selectedItem = null;
@@ -53,6 +55,7 @@ export function createEditor({
     followCam.setEditMode(editing);
     if (editing) {
       scene.add(gizmo);
+      workshop.open();
       return;
     }
     select(null);
@@ -67,31 +70,21 @@ export function createEditor({
     return new THREE.Vector3(position.x, 0, position.z - 4);
   }
 
-  async function spawn(type) {
+  async function spawn(entry) {
     const point = spawnPoint();
-    const entry = {
+    const item = await registry.add({
       id: crypto.randomUUID(),
-      type,
       position: [point.x, null, point.z],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
-    };
-    const item = await registry.add(entry);
-    select(item);
-  }
-
-  function currentState() {
-    return {
-      version: 1,
-      terrain: terrain.params,
-      objects: registry.serializeEntries(),
-      npcs: npcSystem.serialize(),
-      timeOfDay: stage.timeOfDay,
-    };
+      ...entry,
+    });
+    if (editing) select(item);
+    return item;
   }
 
   function save() {
-    saveLocal(currentState());
+    saveLocal(worldSnapshot());
     toast('Мир сохранён в браузере');
   }
 
@@ -132,8 +125,13 @@ export function createEditor({
   });
 
   for (const button of panel.querySelectorAll('[data-spawn]')) {
-    button.addEventListener('click', () => spawn(button.dataset.spawn));
+    button.addEventListener('click', () => spawn({ type: button.dataset.spawn }));
   }
+
+  const workshop = createWorkshop({
+    root: panel.querySelector('[data-workshop]'),
+    spawnModel: (src) => spawn({ type: 'model', src }),
+  });
 
   panel.querySelector('[data-spawn-npc]').addEventListener('click', async () => {
     const point = spawnPoint();
@@ -151,7 +149,7 @@ export function createEditor({
   }
 
   panel.querySelector('[data-save]').addEventListener('click', save);
-  panel.querySelector('[data-export]').addEventListener('click', () => exportFile(currentState()));
+  panel.querySelector('[data-export]').addEventListener('click', () => exportFile(worldSnapshot()));
   panel.querySelector('[data-reset]').addEventListener('click', () => {
     clearLocal();
     location.reload();
@@ -180,17 +178,6 @@ export function createEditor({
     get editing() {
       return editing;
     },
-    spawnModelEntry: async (src) => {
-      const point = spawnPoint();
-      const entry = {
-        id: crypto.randomUUID(),
-        type: 'model',
-        src,
-        position: [point.x, null, point.z],
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-      };
-      return registry.add(entry);
-    },
+    spawnModelEntry: (src) => spawn({ type: 'model', src }),
   };
 }

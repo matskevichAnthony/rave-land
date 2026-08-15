@@ -10,500 +10,6 @@
   },
   "objects": [
     {
-      "id": "speaker-1",
-      "type": "speaker",
-      "position": [
-        -7,
-        null,
-        -7
-      ],
-      "rotation": [
-        0,
-        0.785,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "speaker-2",
-      "type": "speaker",
-      "position": [
-        7,
-        null,
-        -7
-      ],
-      "rotation": [
-        0,
-        -0.785,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "lamp-1",
-      "type": "lamp",
-      "position": [
-        -10,
-        null,
-        10
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "lamp-2",
-      "type": "lamp",
-      "position": [
-        10,
-        null,
-        10
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "lamp-3",
-      "type": "lamp",
-      "position": [
-        -10,
-        null,
-        -10
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "lamp-4",
-      "type": "lamp",
-      "position": [
-        10,
-        null,
-        -10
-      ],
-      "rotation": [
-        0,
-        0,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "house-1",
-      "type": "house",
-      "position": [
-        22,
-        null,
-        8
-      ],
-      "rotation": [
-        0,
-        -1.2,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "house-2",
-      "type": "house",
-      "position": [
-        -20,
-        null,
-        14
-      ],
-      "rotation": [
-        0,
-        0.9,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "house-3",
-      "type": "house",
-      "position": [
-        4,
-        null,
-        -24
-      ],
-      "rotation": [
-        0,
-        0.2,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "tree-1",
-      "type": "tree",
-      "position": [
-        31,
-        null,
-        -18
-      ],
-      "rotation": [
-        0,
-        0.4,
-        0
-      ],
-      "scale": [
-        1.1,
-        1.1,
-        1.1
-      ]
-    },
-    {
-      "id": "tree-2",
-      "type": "tree",
-      "position": [
-        -34,
-        null,
-        -12
-      ],
-      "rotation": [
-        0,
-        2.1,
-        0
-      ],
-      "scale": [
-        0.9,
-        0.9,
-        0.9
-      ]
-    },
-    {
-      "id": "tree-3",
-      "type": "tree",
-      "position": [
-        40,
-        null,
-        22
-      ],
-      "rotation": [
-        0,
-        1.3,
-        0
-      ],
-      "scale": [
-        1.3,
-        1.3,
-        1.3
-      ]
-    },
-    {
-      "id": "tree-4",
-      "type": "tree",
-      "position": [
-        -42,
-        null,
-        26
-      ],
-      "rotation": [
-        0,
-        5.1,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "tree-5",
-      "type": "tree",
-      "position": [
-        12,
-        null,
-        38
-      ],
-      "rotation": [
-        0,
-        3.3,
-        0
-      ],
-      "scale": [
-        1.2,
-        1.2,
-        1.2
-      ]
-    },
-    {
-      "id": "tree-6",
-      "type": "tree",
-      "position": [
-        -16,
-        null,
-        42
-      ],
-      "rotation": [
-        0,
-        0.7,
-        0
-      ],
-      "scale": [
-        0.8,
-        0.8,
-        0.8
-      ]
-    },
-    {
-      "id": "tree-7",
-      "type": "tree",
-      "position": [
-        52,
-        null,
-        -6
-      ],
-      "rotation": [
-        0,
-        1.9,
-        0
-      ],
-      "scale": [
-        1.4,
-        1.4,
-        1.4
-      ]
-    },
-    {
-      "id": "tree-8",
-      "type": "tree",
-      "position": [
-        -50,
-        null,
-        2
-      ],
-      "rotation": [
-        0,
-        2.8,
-        0
-      ],
-      "scale": [
-        1.1,
-        1.1,
-        1.1
-      ]
-    },
-    {
-      "id": "tree-9",
-      "type": "tree",
-      "position": [
-        26,
-        null,
-        -40
-      ],
-      "rotation": [
-        0,
-        4.2,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "tree-10",
-      "type": "tree",
-      "position": [
-        -28,
-        null,
-        -36
-      ],
-      "rotation": [
-        0,
-        0.1,
-        0
-      ],
-      "scale": [
-        1.2,
-        1.2,
-        1.2
-      ]
-    },
-    {
-      "id": "tree-11",
-      "type": "tree",
-      "position": [
-        6,
-        null,
-        -52
-      ],
-      "rotation": [
-        0,
-        2.4,
-        0
-      ],
-      "scale": [
-        0.9,
-        0.9,
-        0.9
-      ]
-    },
-    {
-      "id": "tree-12",
-      "type": "tree",
-      "position": [
-        -8,
-        null,
-        58
-      ],
-      "rotation": [
-        0,
-        1.6,
-        0
-      ],
-      "scale": [
-        1.3,
-        1.3,
-        1.3
-      ]
-    },
-    {
-      "id": "rock-1",
-      "type": "rock",
-      "position": [
-        16,
-        null,
-        16
-      ],
-      "rotation": [
-        0,
-        0.6,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
-      "id": "rock-2",
-      "type": "rock",
-      "position": [
-        -14,
-        null,
-        -16
-      ],
-      "rotation": [
-        0,
-        1.8,
-        0
-      ],
-      "scale": [
-        1.4,
-        1.4,
-        1.4
-      ]
-    },
-    {
-      "id": "rock-3",
-      "type": "rock",
-      "position": [
-        36,
-        null,
-        4
-      ],
-      "rotation": [
-        0,
-        3.1,
-        0
-      ],
-      "scale": [
-        0.8,
-        0.8,
-        0.8
-      ]
-    },
-    {
-      "id": "rock-4",
-      "type": "rock",
-      "position": [
-        -30,
-        null,
-        30
-      ],
-      "rotation": [
-        0,
-        0.3,
-        0
-      ],
-      "scale": [
-        1.2,
-        1.2,
-        1.2
-      ]
-    },
-    {
-      "id": "rock-5",
-      "type": "rock",
-      "position": [
-        -2,
-        null,
-        -34
-      ],
-      "rotation": [
-        0,
-        2.2,
-        0
-      ],
-      "scale": [
-        1,
-        1,
-        1
-      ]
-    },
-    {
       "id": "prop-truss-left",
       "type": "model",
       "src": "assets/models/props/truss-tower.glb",
@@ -1255,6 +761,63 @@
       "rotation": [
         0,
         1.35,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "prop-barrel-entrance",
+      "type": "barrel",
+      "position": [
+        3.4,
+        null,
+        16.6
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "prop-barrel-floor-west",
+      "type": "barrel",
+      "position": [
+        -7.6,
+        null,
+        -4.2
+      ],
+      "rotation": [
+        0,
+        0.5,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "prop-barrel-floor-east",
+      "type": "barrel",
+      "position": [
+        7.4,
+        null,
+        -1.6
+      ],
+      "rotation": [
+        0,
+        -0.4,
         0
       ],
       "scale": [

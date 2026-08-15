@@ -4,10 +4,13 @@ import { loadModel } from './gltf.js';
 import { mulberry32 } from '../terrain/heightfield.js';
 import { MAX_LAMP_LIGHTS } from '../config.js';
 
+/** Типы предметов, которые просят собственный источник света. */
+const LIGHT_EMITTERS = new Set(['lamp', 'barrel']);
+
 export function createRegistry({ RAPIER, physicsWorld, scene, terrain }) {
   const items = new Map();
   const pulseMaterials = [];
-  let lampLightCount = 0;
+  let lightCount = 0;
   let buildSeedCounter = 1;
 
   function collectPulseMaterials(object) {
@@ -67,8 +70,12 @@ export function createRegistry({ RAPIER, physicsWorld, scene, terrain }) {
     if (!builder) throw new Error(`Неизвестный тип объекта: ${entry.type}`);
     const random = mulberry32(buildSeedCounter);
     buildSeedCounter += 1;
-    const allowLight = entry.type !== 'lamp' || lampLightCount < MAX_LAMP_LIGHTS;
-    if (entry.type === 'lamp' && allowLight) lampLightCount += 1;
+    // Лимит общий на все светящие предметы, а не на один тип: каждый добавленный в сцену
+    // источник заставляет three пересобрать программы всех материалов, и цена не зависит
+    // от того, фонарь это или бочка.
+    const wantsLight = LIGHT_EMITTERS.has(entry.type);
+    const allowLight = !wantsLight || lightCount < MAX_LAMP_LIGHTS;
+    if (wantsLight && allowLight) lightCount += 1;
     return builder(random, { allowLight });
   }
 

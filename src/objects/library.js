@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { NEON_COLORS } from '../config.js';
+import { flatDisc, openBandY } from '../procedural/shapes.js';
+import { createSparks } from '../procedural/sparks.js';
 
 function material(color, options = {}) {
   return new THREE.MeshStandardMaterial({ color, flatShading: true, roughness: 0.9, ...options });
@@ -111,7 +113,8 @@ function buildDancefloor(random) {
   return { object: group, collider: null };
 }
 
-function buildLamp(random, context) {
+// Витрина в тулбоксе строит объекты без контекста мира, поэтому без света, а не с ошибкой.
+function buildLamp(random, context = {}) {
   const group = new THREE.Group();
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 3.4, 6), material('#2a2735'));
   pole.position.y = 1.7;
@@ -143,6 +146,81 @@ function buildRock(random) {
   return { object: group, collider: null };
 }
 
+const MILLISECONDS = 1000;
+
+const BARREL = {
+  radius: 0.31,
+  height: 0.92,
+  coalRadius: 0.26,
+  coalLift: 0.88,
+  emissive: 2.2,
+  flicker: 1.1,
+  flickerSpeed: 7,
+  lightPower: 14,
+  lightRange: 9,
+  sparks: {
+    count: 120,
+    size: 11,
+    jitter: 0.14,
+    rise: [1.1, 2.8],
+    drift: [0.06, 0.28],
+    speed: [0.1, 0.32],
+  },
+};
+
+/**
+ * Горящая бочка: ржавый барабан, угли диском сверху и искры над ними.
+ *
+ * Барабан открыт с торцов, поэтому материал двусторонний: крышки у бочки нет, её место
+ * занимают угли, а дно всё равно стоит на земле и в кадр не попадает.
+ */
+function buildBarrel(random, context = {}) {
+  const group = new THREE.Group();
+
+  const drum = new THREE.Mesh(openBandY(), material('#6a3418', {
+    side: THREE.DoubleSide,
+    roughness: 1,
+  }));
+  drum.position.y = BARREL.height / 2;
+  drum.scale.set(BARREL.radius, BARREL.height, BARREL.radius);
+  group.add(drum);
+
+  const coals = new THREE.Mesh(flatDisc(), new THREE.MeshStandardMaterial({
+    color: '#1a0d06',
+    emissive: '#ff4d0d',
+    emissiveIntensity: BARREL.emissive,
+    roughness: 1,
+  }));
+  coals.position.y = BARREL.height * BARREL.coalLift;
+  coals.scale.setScalar(BARREL.coalRadius);
+  markPulse(coals, BARREL.emissive, BARREL.flicker, BARREL.flickerSpeed, random() * Math.PI * 2);
+  group.add(coals);
+
+  const sparks = createSparks({
+    random,
+    sources: [[0, BARREL.height, 0]],
+    ...BARREL.sparks,
+  });
+  // Реестр отдаёт кадру только пульс материалов, а шейдеру искр нужно время. Взять его
+  // больше негде, поэтому его подаёт рендерер прямо перед отрисовкой точек.
+  sparks.object.onBeforeRender = () => sparks.update(performance.now() / MILLISECONDS);
+  group.add(sparks.object);
+
+  if (context.allowLight) {
+    const light = new THREE.PointLight('#ff6a1e', BARREL.lightPower, BARREL.lightRange, 2);
+    light.position.y = BARREL.height;
+    group.add(light);
+  }
+
+  return {
+    object: group,
+    collider: {
+      halfExtents: [BARREL.radius, BARREL.height / 2, BARREL.radius],
+      offset: [0, BARREL.height / 2, 0],
+    },
+  };
+}
+
 export const OBJECT_BUILDERS = {
   house: buildHouse,
   tree: buildTree,
@@ -150,6 +228,7 @@ export const OBJECT_BUILDERS = {
   dancefloor: buildDancefloor,
   lamp: buildLamp,
   rock: buildRock,
+  barrel: buildBarrel,
 };
 
 export const OBJECT_LABELS = {
@@ -159,5 +238,6 @@ export const OBJECT_LABELS = {
   dancefloor: 'танцпол',
   lamp: 'фонарь',
   rock: 'камень',
+  barrel: 'горящая бочка',
   model: 'модель',
 };
