@@ -57,10 +57,14 @@ export function createPanel({ root, opener, event, budget, controls, view, actio
   pick('guest').addEventListener('click', actions.guest);
   pick('battle').addEventListener('click', actions.battle);
 
-  function toggleDeck() {
-    const hidden = root.classList.toggle(HIDDEN_CLASS);
+  function setDeck(hidden) {
+    root.classList.toggle(HIDDEN_CLASS, hidden);
     opener.textContent = hidden ? TOGGLE_LABEL.hidden : TOGGLE_LABEL.shown;
     opener.setAttribute('aria-expanded', String(!hidden));
+  }
+
+  function toggleDeck() {
+    setDeck(!root.classList.contains(HIDDEN_CLASS));
   }
 
   function showSpot(place) {
@@ -120,6 +124,7 @@ export function createPanel({ root, opener, event, budget, controls, view, actio
       for (const locked of root.querySelectorAll(LOCKED_WHILE_RECORDING)) locked.disabled = active;
     },
     toggle: toggleDeck,
+    hide: () => setDeck(true),
   };
 }
 

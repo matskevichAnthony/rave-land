@@ -1,6 +1,9 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import { createPlayer } from '../player/player.js';
 import { createFollowCamera } from '../player/follow-camera.js';
+import { createTouchPad } from '../player/touch-pad.js';
+import { input } from '../player/input.js';
+import { exitPointerLock } from '../player/pointer-lock.js';
 import { createNpcSystem } from '../npc/system.js';
 import { createRagdolls } from '../combat/ragdoll.js';
 import { createArena } from '../combat/arena.js';
@@ -90,6 +93,10 @@ export async function createWalk({ scene, camera, renderer, grab, cast }) {
     playerFighter: combat.fighter,
   });
 
+  // Клавиатуры на телефоне нет, а слой захвата это единственное, что там вообще ловит палец:
+  // стик и кнопки живут прямо на нём.
+  const touchPad = createTouchPad({ root: grab });
+
   const roster = { ...DEFAULT_CAST, ...cast };
   arena.setSpawns(planSpawns([...roster.teams, PLAYER_TEAM], roster.spawnRadius));
   const rng = createRandom(GUEST_SEED);
@@ -116,7 +123,16 @@ export async function createWalk({ scene, camera, renderer, grab, cast }) {
 
   for (let index = 0; index < roster.crowd; index += 1) await addGuest();
 
+  /** Пад вливается в тот же ввод, что и клавиатура: одно намерение на оба источника. */
+  function pourTouch() {
+    const look = touchPad.takeLook();
+    followCam.dragLook(look.dx, look.dy);
+    input.setPad({ x: touchPad.axes.x, z: touchPad.axes.y, jump: touchPad.buttons.jump });
+    combat.setPadButtons(touchPad.buttons);
+  }
+
   function update(dt) {
+    if (touchPad.available) pourTouch();
     const { fighter } = combat;
     const aiming = combat.armed;
     followCam.setAiming(aiming);
@@ -150,7 +166,8 @@ export async function createWalk({ scene, camera, renderer, grab, cast }) {
     for (const object of npcSystem.objects) object.visible = active;
     grab.hidden = !active;
     battleHud.setActive(active && arena.active);
-    if (!active) document.exitPointerLock();
+    touchPad.setActive(active);
+    if (!active) exitPointerLock();
   }
 
   setActive(false);

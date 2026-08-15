@@ -21,6 +21,9 @@ const FRAME_MARGIN = 24;
 
 const FRAMINGS = { square: 1, story: 9 / 16, wide: 16 / 9, full: null };
 
+// Палец вместо мыши: тот же признак, по которому поднимается экранное управление прогулки.
+const TOUCH_SCREEN = window.matchMedia('(pointer: coarse)');
+
 const STATS_WINDOW_SECONDS = 3;
 const STATS_REFRESH_SECONDS = 0.25;
 const LOW_PERCENTILE = 0.99;
@@ -83,6 +86,9 @@ async function boot() {
       setMode: (mode) => {
         view.mode = mode;
         if (mode === WALK_MODE) {
+          // На телефоне пульт лежит нижним листом ровно там, где стик и кнопки, поэтому на
+          // входе в прогулку он сворачивается: вернуть его можно кнопкой в углу.
+          if (TOUCH_SCREEN.matches) panel.hide();
           enterWalk().catch((error) => showNotice(`Прогулка не поднялась: ${error.message}`));
           return;
         }

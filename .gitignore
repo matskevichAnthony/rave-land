@@ -51,3 +51,6 @@ _other/gta-sfx/*/bank*/
 
 # Дубликат клипов Dance из character-animated.glb, потребителя у него не осталось (F-008)
 public/assets/models/dance-preview.glb
+
+# Референсы из чужих лент: чужой материал, страницами не читается, живёт локально.
+_IDEAS-PHOTOS/
