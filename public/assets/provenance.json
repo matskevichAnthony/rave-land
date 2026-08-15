@@ -25,14 +25,6 @@
       "animations": "Idle и Aim самописные; Walk, Run, Dance это mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset",
       "license": "клипы Bandai остаются CC BY-NC, в релиз не годятся (F-004)"
     },
-    "assets/models/dance-preview.glb": {
-      "title": "Танцы (mocap-ретаргет)",
-      "source": "characters",
-      "model": "меш Берлинца из TRELLIS: https://huggingface.co/spaces/JeffreyXiang/TRELLIS",
-      "rig": "локальный авториг, Blender headless, 17 костей",
-      "animations": "превью ретаргета танцев, mocap Bandai Namco, лицензия CC BY-NC 4.0: https://github.com/BandaiNamcoResearchInc/Bandai-Namco-Research-Motiondataset",
-      "license": "клипы Bandai остаются CC BY-NC, в релиз не годятся (F-004)"
-    },
     "assets/models/sandbags.glb": {
       "title": "Мешки с песком",
       "source": "generated",
