@@ -8,9 +8,14 @@
 невнятной ошибкой.
 
 ```sh
+git clone --depth 1 git@github.com:matskevichAnthony/rave-land.git
+cd rave-land
 npm install
 npm run dev
 ```
+
+`--depth 1` берёт только последний срез, это 26 МБ. Полная история тянет ещё
+190 МБ старого сырья, которого в дереве давно нет и которое странице не нужно.
 
 Страницы: `/` мир, `/understav.html` промо-сцена, `/toolbox.html` мастерская,
 `/generator.html` генератор ассетов, `/status.html` статус проекта.
