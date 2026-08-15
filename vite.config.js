@@ -28,6 +28,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
+        akhet: resolve(import.meta.dirname, 'akhet.html'),
         audio: resolve(import.meta.dirname, 'audio-probe.html'),
         generator: resolve(import.meta.dirname, 'generator.html'),
         status: resolve(import.meta.dirname, 'status.html'),
