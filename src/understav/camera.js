@@ -54,17 +54,30 @@ const DESCEND = {
   nearTargetY: 2.4,
 };
 
-// Пролёт: камера входит в коридоре боком, разворачивается к залу и идёт к месту афиши.
-// Разворот занимает начало пути, чтобы зритель успел увидеть коридор до того, как в кадр
-// придёт афиша.
+// Пролёт это слалом по коридору, а не прямая: камера идёт от борта к борту, ныряет к полу и
+// снова поднимается, и лишь в конце выходит на ось афиши. По прямой коридор не показать,
+// стены в кадре стоят на месте, и от полёта остаётся только приближение афиши.
+//
+// Боковой размах держится в пролёте между колоннами коридора: они стоят на 5.4 от оси, и
+// узел дальше четырёх метров провёл бы камеру сквозь камень.
 const APPROACH = {
   seconds: 30,
-  startX: 2.6,
-  startY: 3.4,
-  startZ: CORRIDOR.farZ - 4,
-  startTargetX: -8,
-  startTargetY: 4.2,
-  turnShare: 0.34,
+  // Афиша собирается по ходу пролёта и заканчивается раньше самого пролёта: последнему имени
+  // нужно время встать на место и быть прочитанным до того, как камера остановится.
+  assembleFrom: 0.12,
+  assembleTo: 0.84,
+  // Крен берётся из бокового сноса самой трассы, а не выписан по узлам: так поворот и наклон
+  // не могут разъехаться при правке узла.
+  bankLead: 0.012,
+  bankGain: 0.22,
+  bankLimit: 0.1,
+  flight: [
+    { eye: [3.6, 4.4, CORRIDOR.farZ - 2], aim: [-4.5, 3.4, 96] },
+    { eye: [-3.4, 2, 88], aim: [4.4, 5.4, 70] },
+    { eye: [3.8, 5.2, 64], aim: [-3.6, 2.8, 46] },
+    { eye: [-2.8, 2.6, 48], aim: [2.4, 6, 30] },
+    { eye: [2.2, 4.6, 38], aim: [-1.2, 5.2, 12] },
+  ],
 };
 
 // Свободный кадр ищет человек, поэтому подгонка тут не работает: остаются только стены
@@ -139,6 +152,30 @@ export function createCameraRig({ camera, bounds, rng }) {
   const drag = { pointer: null, kind: null, x: 0, y: 0 };
   let spotStale = false;
   let releasePointers = null;
+  // Крен кадра и доля собранной афиши: их ставит текущий кадр, а не тот, что был до него,
+  // поэтому перед каждым вызовом они возвращаются к покою.
+  let roll = 0;
+  let reveal = 1;
+
+  // Трасса пролёта идёт сплайном, а не отрезками: на стыке отрезков скорость падает в ноль,
+  // и полёт читается серией остановок у каждого узла.
+  const approachEnd = new THREE.Vector3(0, STILL.y, STILL.z);
+  const approachEye = new THREE.CatmullRomCurve3([
+    ...APPROACH.flight.map((node) => new THREE.Vector3(...node.eye)),
+    approachEnd,
+  ]);
+  const approachAim = new THREE.CatmullRomCurve3([
+    ...APPROACH.flight.map((node) => new THREE.Vector3(...node.aim)),
+    new THREE.Vector3(0, STILL.targetY, 0),
+  ]);
+  const draftAhead = new THREE.Vector3();
+
+  /** Крен на повороте: камера заваливается в ту сторону, куда её сносит трасса. */
+  function bankOf(along) {
+    approachEye.getPoint(Math.min(along + APPROACH.bankLead, 1), draftAhead);
+    const drift = (position.x - draftAhead.x) * APPROACH.bankGain;
+    return clamp(drift, -APPROACH.bankLimit, APPROACH.bankLimit);
+  }
 
   const shots = {
     still(seconds) {
@@ -182,18 +219,15 @@ export function createCameraRig({ camera, bounds, rng }) {
     },
     approach(seconds) {
       const time = Math.min(seconds / APPROACH.seconds, 1);
-      const turn = smoothstep(Math.min(time / APPROACH.turnShare, 1));
-      const fly = smoothstep(time);
-      const poster = Math.max(STILL.z, fitDistance(camera.aspect, STILL.targetY));
-      position.set(
-        lerp(APPROACH.startX, 0, fly),
-        lerp(APPROACH.startY, STILL.y, fly),
-        lerp(APPROACH.startZ, poster, fly),
-      );
-      lookAt.set(
-        lerp(APPROACH.startTargetX, 0, turn),
-        lerp(APPROACH.startTargetY, STILL.targetY, turn),
-        0,
+      // Последний узел трассы это кадр афиши, а он зависит от формы холста, поэтому узел
+      // переставляется на каждом кадре, а не вычисляется один раз при сборке рига.
+      approachEnd.z = Math.max(STILL.z, fitDistance(camera.aspect, STILL.targetY));
+      const along = smoothstep(time);
+      approachEye.getPoint(along, position);
+      approachAim.getPoint(along, lookAt);
+      roll = bankOf(along);
+      reveal = clamp01(
+        (time - APPROACH.assembleFrom) / (APPROACH.assembleTo - APPROACH.assembleFrom),
       );
     },
     free() {
@@ -262,6 +296,8 @@ export function createCameraRig({ camera, bounds, rng }) {
   }
 
   function place(seconds) {
+    roll = 0;
+    reveal = 1;
     shots[mode](seconds);
     // Отъезжает только афиша: она снимает коробку типографики в лоб. Петле и спуску отъезд
     // вреден, они ходят внутри зала и вылезли бы за колоннаду.
@@ -272,6 +308,7 @@ export function createCameraRig({ camera, bounds, rng }) {
     }
     camera.position.copy(position);
     camera.lookAt(lookAt);
+    if (roll !== 0) camera.rotateZ(roll);
   }
 
   function readMotion(dt) {
@@ -392,5 +429,7 @@ export function createCameraRig({ camera, bounds, rng }) {
   previousPosition.copy(camera.position);
   camera.getWorldDirection(previousForward);
 
-  return { setMode, update, motion };
+  // Афишу собирает типографика, а знает про сборку камера: только у неё есть время кадра.
+  // Наружу уходит доля собранного, а не имя режима, иначе про пролёт узнает вся страница.
+  return { setMode, update, motion, get reveal() { return reveal; } };
 }

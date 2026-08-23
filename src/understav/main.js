@@ -288,11 +288,14 @@ async function boot() {
     stage.renderer.info.reset();
     stage.update(dt, elapsed);
     world?.architecture.update(elapsed);
-    world?.typography.update(dt, elapsed);
-    world?.bats.update(elapsed);
     const walking = view.mode === WALK_MODE && walk !== null;
     if (walking) walk.update(dt);
     else world?.rig.update(dt, elapsed);
+    // Камера ведёт сборку афиши, поэтому она ходит раньше типографики: иначе строки едут
+    // по доле прошлого кадра, а железо плит доезжает до них ещё кадром позже.
+    world?.typography.assemble(walking ? 1 : world.rig.reveal);
+    world?.typography.update(dt, elapsed);
+    world?.bats.update(elapsed);
     effects.render(dt, elapsed, world && !walking ? world.rig.motion : STILL_MOTION);
 
     if (recorder.recording) recorder.frame();

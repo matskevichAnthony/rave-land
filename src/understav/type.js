@@ -67,6 +67,16 @@ const STENCIL_LIFT = 0.006;
 // строгому порогу мелкое имя рассыпается раньше, чем становится нечитаемым по кеглю.
 const STENCIL_ALPHA_TEST = 0.38;
 const RAGGED_SHIFT = 0.6;
+// Лайнап стоит зигзагом, а не колонкой по центру: имена уходят попеременно влево и вправо,
+// и список читается лентой. Размах в метрах, но он режется свободным местом строки: широкое
+// имя занимает коробку почти целиком и почти не двигается, короткое уходит на всю ширину.
+const LINEUP_ZIGZAG = 1.4;
+
+// Сборка афиши на пролёте: строки прилетают по одной, попеременно из-за левого и правого
+// края зала, и садятся на своё место. Разгон меряется местами в очереди, а не секундами:
+// длина пролёта зависит от кадра, а порядок строк нет.
+const ASSEMBLE_SLIDE = 24;
+const ASSEMBLE_SPAN = 1.7;
 
 // Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
@@ -572,9 +582,15 @@ function planBarbedRun({ shared, rng, anchor, layout, width, height }) {
   }
 }
 
+/** Сдвиг плиты поперёк коробки: заданная сторона уводит её зигзагом, ноль оставляет рванину. */
+function plateShift(zigzag, slack, rng) {
+  if (!zigzag) return rng.range(-1, 1) * slack * RAGGED_SHIFT;
+  return zigzag * Math.min(slack, LINEUP_ZIGZAG);
+}
+
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
-  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, wireLayout = null,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, wireLayout = null, zigzag = 0,
 }) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
   const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
@@ -622,7 +638,7 @@ function createPlate({
   stencilFace.castShadow = false;
 
   group.add(stencilFace);
-  group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
+  group.position.x = plateShift(zigzag, (maxWidth - width) / 2, rng);
 
   if (wireLayout) planBarbedRun({ shared, rng, anchor: group, layout: wireLayout, width, height });
 
@@ -694,6 +710,11 @@ function stackRows(rows, box) {
   }
 }
 
+/** Мягкая посадка: строка приходит быстро и гасит скорость у самого своего места. */
+function settle(t) {
+  return 1 - (1 - t) ** 3;
+}
+
 function breath(elapsed, omega) {
   return Math.pow(0.5 + 0.5 * Math.sin(elapsed * omega), BREATH_SHARPNESS);
 }
@@ -749,6 +770,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
     wireLayout: wireLayouts[index],
+    zigzag: index % 2 === 0 ? -1 : 1,
   }));
 
   const dateFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
@@ -808,10 +830,35 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   const plates = [...(tagline ? [tagline] : []), ...lineup, date, ...(venue ? [venue] : [])];
   const beatOmega = TAU / BEAT.seconds;
 
+  // Строки прилетают в том же порядке, в каком стоят в афише, и через одну с разных сторон.
+  // Место покоя у строки своё, поэтому влёт считается от него, а не вместо него.
+  const flying = rows.map((item, index) => ({
+    group: item.row.group,
+    restX: item.row.group.position.x,
+    from: index % 2 === 0 ? -1 : 1,
+  }));
+  let assembled = 1;
+
   return {
     group,
     setDaysLeft(days) {
       countdown.show(days);
+    },
+    /**
+     * Насколько афиша собрана: ноль это пустой зал, единица это готовый плакат.
+     *
+     * Долю даёт камера, потому что собирается афиша по ходу пролёта, а её время знает риг.
+     */
+    assemble(progress) {
+      const ready = THREE.MathUtils.clamp(progress, 0, 1);
+      if (ready === assembled) return;
+      assembled = ready;
+      const front = ready * (flying.length + ASSEMBLE_SPAN);
+      for (let index = 0; index < flying.length; index += 1) {
+        const row = flying[index];
+        const arrived = settle(THREE.MathUtils.clamp((front - index) / ASSEMBLE_SPAN, 0, 1));
+        row.group.position.x = row.restX + (1 - arrived) * row.from * ASSEMBLE_SLIDE;
+      }
     },
     update(dt, elapsed) {
       title.burn(elapsed);
