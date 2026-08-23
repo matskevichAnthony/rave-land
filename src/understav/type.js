@@ -60,18 +60,6 @@ const RULE_THICKNESS = 0.06;
 const RULE_DEPTH = 0.05;
 const RULE_EMISSIVE = 1.1;
 
-// Колючая проволока по кромкам имён: зал жуёт афишу, и лайнап в нём не висит, а отгорожен.
-const WIRE_SIDES = 4;
-const WIRE_RADIUS = 0.017;
-const WIRE_SPANS = 9;
-const WIRE_OVERHANG = 0.22;
-const WIRE_SAG = 0.055;
-const WIRE_Z = PLATE_Z + 0.24;
-const WIRE_EMISSIVE = 0.16;
-const BARB_EVERY = 1;
-const BARB_LENGTH = 0.14;
-const BARB_RADIUS = 0.026;
-const BARB_TILT = 0.55;
 const PLATE_RIM = 0.05;
 const PLATE_FACE_RELIEF = 0.02;
 const STENCIL_LIFT = 0.006;
@@ -88,6 +76,50 @@ const GAP_IN_LINEUP = 0.13;
 const GAP_AFTER_LINEUP = 0.75;
 const GAP_AFTER_RULE = 0.75;
 const GAP_AFTER_DATE = 0.1;
+
+// Колючая проволока по кромкам имён: зал жуёт афишу, и лайнап в нём не висит, а отгорожен.
+// Прогон один на строку и не на каждой строке: проволока по обеим кромкам всех имён
+// читается орнаментом, а заграждение это то, чего мало и что торчит. Пустое место в списке
+// раскладок это плита вовсе без проволоки.
+const WIRE_LAYOUTS = ['top', 'bottom', 'corner', null];
+const WIRE_SIDES = 4;
+const WIRE_RADIUS = 0.024;
+const WIRE_OVERHANG = 0.26;
+const WIRE_STEP_MIN = 0.34;
+const WIRE_STEP_MAX = 0.62;
+const WIRE_SAG_MIN = 0.03;
+const WIRE_SAG_MAX = 0.14;
+const WIRE_LEAN = 0.07;
+const WIRE_JITTER = 0.035;
+const WIRE_CORNER_DROP_MIN = 0.35;
+const WIRE_CORNER_DROP_MAX = 0.8;
+const WIRE_Z = PLATE_Z + 0.24;
+// Полированный металл в чёрном зале отражает пустоту и уходит в чёрный, поэтому прут почти
+// не металл: светлая кость, матовая, со своим свечением. Свечение держится ниже порога
+// блума, иначе колючка засветится ярче имени, которое сторожит.
+const WIRE_EMISSIVE = 0.9;
+const WIRE_METALNESS = 0.2;
+const WIRE_ROUGHNESS = 0.5;
+
+const BARB_SIDES = 6;
+const BARB_RADIUS = 0.038;
+const BARB_SPIKES_MIN = 3;
+const BARB_SPIKES_MAX = 4;
+const BARB_EVERY_MIN = 1;
+const BARB_EVERY_MAX = 2;
+const BARB_LENGTH_MIN = 0.62;
+const BARB_LENGTH_MAX = 0.95;
+const BARB_LENGTH_JITTER = 0.22;
+// Веер узла отсчитывается от направления наружу: ноль это прочь от плиты, четверть
+// оборота вперёд, к камере, а небольшой минус уводит шип назад, за кромку.
+const BARB_FAN_FROM = -0.35;
+const BARB_FAN_TO = 1.75;
+const BARB_RAKE_MIN = 0.7;
+const BARB_RAKE_MAX = 1.8;
+// Между именами лежит только промежуток строки да поле плиты: шип, задранный прямо
+// наружу, упёрся бы в буквы соседа, поэтому вверх он короткий, а длину набирает тот,
+// что валится вдоль прута и вперёд.
+const BARB_CLEARANCE = GAP_IN_LINEUP + PLATE_PAD_Y - PLATE_RIM;
 
 const COUNTDOWN_WIDTH = 6.4;
 const COUNTDOWN_HEIGHT = 4.8;
@@ -143,6 +175,7 @@ const draftScale = new THREE.Vector3();
 const draftTurn = new THREE.Quaternion();
 const IDENTITY_TURN = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
+const FORWARD = new THREE.Vector3(0, 0, 1);
 
 const REQUIRED_EVENT_FIELDS = ['event', 'dateLabel', 'lineup'];
 
@@ -341,12 +374,14 @@ function createPlateMaterials() {
   return {
     rim: new THREE.MeshStandardMaterial({ color: PALETTE.rust, metalness: 0.8, roughness: 0.9 }),
     face: new THREE.MeshStandardMaterial({ color: PALETTE.iron, metalness: 0.9, roughness: 0.55 }),
+    // Проволока светится сама: бликам в этом зале нечего отражать, и цвет прута держится
+    // только на собственном свечении.
     wire: new THREE.MeshStandardMaterial({
-      color: PALETTE.rust,
-      emissive: PALETTE.ember,
+      color: PALETTE.bone,
+      emissive: PALETTE.bone,
       emissiveIntensity: WIRE_EMISSIVE,
-      metalness: 0.95,
-      roughness: 0.55,
+      metalness: WIRE_METALNESS,
+      roughness: WIRE_ROUGHNESS,
     }),
   };
 }
@@ -423,52 +458,123 @@ function createRule({ shared, width }) {
   return { group, height: RULE_THICKNESS };
 }
 
-/** Узлы прута вдоль кромки: провис вниз-вверх через один, чтобы прут не читался линейкой. */
-function wireKnots(width, edgeY, rng) {
-  const span = width + WIRE_OVERHANG * 2;
-  return Array.from({ length: WIRE_SPANS + 1 }, (unused, index) => {
-    const along = index / WIRE_SPANS;
-    const sag = index % 2 === 0 ? -WIRE_SAG : WIRE_SAG;
-    return new THREE.Vector3(
-      -span / 2 + span * along,
-      edgeY + sag * rng.range(0.6, 1.4),
-      WIRE_Z + rng.range(-1, 1) * WIRE_SAG,
-    );
+/** Раскладки прогонов по строкам: соседние не повторяются, иначе ряд снова читается узором. */
+function planWireLayouts(count, rng) {
+  const layouts = [];
+  for (let index = 0; index < count; index += 1) {
+    layouts.push(rng.pick(WIRE_LAYOUTS.filter((layout) => layout !== layouts[index - 1])));
+  }
+  return layouts;
+}
+
+/** Концы прогона в системе плиты: вдоль верхней кромки, вдоль нижней или наискось через угол. */
+function wireRunEnds(layout, { width, height, rng }) {
+  const reach = width / 2 + WIRE_OVERHANG;
+  if (layout === 'corner') {
+    const side = rng.sign();
+    const drop = -height * rng.range(WIRE_CORNER_DROP_MIN, WIRE_CORNER_DROP_MAX);
+    return [
+      new THREE.Vector3(side * reach, drop, WIRE_Z),
+      // Внутрь прут заходит ровно на поле плиты: дальше начинается буква.
+      new THREE.Vector3(side * (width / 2 - PLATE_PAD_X), PLATE_RIM + WIRE_OVERHANG, WIRE_Z),
+    ];
+  }
+  const edgeY = layout === 'top' ? PLATE_RIM : -height - PLATE_RIM;
+  const lean = rng.range(-WIRE_LEAN, WIRE_LEAN);
+  return [
+    new THREE.Vector3(-reach, edgeY - lean, WIRE_Z),
+    new THREE.Vector3(reach, edgeY + lean, WIRE_Z),
+  ];
+}
+
+/** Узлы прута: провис к середине пролёта плюс дрожь, чтобы прут не читался линейкой. */
+function wireKnots(from, to, rng) {
+  const sag = rng.range(WIRE_SAG_MIN, WIRE_SAG_MAX);
+  const steps = Math.max(2, Math.round(from.distanceTo(to) / rng.range(WIRE_STEP_MIN, WIRE_STEP_MAX)));
+  return Array.from({ length: steps + 1 }, (unused, index) => {
+    const along = index / steps;
+    const knot = from.clone().lerp(to, along);
+    knot.y += rng.range(-1, 1) * WIRE_JITTER - sag * Math.sin(along * Math.PI);
+    knot.z += rng.range(-1, 1) * WIRE_JITTER;
+    return knot;
   });
 }
 
+/** Куда торчать шипам: перпендикуляр прогона в плоскости плиты, направленный прочь от букв. */
+function outwardOfRun(from, to, height) {
+  const side = new THREE.Vector3(from.y - to.y, to.x - from.x, 0).normalize();
+  const away = new THREE.Vector3((from.x + to.x) / 2, (from.y + to.y) / 2 + height / 2, 0);
+  return side.dot(away) < 0 ? side.negate() : side;
+}
+
 /**
- * Прут и колючки одной кромки.
+ * Узел колючки: два-четыре шипа, скрещённых в одной точке.
+ *
+ * Одиночный конус на сегмент читается заклёпкой: злость даёт именно перекрестье, поэтому
+ * шипы веером расходятся наружу и вперёд, к камере, а вдоль прута валятся в разные стороны,
+ * через один. Так узел виден и в силуэте, и в лоб.
+ */
+function planBarbKnot({ shared, rng, anchor, at, along, outward, length }) {
+  const spikes = rng.int(BARB_SPIKES_MIN, BARB_SPIKES_MAX);
+  for (let index = 0; index < spikes; index += 1) {
+    const fan = BARB_FAN_FROM + (BARB_FAN_TO - BARB_FAN_FROM) * ((index + rng()) / spikes);
+    const rake = rng.range(BARB_RAKE_MIN, BARB_RAKE_MAX) * (index % 2 === 0 ? 1 : -1);
+    const spike = outward.clone().multiplyScalar(Math.cos(fan))
+      .addScaledVector(FORWARD, Math.sin(fan))
+      .addScaledVector(along, rake)
+      .normalize();
+    const grown = Math.min(
+      length * rng.range(1 - BARB_LENGTH_JITTER, 1 + BARB_LENGTH_JITTER),
+      BARB_CLEARANCE / Math.abs(spike.y),
+    );
+    shared.slabs.barb.push(anchoredAt(anchor, {
+      position: at.clone().addScaledVector(spike, grown / 2),
+      quaternion: draftTurn.clone().setFromUnitVectors(UP, spike),
+      scale: draftScale.set(BARB_RADIUS, grown, BARB_RADIUS),
+    }));
+  }
+}
+
+/**
+ * Прогон проволоки с узлами.
  *
  * Прут собирается отрезками между узлами, а не сплайном: у отрезка есть готовая геометрия,
- * которая уже едет инстансом, и колючке есть на чём сидеть.
+ * которая уже едет инстансом, и колючке есть на чём сидеть. Плотность узлов, провис, наклон
+ * и длина шипов берутся на прогон, а не на сцену: две плиты подряд не должны совпасть.
  */
-function planBarbedEdge({ shared, rng, anchor, width, edgeY, outward }) {
-  const knots = wireKnots(width, edgeY, rng);
+function planBarbedRun({ shared, rng, anchor, layout, width, height }) {
+  const [from, to] = wireRunEnds(layout, { width, height, rng });
+  const knots = wireKnots(from, to, rng);
+  const outward = outwardOfRun(from, to, height);
+  const every = rng.int(BARB_EVERY_MIN, BARB_EVERY_MAX);
+  const length = rng.range(BARB_LENGTH_MIN, BARB_LENGTH_MAX);
+
   for (let index = 0; index < knots.length - 1; index += 1) {
-    const from = knots[index];
-    const to = knots[index + 1];
-    const along = to.clone().sub(from);
-    const turn = draftTurn.clone().setFromUnitVectors(UP, along.clone().normalize());
+    const start = knots[index];
+    const end = knots[index + 1];
+    const along = end.clone().sub(start);
     shared.slabs.wire.push(anchoredAt(anchor, {
-      position: from.clone().add(to).multiplyScalar(0.5),
-      quaternion: turn,
+      position: start.clone().add(end).multiplyScalar(0.5),
+      quaternion: draftTurn.clone().setFromUnitVectors(UP, along.clone().normalize()),
       scale: draftScale.set(WIRE_RADIUS, along.length(), WIRE_RADIUS),
     }));
 
-    if (index % BARB_EVERY !== 0) continue;
-    const lean = new THREE.Vector3(rng.range(-BARB_TILT, BARB_TILT), outward, rng.range(-1, 1) * BARB_TILT);
-    shared.slabs.barb.push(anchoredAt(anchor, {
-      position: from.clone().lerp(to, 0.5),
-      quaternion: draftTurn.clone().setFromUnitVectors(UP, lean.normalize()),
-      scale: draftScale.set(BARB_RADIUS, BARB_LENGTH * rng.range(0.8, 1.3), BARB_RADIUS),
-    }));
+    if (index % every !== 0) continue;
+    planBarbKnot({
+      shared,
+      rng,
+      anchor,
+      outward,
+      length,
+      at: start.clone().lerp(end, 0.5),
+      along: along.normalize(),
+    });
   }
 }
 
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
-  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, barbed = false,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, wireLayout = null,
 }) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
   const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
@@ -518,10 +624,7 @@ function createPlate({
   group.add(stencilFace);
   group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
 
-  if (barbed) {
-    planBarbedEdge({ shared, rng, anchor: group, width, edgeY: PLATE_RIM, outward: 1 });
-    planBarbedEdge({ shared, rng, anchor: group, width, edgeY: -height - PLATE_RIM, outward: -1 });
-  }
+  if (wireLayout) planBarbedRun({ shared, rng, anchor: group, layout: wireLayout, width, height });
 
   return {
     group,
@@ -609,7 +712,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
     wire: new THREE.CylinderGeometry(1, 1, 1, WIRE_SIDES, 1, true),
-    barb: new THREE.ConeGeometry(1, 1, WIRE_SIDES),
+    barb: new THREE.ConeGeometry(1, 1, BARB_SIDES),
     materials: createPlateMaterials(),
     slabs: {
       rim: [], front: [], wire: [], barb: [],
@@ -635,6 +738,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   // а ранга у этих имён нет, есть только разная длина ников.
   const lineupFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * LINEUP_WIDTH_RATIO };
   const lineupCap = Math.min(...event.lineup.map((name) => fitCapHeight(name, lineupFit)));
+  const wireLayouts = planWireLayouts(event.lineup.length, rng);
   const lineup = event.lineup.map((name, index) => createPlate({
     text: name,
     maxWidth: lineupFit.maxWidth,
@@ -644,7 +748,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     shared,
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
-    barbed: true,
+    wireLayout: wireLayouts[index],
   }));
 
   const dateFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
