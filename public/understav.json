@@ -1,11 +1,10 @@
 {
   "version": 1,
   "event": "UNDERSTAV",
-  "tagline": "++ INDUSTRIAL GOTHIC RITUAL ++",
+  "tagline": "INDUSTRIAL GOTHIC RITUAL",
   "date": "2026-09-25",
   "dateLabel": "25.09.2026",
   "todayLabel": "СЕГОДНЯ",
-  "headliners": 2,
   "lineup": [
     "PRIZRAK (KRD)",
     "ANTON+MATZKAIM",
