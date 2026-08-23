@@ -20,6 +20,7 @@ const DEFAULT_TAKE_SECONDS = 8;
 const MAX_TAKE_SECONDS = 60;
 const HIDDEN_CLASS = 'deck--hidden';
 const TOGGLE_LABEL = { shown: 'Скрыть', hidden: 'Пульт' };
+const SAVE_SCENE_LABEL = { idle: 'Скачать сцену', busy: 'Собираю' };
 const LOCKED_WHILE_RECORDING = '[data-js-framing], [data-js-new-seed]';
 const OVER_CLASS = 'meter__value--over';
 
@@ -65,6 +66,7 @@ export function createPanel({
   countdown.addEventListener('change', () => actions.setCountdown(countdown.checked));
   pick('shoot').addEventListener('click', () => actions.shoot(takeSeconds()));
   pick('capture').addEventListener('click', actions.capture);
+  pick('save-scene').addEventListener('click', actions.saveScene);
   pick('guest').addEventListener('click', actions.guest);
   pick('battle').addEventListener('click', actions.battle);
 
@@ -133,6 +135,11 @@ export function createPanel({
       // Смена кадрирования и сида посреди дубля меняет размер холста, а дорожка записи
       // этого не переживает, поэтому на время записи кнопки закрыты.
       for (const locked of root.querySelectorAll(LOCKED_WHILE_RECORDING)) locked.disabled = active;
+    },
+    setExporting(active) {
+      const button = pick('save-scene');
+      button.disabled = active;
+      button.textContent = active ? SAVE_SCENE_LABEL.busy : SAVE_SCENE_LABEL.idle;
     },
     toggle: toggleDeck,
     hide: () => setDeck(true),

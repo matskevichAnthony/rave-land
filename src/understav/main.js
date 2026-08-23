@@ -19,6 +19,7 @@ const SEED_PATTERN = /^[0-9a-f]{1,8}$/i;
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PANEL_KEY = 'KeyH';
 const FRAME_MARGIN = 24;
+const MEGABYTE = 1024 * 1024;
 
 const FRAMINGS = { square: 1, story: 9 / 16, wide: 16 / 9, full: null };
 
@@ -114,6 +115,7 @@ async function boot() {
       capture: () => {
         wantsStillFrame = true;
       },
+      saveScene: saveSceneFile,
     },
   });
 
@@ -263,6 +265,34 @@ async function boot() {
     }, 'image/png');
   }
 
+  /**
+   * Сцена наружу файлом: зал и афиша уходят в .glb для телефона и для Blender.
+   *
+   * Слепок со сцены снимается разом, а картинки экспортёр жуёт сам и поток между ними
+   * отпускает: отрисовка идёт своим чередом, и кадр на время сборки не встаёт.
+   */
+  async function saveSceneFile() {
+    if (!world) {
+      panel.note('Сцена ещё не собралась');
+      return;
+    }
+    panel.setExporting(true);
+    panel.note('Собираю файл сцены');
+    try {
+      const { exportSceneGlb } = await import('./export-glb.js').catch((error) => {
+        throw new Error(`export-glb.js не загрузился: ${error.message}`);
+      });
+      const blob = await exportSceneGlb([world.architecture.group, world.typography.group]);
+      const name = `${fileStem()}.glb`;
+      download(blob, name);
+      panel.note(`Готово: ${name}, ${megabytes(blob.size)}`);
+    } catch (error) {
+      panel.note(`Сцена не выгрузилась: ${error.message}`);
+    } finally {
+      panel.setExporting(false);
+    }
+  }
+
   function fileStem() {
     return `${event.event}-${view.mode}-${seed}`.toLowerCase();
   }
@@ -342,6 +372,10 @@ function daysUntil(date) {
 function readSeed(fallback) {
   const asked = new URL(window.location.href).searchParams.get(SEED_PARAM);
   return asked && SEED_PATTERN.test(asked) ? asked.toLowerCase() : fallback;
+}
+
+function megabytes(bytes) {
+  return `${(bytes / MEGABYTE).toFixed(1)} МБ`;
 }
 
 function frameSize(aspect) {
