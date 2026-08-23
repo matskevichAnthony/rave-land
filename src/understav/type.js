@@ -113,6 +113,10 @@ const SWAY_BEATS_MAX = 11;
 
 const TAU = Math.PI * 2;
 
+// Черновик матрицы инстанса: пересчёт идёт каждый кадр, и новых объектов он заводить не должен.
+const localSlab = new THREE.Object3D();
+const slabMatrix = new THREE.Matrix4();
+
 const REQUIRED_EVENT_FIELDS = ['event', 'dateLabel', 'lineup'];
 
 function requireEventFields(event) {
@@ -322,6 +326,33 @@ function slab(geometry, material, width, height, depth, z) {
   return mesh;
 }
 
+/**
+ * Железо всех плит двумя инстансами: кант и лицо.
+ *
+ * Отдельными мешами афиша стоила восьми вызовов отрисовки на строку (кадр рисует сцену
+ * трижды: глубина, тени, цвет), то есть трети всего бюджета кадра на текст. Форма и материал
+ * у плит общие, разнятся только габариты, и это ровно случай инстанса.
+ */
+function buildSlabInstances(slabs, geometry, material) {
+  const mesh = new THREE.InstancedMesh(geometry, material, slabs.length);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
+  return {
+    mesh,
+    refresh() {
+      for (const [index, plan] of slabs.entries()) {
+        plan.anchor.updateMatrixWorld();
+        localSlab.position.set(0, -plan.height / 2, plan.z);
+        localSlab.scale.set(plan.width, plan.height, plan.depth);
+        localSlab.updateMatrix();
+        mesh.setMatrixAt(index, slabMatrix.multiplyMatrices(plan.anchor.matrixWorld, localSlab.matrix));
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+    },
+  };
+}
+
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
   worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING,
@@ -352,15 +383,15 @@ function createPlate({
   });
 
   const frontDepth = PLATE_DEPTH + PLATE_FACE_RELIEF;
-  const front = slab(shared.box, shared.materials.face, width, height, frontDepth, PLATE_Z);
-  const rim = slab(
-    shared.box,
-    shared.materials.rim,
-    width + PLATE_RIM * 2,
-    height + PLATE_RIM * 2,
-    PLATE_DEPTH,
-    PLATE_Z,
-  );
+  const group = new THREE.Group();
+  shared.slabs.rim.push({
+    anchor: group,
+    width: width + PLATE_RIM * 2,
+    height: height + PLATE_RIM * 2,
+    depth: PLATE_DEPTH,
+    z: PLATE_Z,
+  });
+  shared.slabs.front.push({ anchor: group, width, height, depth: frontDepth, z: PLATE_Z });
 
   const stencilFace = slab(
     shared.plane,
@@ -372,8 +403,7 @@ function createPlate({
   );
   stencilFace.castShadow = false;
 
-  const group = new THREE.Group();
-  group.add(rim, front, stencilFace);
+  group.add(stencilFace);
   group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
 
   return {
@@ -462,6 +492,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
     materials: createPlateMaterials(),
+    slabs: { rim: [], front: [] },
   };
 
   const title = createTitle({ text: event.event, rng, targetWidth: box.width * TITLE_WIDTH_RATIO });
@@ -537,6 +568,12 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   for (const item of rows) group.add(item.row.group);
   group.add(countdown.mesh);
 
+  const iron = [
+    buildSlabInstances(shared.slabs.rim, shared.box, shared.materials.rim),
+    buildSlabInstances(shared.slabs.front, shared.box, shared.materials.face),
+  ];
+  group.add(...iron.map((instance) => instance.mesh));
+
   const plates = [...(tagline ? [tagline] : []), ...lineup, date, ...(venue ? [venue] : [])];
   const beatOmega = TAU / BEAT.seconds;
 
@@ -553,6 +590,8 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
         plate.group.rotation.z = plate.sway.amplitude * Math.sin(angle);
         plate.group.rotation.x = plate.sway.amplitude * SWAY_TILT_RATIO * Math.cos(angle);
       }
+      // Железо плит живёт инстансами, и качание доезжает до него матрицами, а не иерархией.
+      for (const instance of iron) instance.refresh();
 
       if (!countdown.mesh.visible) return;
       const pulse = breath(elapsed, beatOmega);
