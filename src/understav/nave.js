@@ -37,6 +37,29 @@ export const CORRIDOR = {
 /** Коробка под лайнап: внутри неё не стоит ни одна деталь зала. */
 export const TYPE_BOX = { x: 0, y: 5.5, z: 0, width: 12, height: 9, depth: 2 };
 
+/** Точка, с которой снимают афишу: от неё считается, что в кадре ляжет поверх текста. */
+export const POSTER_EYE = { y: 5.5, z: 26 };
+
+/**
+ * Ложится ли точка зала на текст в кадре афиши.
+ *
+ * Проверять надо конус зрения, а не объём коробки: цепь, честно висящая в десяти метрах
+ * за текстом, на экране всё равно перечёркивает имена, потому что стоит на том же луче.
+ */
+export function crossesTypeOnScreen(x, z, margin = 0) {
+  const depth = POSTER_EYE.z - z;
+  if (depth <= 0) return false;
+  const spread = depth / (POSTER_EYE.z - TYPE_BOX.z);
+  return Math.abs(x - TYPE_BOX.x) < (TYPE_BOX.width / 2 + margin) * spread;
+}
+
+/** Ближайшее к оси место сбоку от текста: туда уводят то, что иначе перечеркнёт имена. */
+export function besideType(x, z, margin = 0) {
+  const spread = (POSTER_EYE.z - z) / (POSTER_EYE.z - TYPE_BOX.z);
+  const clear = (TYPE_BOX.width / 2 + margin) * spread;
+  return Math.sign(x || 1) * Math.min(Math.max(Math.abs(x), clear), NAVE.colonnadeHalfWidth);
+}
+
 /**
  * Кольцо бочек с углями.
  *

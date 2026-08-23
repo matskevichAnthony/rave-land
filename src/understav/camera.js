@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CORRIDOR, NAVE, ROSE, TYPE_BOX } from './nave.js';
+import { CORRIDOR, NAVE, POSTER_EYE, ROSE, TYPE_BOX } from './nave.js';
 
 /**
  * Камера промо-сцены: три готовых кадра, свободный поиск руками и честная экранная
@@ -17,8 +17,8 @@ const TAU = Math.PI * 2;
 const DEFAULT_BOUNDS = { radius: 14, height: 18 };
 
 const STILL = {
-  y: 5.5,
-  z: 26,
+  y: POSTER_EYE.y,
+  z: POSTER_EYE.z,
   targetY: 5,
   breathSeconds: 19,
   breathHeight: 0.16,

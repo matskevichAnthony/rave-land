@@ -10,7 +10,9 @@ import * as THREE from 'three';
 import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BEAT, PALETTE } from './palette.js';
-import { BOUNDS, CORRIDOR, EMBER_RING, NAVE, ROSE, TYPE_BOX } from './nave.js';
+import {
+  besideType, BOUNDS, CORRIDOR, crossesTypeOnScreen, EMBER_RING, NAVE, ROSE, TYPE_BOX,
+} from './nave.js';
 import { createFloorSmoke, createGodRay, createHaze, createSparks } from './embers.js';
 import { createCat } from './cat.js';
 import { createRandom } from './random.js';
@@ -141,6 +143,7 @@ const ALTAR = {
   stepTaper: 0.35,
   chainAngles: [0.25, 0.75, 1.25, 1.75],
   chainRadius: 5.4,
+  chainClearance: 0.9,
   chainDrop: 0.4,
 };
 
@@ -1344,12 +1347,18 @@ function buildChain(geometries, materials, links, tint) {
   }, tint);
 }
 
+/**
+ * Цепи алтаря обрамляют текст, а не перечёркивают его.
+ *
+ * Кольцо радиусом с алтарь ставило все четыре цепи на луч зрения поверх имён, поэтому
+ * место по оси зала остаётся, а поперёк цепь уводится за экранный край коробки.
+ */
 function buildAltarChains(geometries, materials) {
   const links = [];
   for (const turn of ALTAR.chainAngles) {
     const angle = turn * Math.PI;
-    const x = Math.cos(angle) * ALTAR.chainRadius;
     const z = Math.sin(angle) * ALTAR.chainRadius;
+    const x = besideType(Math.cos(angle) * ALTAR.chainRadius, z, ALTAR.chainClearance);
     planChain(
       links,
       new THREE.Vector3(x, NAVE.vaultHeight - ALTAR.chainDrop, z),
@@ -1376,10 +1385,8 @@ function crossesRose(x) {
   return Math.abs(x) < ROSE.radius + JUNK.clearance;
 }
 
-function junkBottom(x, z, halfX = 0, halfZ = 0) {
-  const insideX = Math.abs(x - TYPE_BOX.x) < TYPE_BOX.width * HALF + JUNK.clearance + halfX;
-  const insideZ = Math.abs(z - TYPE_BOX.z) < TYPE_BOX.depth * HALF + JUNK.clearance + halfZ;
-  if (!insideX || !insideZ) return JUNK.freeBottom;
+function junkBottom(x, z, halfX = 0) {
+  if (!crossesTypeOnScreen(x, z, JUNK.clearance + halfX)) return JUNK.freeBottom;
   return TYPE_BOX.y + TYPE_BOX.height * HALF + JUNK.clearance;
 }
 
@@ -1425,7 +1432,7 @@ function buildJunk(rng, geometries, materials) {
     const radius = rng.range(...JUNK.ductRadius);
     const length = rng.range(...JUNK.ductLength);
     const alongZ = rng() < HALF || crossesRose(x);
-    const bottom = junkBottom(x, z, alongZ ? 0 : length * HALF, alongZ ? length * HALF : 0);
+    const bottom = junkBottom(x, z, alongZ ? 0 : length * HALF);
     item.position.set(x, bottom + rng.range(...JUNK.hang) - NAVE.vaultHeight, z);
     item.rotation.set(alongZ ? Math.PI * HALF : 0, 0, alongZ ? 0 : Math.PI * HALF);
     item.scale.set(radius, length, radius);
@@ -1438,7 +1445,7 @@ function buildJunk(rng, geometries, materials) {
     const z = rng.range(...JUNK.spreadZ);
     const length = rng.range(...JUNK.trayLength);
     const alongZ = rng() < HALF || crossesRose(x);
-    const bottom = junkBottom(x, z, alongZ ? 0 : length * HALF, alongZ ? length * HALF : 0);
+    const bottom = junkBottom(x, z, alongZ ? 0 : length * HALF);
     item.position.set(x, bottom + rng.range(...JUNK.hang) - NAVE.vaultHeight, z);
     item.rotation.y = alongZ ? Math.PI * HALF : 0;
     item.scale.set(length, JUNK.trayHeight, JUNK.trayWidth);
