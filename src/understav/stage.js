@@ -19,12 +19,15 @@ const FOG_DENSITY = 0.015;
 
 const KEY = { intensity: 3.6, breath: 0.09 };
 const SHADOW = {
-  mapSize: 1024,
+  // Тень идёт на весь зал: на тысяче двадцати четырёх тексель весит три сантиметра, и прутья
+  // розы с рёбрами свода ложились на камень лесенкой. Второй проход теней это не добавляет,
+  // карта та же, просто вчетверо подробнее.
+  mapSize: 2048,
   halfWidth: 16,
   halfHeight: 20,
   near: 8,
   far: 84,
-  bias: -0.0008,
+  bias: -0.0004,
   normalBias: 0.06,
 };
 // Полусфера светит всюду и не отбрасывает ничего: на прежней силе она поднимала каждую тень
@@ -108,7 +111,7 @@ export function createStage({ mount }) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = EXPOSURE;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   mount.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
