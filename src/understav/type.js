@@ -14,8 +14,10 @@ import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.j
  */
 
 const BOX_WIDTH = 12;
-const BOX_HEIGHT = 9;
-const BOX_TOP = 10;
+// Коробка выше зала прежнего: набор перерос её, а первым делом строки съедают промежутки,
+// и блоки афиши слипались в одну простыню.
+const BOX_HEIGHT = 9.4;
+const BOX_TOP = 11.8;
 const NAVE_HEADROOM = 2;
 
 const TITLE_WIDTH_RATIO = 0.95;
@@ -53,6 +55,10 @@ const GOTHIC_TRACKING = 0.06;
 const PLATE_PAD_X = 0.3;
 const PLATE_PAD_Y = 0.12;
 const PLATE_DEPTH = 0.09;
+const RULE_WIDTH_RATIO = 0.44;
+const RULE_THICKNESS = 0.06;
+const RULE_DEPTH = 0.05;
+const RULE_EMISSIVE = 1.1;
 const PLATE_RIM = 0.05;
 const PLATE_FACE_RELIEF = 0.02;
 const STENCIL_LIFT = 0.006;
@@ -61,11 +67,14 @@ const STENCIL_LIFT = 0.006;
 const STENCIL_ALPHA_TEST = 0.38;
 const RAGGED_SHIFT = 0.6;
 
-const GAP_AFTER_TITLE = 0.26;
-const GAP_AFTER_TAGLINE = 0.5;
-const GAP_IN_LINEUP = 0.16;
-const GAP_AFTER_LINEUP = 0.42;
-const GAP_AFTER_DATE = 0.2;
+// Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
+// блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
+const GAP_AFTER_TITLE = 0.34;
+const GAP_AFTER_TAGLINE = 1.2;
+const GAP_IN_LINEUP = 0.13;
+const GAP_AFTER_LINEUP = 0.75;
+const GAP_AFTER_RULE = 0.75;
+const GAP_AFTER_DATE = 0.1;
 
 const COUNTDOWN_WIDTH = 6.4;
 const COUNTDOWN_HEIGHT = 4.8;
@@ -353,6 +362,28 @@ function buildSlabInstances(slabs, geometry, material) {
   };
 }
 
+/**
+ * Планка между лайнапом и подвалом.
+ *
+ * Воздуха мало: он говорит о паузе, но не о том, что блок кончился. Планка светится сама,
+ * иначе тёмное железо на тёмном зале просто не видно, и разделителя как не было.
+ */
+function createRule({ shared, width }) {
+  const material = new THREE.MeshStandardMaterial({
+    color: PALETTE.iron,
+    emissive: PALETTE.ember,
+    emissiveIntensity: RULE_EMISSIVE * lumaBoost(PALETTE.ember),
+    metalness: 0.9,
+    roughness: 0.4,
+  });
+  const bar = slab(shared.box, material, width, RULE_THICKNESS, RULE_DEPTH, PLATE_Z);
+  bar.castShadow = false;
+
+  const group = new THREE.Group();
+  group.add(bar);
+  return { group, height: RULE_THICKNESS };
+}
+
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
   worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING,
@@ -548,6 +579,8 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     shared,
   }) : null;
 
+  const rule = createRule({ shared, width: box.width * RULE_WIDTH_RATIO });
+
   const rows = [
     { row: title, gap: GAP_AFTER_TITLE },
     // Тэглайн стоит подписью под названием, а не отдельной строкой внизу: он объясняет, что
@@ -557,6 +590,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
       row,
       gap: index < lineup.length - 1 ? GAP_IN_LINEUP : GAP_AFTER_LINEUP,
     })),
+    { row: rule, gap: GAP_AFTER_RULE },
     { row: date, gap: GAP_AFTER_DATE },
     ...(venue ? [{ row: venue, gap: 0 }] : []),
   ];
