@@ -35,10 +35,10 @@ const MOTION_DRIVE_MAX = 2.5;
 
 const GRADE = {
   saturation: 0.74,
-  contrast: 1.12,
+  contrast: 1.26,
   vignette: 0.58,
   warmth: 0.14,
-  shadowLift: 0.05,
+  shadowLift: 0.02,
 };
 
 // Один сильный эффект бьёт четыре средних, поэтому по умолчанию ведут MOSH и GHOST.
