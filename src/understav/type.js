@@ -2,15 +2,15 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import fontData from 'three/examples/fonts/helvetiker_bold.typeface.json';
+import fontData from './fonts/unifraktur-cook-bold.typeface.json';
 import { BEAT, PALETTE } from './palette.js';
 import { createStencil, measureWidthPerCap } from './text-texture.js';
 
 /**
  * Типографика сцены UNDERSTAV: заголовок, тэглайн, лайнап, дата и отсчёт дней.
  *
- * Буквы это предметы нефа, а не слой поверх кадра: заголовок отлит в металле с прожжённой
- * фаской, остальное вырезано трафаретом в подвешенных стальных плитах.
+ * Буквы это предметы нефа, а не слой поверх кадра: заголовок отлит готическим текстуром в
+ * металле с прожжённой фаской, остальное вырезано трафаретом в подвешенных стальных плитах.
  */
 
 const BOX_WIDTH = 12;
@@ -197,7 +197,10 @@ function createTitle({ text, rng, targetWidth }) {
 
   const unitWidth = merged.boundingBox.max.x - merged.boundingBox.min.x;
   const scale = targetWidth / (unitWidth * TITLE_NARROW);
-  const capHeight = merged.boundingBox.max.y * scale;
+  const inkTop = merged.boundingBox.max.y * scale;
+  // Строка меряется по всей краске, а не по высоте прописной: у текстура росчерк «A» уходит
+  // под базовую линию и без этого лёг бы на первую плиту лайнапа.
+  const inkHeight = inkTop - merged.boundingBox.min.y * scale;
 
   const material = new THREE.MeshStandardMaterial({
     color: '#ffffff',
@@ -215,13 +218,13 @@ function createTitle({ text, rng, targetWidth }) {
   mesh.scale.set(scale * TITLE_NARROW, scale, scale);
   mesh.position.set(
     -targetWidth / 2 - merged.boundingBox.min.x * scale * TITLE_NARROW,
-    -capHeight,
+    -inkTop,
     TITLE_Z,
   );
 
   const group = new THREE.Group();
   group.add(mesh);
-  return { group, height: capHeight, material };
+  return { group, height: inkHeight, material };
 }
 
 /** Кегль подбирается по шкале: имена разной длины, а коробка одна. */
