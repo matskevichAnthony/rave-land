@@ -19,10 +19,7 @@ const BOX_TOP = 10;
 const NAVE_HEADROOM = 2;
 
 const TITLE_WIDTH_RATIO = 0.95;
-const LINEUP_WIDTH_RATIO = 0.7;
-// Хедлайнеру отдана почти вся коробка: длинный ник на узкой плите садится на мелкий кегль
-// и оказывается меньше короткого имени из поддержки.
-const HEADLINE_WIDTH_RATIO = 0.94;
+const LINEUP_WIDTH_RATIO = 0.94;
 const TAGLINE_WIDTH_RATIO = 0.94;
 const DATE_WIDTH_RATIO = 0.38;
 
@@ -45,11 +42,6 @@ const BURN_FLAT = 0.94;
 const BURN_EDGE = 0.2;
 
 const CAP_SCALE = [0.28, 0.36, 0.46, 0.58, 0.72, 0.9];
-const HEADLINE_CAP = 0.9;
-// Кегль задаёт ранг, а не длина имени: без своего потолка короткий ник поддержки набирается
-// крупнее хедлайнера просто потому, что влез в плиту целиком.
-const SUPPORT_CAP = 0.46;
-const DEFAULT_HEADLINERS = 1;
 const PLATE_TRACKING = 0.22;
 // Готика плотнее гротеска и на разгоне разваливается на отдельные знаки, поэтому её строка
 // набирается почти вплотную.
@@ -65,8 +57,8 @@ const STENCIL_LIFT = 0.006;
 const STENCIL_ALPHA_TEST = 0.38;
 const RAGGED_SHIFT = 0.6;
 
-const GAP_AFTER_TAGLINE = 0.3;
-const GAP_AFTER_TITLE = 0.52;
+const GAP_AFTER_TITLE = 0.26;
+const GAP_AFTER_TAGLINE = 0.5;
 const GAP_IN_LINEUP = 0.16;
 const GAP_AFTER_LINEUP = 0.34;
 
@@ -84,9 +76,24 @@ const COUNTDOWN_PULSE = 0.035;
 /** В схеме события пока нет своего слова для нулевого дня, поэтому оно ждёт поля `todayLabel`. */
 const DEFAULT_TODAY_LABEL = 'СЕГОДНЯ';
 
-const TITLE_EMISSIVE_BASE = 0.35;
-const TITLE_EMISSIVE_SWING = 1.15;
-const PLATE_EMISSIVE_BASE = 2.4;
+const TITLE_EMISSIVE_BASE = 1.15;
+// Жар не мигает в такт, а ползёт по фаске, как по остывающему прокату, и изредка срывается
+// дугой: ровный пульс в бит читается дискотечной гирляндой, а не раскалённым железом.
+const TITLE_HEAT_WAVES = 1.6;
+const TITLE_HEAT_SECONDS = 14;
+const TITLE_HEAT_LOW = 0.32;
+const TITLE_HEAT_HIGH = 1.35;
+const ARC_GAP_MIN = 2.4;
+const ARC_GAP_MAX = 7;
+const ARC_BLINK_MIN = 0.03;
+const ARC_BLINK_MAX = 0.11;
+const ARC_DEPTH_MIN = 0.18;
+const ARC_DEPTH_MAX = 0.45;
+const PLATE_EMISSIVE_BASE = 1.6;
+// Блум берёт по яркости, а не по цвету: у крови её вдвое меньше, чем у кости, и красная
+// плита не доходит до порога свечения. Множитель выравнивает именно это.
+const EMISSIVE_LUMA_REFERENCE = 0.55;
+const EMISSIVE_LUMA_BOOST_CAP = 2.2;
 const PLATE_EMISSIVE_CAP = 0.58;
 const PLATE_EMISSIVE_BOOST = 1.6;
 const COUNTDOWN_EMISSIVE_BASE = 1.4;
@@ -144,14 +151,52 @@ function paintBurn(geometry) {
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
-/** Эмиссия обязана гореть только по фаске, поэтому её гасит тот же цвет вершины. */
-function burnEmissiveByVertexColor(material) {
+/**
+ * Эмиссия горит только по фаске (её гасит цвет вершины) и волной идёт вдоль строки.
+ *
+ * Волна живёт в шейдере, потому что она разная в каждой точке буквы: из JS такое пришлось бы
+ * гнать отдельным материалом на каждую букву, то есть отдельным вызовом отрисовки.
+ */
+function burnEmissiveByVertexColor(material, span) {
+  const heat = { value: 0 };
   material.onBeforeCompile = (shader) => {
-    shader.fragmentShader = shader.fragmentShader.replace(
-      '#include <emissivemap_fragment>',
-      '#include <emissivemap_fragment>\n\ttotalEmissiveRadiance *= vColor;',
-    );
+    shader.uniforms.uHeat = heat;
+    shader.uniforms.uSpan = { value: span };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying float vHeatX;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvHeatX = position.x;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vHeatX;\nuniform float uHeat;\nuniform float uSpan;')
+      .replace(
+        '#include <emissivemap_fragment>',
+        `#include <emissivemap_fragment>
+\tfloat wave = 0.5 + 0.5 * sin(vHeatX / uSpan * ${TITLE_HEAT_WAVES.toFixed(2)} * 6.2831853 - uHeat);
+\ttotalEmissiveRadiance *= vColor * mix(${TITLE_HEAT_LOW.toFixed(2)}, ${TITLE_HEAT_HIGH.toFixed(2)}, wave);`,
+      );
   };
+  return heat;
+}
+
+/** Дуга не мигает по расписанию: горит ровно, изредка срывается и снова садится на ток. */
+function createArcFlicker(rng) {
+  let nextAt = rng.range(ARC_GAP_MIN, ARC_GAP_MAX);
+  let until = 0;
+  let depth = 1;
+  return function flicker(elapsed) {
+    if (elapsed >= nextAt) {
+      until = elapsed + rng.range(ARC_BLINK_MIN, ARC_BLINK_MAX);
+      depth = rng.range(ARC_DEPTH_MIN, ARC_DEPTH_MAX);
+      nextAt = until + rng.range(ARC_GAP_MIN, ARC_GAP_MAX);
+    }
+    return elapsed < until ? depth : 1;
+  };
+}
+
+/** Насколько поднять эмиссию, чтобы цвет любой светлоты дотянулся до порога блума. */
+function lumaBoost(color) {
+  const { r, g, b } = new THREE.Color(color);
+  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return Math.min(EMISSIVE_LUMA_REFERENCE / luma, EMISSIVE_LUMA_BOOST_CAP);
 }
 
 function tiltLetter(geometry, halfWidth, rng) {
@@ -221,7 +266,8 @@ function createTitle({ text, rng, targetWidth }) {
     emissive: PALETTE.blood,
     emissiveIntensity: TITLE_EMISSIVE_BASE,
   });
-  burnEmissiveByVertexColor(material);
+  const heat = burnEmissiveByVertexColor(material, unitWidth);
+  const flicker = createArcFlicker(rng);
 
   const mesh = new THREE.Mesh(merged, material);
   mesh.castShadow = true;
@@ -235,16 +281,24 @@ function createTitle({ text, rng, targetWidth }) {
 
   const group = new THREE.Group();
   group.add(mesh);
-  return { group, height: inkHeight, material };
+  return {
+    group,
+    height: inkHeight,
+    burn(elapsed) {
+      heat.value = (elapsed / TITLE_HEAT_SECONDS) * TAU;
+      material.emissiveIntensity = TITLE_EMISSIVE_BASE * flicker(elapsed);
+    },
+  };
 }
 
 /** Кегль подбирается по шкале: имена разной длины, а коробка одна. */
-function fitCapHeight(widthPerCap, maxWidth, capLimit) {
+function fitCapHeight(text, { tracking, face, maxWidth }) {
+  const widthPerCap = measureWidthPerCap(text, tracking, face);
   const usable = maxWidth - PLATE_PAD_X * 2;
   for (let step = CAP_SCALE.length - 1; step >= 0; step -= 1) {
-    if (CAP_SCALE[step] <= capLimit && CAP_SCALE[step] * widthPerCap <= usable) return CAP_SCALE[step];
+    if (CAP_SCALE[step] * widthPerCap <= usable) return CAP_SCALE[step];
   }
-  return Math.min(capLimit, usable / widthPerCap);
+  return usable / widthPerCap;
 }
 
 function createPlateMaterials() {
@@ -264,11 +318,10 @@ function slab(geometry, material, width, height, depth, z) {
 }
 
 function createPlate({
-  text, maxWidth, emissive, rng, shared,
-  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, capLimit = HEADLINE_CAP,
+  text, maxWidth, capHeight, emissive, rng, shared,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING,
 }) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
-  const capHeight = fitCapHeight(widthPerCap, maxWidth, capLimit);
   const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
   const height = capHeight + PLATE_PAD_Y * 2;
 
@@ -285,7 +338,7 @@ function createPlate({
     emissive,
     // Шкала кеглей не должна менять яркость строки: длинное имя садится на мелкий кегль,
     // его штрих тоньше и на экране гаснет, поэтому мелкая плита светит сильнее крупной.
-    emissiveIntensity: PLATE_EMISSIVE_BASE
+    emissiveIntensity: PLATE_EMISSIVE_BASE * lumaBoost(emissive)
       * Math.min(PLATE_EMISSIVE_CAP / capHeight, PLATE_EMISSIVE_BOOST),
     alphaMap: stencil.texture,
     alphaTest: STENCIL_ALPHA_TEST,
@@ -374,13 +427,6 @@ function createCountdown({ rng, todayLabel }) {
   };
 }
 
-/** Первое имя горит кровью, одному из поддержки достаётся трип, остальным холодная кость. */
-function lineupTint(index, poisoned) {
-  if (index === 0) return PALETTE.blood;
-  if (index === poisoned) return PALETTE.trip;
-  return PALETTE.bone;
-}
-
 /** Строки кладутся сверху вниз; если набор перерос коробку, первыми жмутся промежутки. */
 function stackRows(rows, box) {
   const content = rows.reduce((sum, item) => sum + item.row.height, 0);
@@ -414,34 +460,40 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   };
 
   const title = createTitle({ text: event.event, rng, targetWidth: box.width * TITLE_WIDTH_RATIO });
+
+  const taglineFit = { tracking: GOTHIC_TRACKING, face: GOTHIC_FACE, maxWidth: box.width * TAGLINE_WIDTH_RATIO };
   // Тэглайн необязателен: сцена собирается и без него, если строки нет в данных события.
   const tagline = event.tagline ? createPlate({
     text: event.tagline,
-    maxWidth: box.width * TAGLINE_WIDTH_RATIO,
-    emissive: PALETTE.blood,
+    maxWidth: taglineFit.maxWidth,
+    capHeight: fitCapHeight(event.tagline, taglineFit),
+    emissive: PALETTE.bone,
     rng,
     shared,
     face: GOTHIC_FACE,
     tracking: GOTHIC_TRACKING,
   }) : null;
 
-  const headliners = event.headliners ?? DEFAULT_HEADLINERS;
-  // Ядовитое пятно достаётся поддержке: хедлайнеры горят своим цветом и жребию не подлежат.
-  const poisoned = rng.int(headliners, event.lineup.length - 1);
+  // Лайнап набирается одним кеглем по самому длинному имени: разный кегль читается рангом,
+  // а ранга у этих имён нет, есть только разная длина ников.
+  const lineupFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * LINEUP_WIDTH_RATIO };
+  const lineupCap = Math.min(...event.lineup.map((name) => fitCapHeight(name, lineupFit)));
   const lineup = event.lineup.map((name, index) => createPlate({
     text: name,
-    maxWidth: box.width * (index < headliners ? HEADLINE_WIDTH_RATIO : LINEUP_WIDTH_RATIO),
-    emissive: lineupTint(index, poisoned),
+    maxWidth: lineupFit.maxWidth,
+    capHeight: lineupCap,
+    emissive: index === 0 ? PALETTE.blood : PALETTE.bone,
     rng,
     shared,
-    capLimit: index < headliners ? HEADLINE_CAP : SUPPORT_CAP,
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
   }));
 
+  const dateFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
   const date = createPlate({
     text: event.dateLabel,
-    maxWidth: box.width * DATE_WIDTH_RATIO,
+    maxWidth: dateFit.maxWidth,
+    capHeight: fitCapHeight(event.dateLabel, dateFit),
     emissive: PALETTE.moon,
     rng,
     shared,
@@ -449,13 +501,13 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
 
   const rows = [
     { row: title, gap: GAP_AFTER_TITLE },
+    // Тэглайн стоит подписью под названием, а не отдельной строкой внизу: он объясняет, что
+    // это за вечер, и читается только рядом с тем, к чему относится.
+    ...(tagline ? [{ row: tagline, gap: GAP_AFTER_TAGLINE }] : []),
     ...lineup.map((row, index) => ({
       row,
       gap: index < lineup.length - 1 ? GAP_IN_LINEUP : GAP_AFTER_LINEUP,
     })),
-    // Тэглайн ушёл вниз намеренно: над заголовком он приходился на светящуюся розу и терялся
-    // белым по белому, а внизу за ним тёмный алтарь, и строка наконец читается.
-    ...(tagline ? [{ row: tagline, gap: GAP_AFTER_TAGLINE }] : []),
     { row: date, gap: 0 },
   ];
   stackRows(rows, box);
@@ -475,8 +527,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
       countdown.show(days);
     },
     update(dt, elapsed) {
-      const pulse = breath(elapsed, beatOmega);
-      title.material.emissiveIntensity = TITLE_EMISSIVE_BASE + TITLE_EMISSIVE_SWING * pulse;
+      title.burn(elapsed);
 
       for (const plate of plates) {
         const angle = elapsed * plate.sway.omega + plate.sway.phase;
@@ -485,6 +536,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
       }
 
       if (!countdown.mesh.visible) return;
+      const pulse = breath(elapsed, beatOmega);
       countdown.material.emissiveIntensity = COUNTDOWN_EMISSIVE_BASE + COUNTDOWN_EMISSIVE_SWING * pulse;
       countdown.mesh.scale.setScalar(1 + COUNTDOWN_PULSE * pulse);
     },
