@@ -21,7 +21,8 @@ const NAVE_HEADROOM = 2;
 const TITLE_WIDTH_RATIO = 0.95;
 const LINEUP_WIDTH_RATIO = 0.94;
 const TAGLINE_WIDTH_RATIO = 0.94;
-const DATE_WIDTH_RATIO = 0.38;
+const DATE_WIDTH_RATIO = 0.66;
+const VENUE_WIDTH_RATIO = 0.52;
 
 const TITLE_Z = 0.3;
 const PLATE_Z = -0.35;
@@ -60,7 +61,8 @@ const RAGGED_SHIFT = 0.6;
 const GAP_AFTER_TITLE = 0.26;
 const GAP_AFTER_TAGLINE = 0.5;
 const GAP_IN_LINEUP = 0.16;
-const GAP_AFTER_LINEUP = 0.34;
+const GAP_AFTER_LINEUP = 0.42;
+const GAP_AFTER_DATE = 0.2;
 
 const COUNTDOWN_WIDTH = 6.4;
 const COUNTDOWN_HEIGHT = 4.8;
@@ -489,15 +491,28 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     worn: true,
   }));
 
-  const dateFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
+  const dateFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
   const date = createPlate({
     text: event.dateLabel,
     maxWidth: dateFit.maxWidth,
     capHeight: fitCapHeight(event.dateLabel, dateFit),
     emissive: PALETTE.moon,
+    tracking: MARK_TRACKING,
     rng,
     shared,
   });
+
+  // Адрес необязателен ровно как тэглайн: сцена собирается и без него.
+  const venueFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * VENUE_WIDTH_RATIO };
+  const venue = event.venue ? createPlate({
+    text: event.venue,
+    maxWidth: venueFit.maxWidth,
+    capHeight: fitCapHeight(event.venue, venueFit),
+    emissive: PALETTE.bone,
+    tracking: MARK_TRACKING,
+    rng,
+    shared,
+  }) : null;
 
   const rows = [
     { row: title, gap: GAP_AFTER_TITLE },
@@ -508,7 +523,8 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
       row,
       gap: index < lineup.length - 1 ? GAP_IN_LINEUP : GAP_AFTER_LINEUP,
     })),
-    { row: date, gap: 0 },
+    { row: date, gap: GAP_AFTER_DATE },
+    ...(venue ? [{ row: venue, gap: 0 }] : []),
   ];
   stackRows(rows, box);
 
@@ -518,7 +534,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   for (const item of rows) group.add(item.row.group);
   group.add(countdown.mesh);
 
-  const plates = [...(tagline ? [tagline] : []), ...lineup, date];
+  const plates = [...(tagline ? [tagline] : []), ...lineup, date, ...(venue ? [venue] : [])];
   const beatOmega = TAU / BEAT.seconds;
 
   return {
