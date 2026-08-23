@@ -11,7 +11,7 @@ import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BEAT, PALETTE } from './palette.js';
 import { BOUNDS, CORRIDOR, EMBER_RING, NAVE, ROSE, TYPE_BOX } from './nave.js';
-import { createGodRay, createHaze, createSparks } from './embers.js';
+import { createFloorSmoke, createGodRay, createHaze, createSparks } from './embers.js';
 import { createCat } from './cat.js';
 import { createRandom } from './random.js';
 import { buildInstanced } from '../procedural/instancing.js';
@@ -2406,8 +2406,9 @@ export function createArchitecture({ rng }) {
     sources: barrels.map((barrel) => [barrel.x, BARREL.height, barrel.z]),
   });
   const haze = createHaze({ rng });
+  const smoke = createFloorSmoke({ rng });
   const ray = createGodRay({ rng });
-  group.add(sparks.object, haze.object, ray.object);
+  group.add(sparks.object, haze.object, smoke.object, ray.object);
 
   // Кот сам ведёт позицию своей группы каждый кадр, поэтому кольцо сдвигается контейнером,
   // а не его собственным position: тот перезаписывается на первом же update.
@@ -2450,6 +2451,7 @@ export function createArchitecture({ rng }) {
       .multiplyScalar(FLAME.gain * (1 + CORRIDOR_TORCH.swing * flicker));
     sparks.update(elapsed, breath);
     haze.update(elapsed);
+    smoke.update(elapsed);
     ray.update(breath);
   }
 

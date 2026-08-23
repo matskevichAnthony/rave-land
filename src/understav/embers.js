@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
 import { CORRIDOR, KEY_LIGHT, NAVE, ROSE, TYPE_BOX } from './nave.js';
+import { billowMaterial } from '../procedural/billow.js';
 import { buildInstanced } from '../procedural/instancing.js';
 import { softenMaterial } from '../render/depth-probe.js';
 import { createBlobTexture } from '../procedural/canvas-texture.js';
@@ -53,6 +54,30 @@ const HAZE = {
   // снимает уже не шов, а весь тёплый налёт над полом, ради которого дымка и стоит.
   fade: 1,
 };
+
+/**
+ * Дым у пола: то, чем зал дышит на уровне ног, а не висящая в воздухе дымка.
+ *
+ * Стоит своей сущностью, а не слоем в общей дымке: у него другая плотность, другой ход и
+ * тёплый цвет от углей. Один вызов отрисовки на все клубы.
+ */
+const FLOOR_SMOKE = {
+  layers: 9,
+  width: 17,
+  height: 4.2,
+  y: 1.5,
+  farZ: -13,
+  nearZ: 9,
+  opacity: 0.15,
+  tint: [0.5, 1.15],
+  warmth: 0.72,
+  drift: 1.4,
+  driftSpeed: 0.045,
+  fade: 1.2,
+  billow: { scale: 2.6, rise: 0.014, warp: 0.55, floor: 0.12 },
+};
+
+const HAZE_BILLOW = { scale: 1.8, rise: 0.01, warp: 0.7, floor: 0.25 };
 
 const RAY = {
   cones: [1, 0.62, 0.3],
@@ -253,6 +278,7 @@ export function createHaze({ rng }) {
     depthWrite: false,
     fog: false,
   }), HAZE.fade);
+  const billow = billowMaterial(material, HAZE_BILLOW);
 
   const layers = [...planHallHaze(rng), ...planCorridorHaze(rng)];
   const mesh = buildInstanced(
@@ -273,6 +299,66 @@ export function createHaze({ rng }) {
     update(elapsed) {
       material.map.offset.x = elapsed * HAZE.scroll;
       mesh.position.x = Math.sin(elapsed * HAZE.driftSpeed) * HAZE.drift;
+      billow(elapsed);
+    },
+  };
+}
+
+/** Клубы стелются от алтаря к порталу: ближе к камере ниже, шире и теплее. */
+function planFloorSmoke(rng) {
+  const span = FLOOR_SMOKE.nearZ - FLOOR_SMOKE.farZ;
+  return Array.from({ length: FLOOR_SMOKE.layers }, (unused, index) => {
+    const nearness = index / (FLOOR_SMOKE.layers - 1);
+    return {
+      x: rng.range(-2.5, 2.5),
+      y: FLOOR_SMOKE.y * rng.range(0.75, 1.2),
+      z: FLOOR_SMOKE.farZ + (span * (index + 0.5)) / FLOOR_SMOKE.layers + rng.range(-0.8, 0.8),
+      width: FLOOR_SMOKE.width * rng.range(0.85, 1.3),
+      height: FLOOR_SMOKE.height * rng.range(0.8, 1.15),
+      tint: smoke(
+        FLOOR_SMOKE.warmth,
+        FLOOR_SMOKE.tint[0] + (FLOOR_SMOKE.tint[1] - FLOOR_SMOKE.tint[0]) * nearness,
+      ),
+    };
+  });
+}
+
+/** Приземный дым зала: те же альфа-плоскости, но низкие, тёплые и клубящиеся крупнее. */
+export function createFloorSmoke({ rng }) {
+  const material = softenMaterial(new THREE.MeshBasicMaterial({
+    map: createBlobTexture({
+      random: rng,
+      size: HAZE.texture,
+      blobs: HAZE.blobs,
+      radius: HAZE.blobRadius,
+      alpha: HAZE.blobAlpha,
+    }),
+    transparent: true,
+    opacity: FLOOR_SMOKE.opacity,
+    depthWrite: false,
+    fog: false,
+  }), FLOOR_SMOKE.fade);
+  const billow = billowMaterial(material, FLOOR_SMOKE.billow);
+
+  const clouds = planFloorSmoke(rng);
+  const mesh = buildInstanced(
+    new THREE.PlaneGeometry(1, 1),
+    material,
+    clouds.length,
+    (layer, index) => {
+      const plan = clouds[index];
+      layer.position.set(plan.x, plan.y, plan.z);
+      layer.scale.set(plan.width, plan.height, 1);
+    },
+    (tint, index) => tint.copy(clouds[index].tint),
+  );
+  mesh.frustumCulled = false;
+
+  return {
+    object: mesh,
+    update(elapsed) {
+      mesh.position.x = Math.sin(elapsed * FLOOR_SMOKE.driftSpeed) * FLOOR_SMOKE.drift;
+      billow(elapsed);
     },
   };
 }
