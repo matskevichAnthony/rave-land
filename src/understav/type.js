@@ -44,6 +44,9 @@ const BURN_EDGE = 0.2;
 
 const CAP_SCALE = [0.28, 0.36, 0.46, 0.58, 0.72, 0.9];
 const PLATE_TRACKING = 0.22;
+// Дата и адрес набраны в разрядку клеймом по железу: строка мелким кеглем внизу читается
+// подписью в углу листовки, а не отметкой на балке.
+const MARK_TRACKING = 0.55;
 // Готика плотнее гротеска и на разгоне разваливается на отдельные знаки, поэтому её строка
 // набирается почти вплотную.
 const GOTHIC_TRACKING = 0.06;
@@ -78,7 +81,7 @@ const COUNTDOWN_PULSE = 0.035;
 /** В схеме события пока нет своего слова для нулевого дня, поэтому оно ждёт поля `todayLabel`. */
 const DEFAULT_TODAY_LABEL = 'СЕГОДНЯ';
 
-const TITLE_EMISSIVE_BASE = 1.15;
+const TITLE_EMISSIVE_BASE = 2.1;
 // Жар не мигает в такт, а ползёт по фаске, как по остывающему прокату, и изредка срывается
 // дугой: ровный пульс в бит читается дискотечной гирляндой, а не раскалённым железом.
 const TITLE_HEAT_WAVES = 1.6;
@@ -266,7 +269,7 @@ function createTitle({ text, rng, targetWidth }) {
     metalness: 0.95,
     roughness: 0.42,
     emissive: PALETTE.blood,
-    emissiveIntensity: TITLE_EMISSIVE_BASE,
+    emissiveIntensity: TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood),
   });
   const heat = burnEmissiveByVertexColor(material, unitWidth);
   const flicker = createArcFlicker(rng);
@@ -288,7 +291,7 @@ function createTitle({ text, rng, targetWidth }) {
     height: inkHeight,
     burn(elapsed) {
       heat.value = (elapsed / TITLE_HEAT_SECONDS) * TAU;
-      material.emissiveIntensity = TITLE_EMISSIVE_BASE * flicker(elapsed);
+      material.emissiveIntensity = TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood) * flicker(elapsed);
     },
   };
 }
