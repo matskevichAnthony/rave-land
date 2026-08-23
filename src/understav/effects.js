@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createGradePass } from '../render/grade.js';
@@ -337,15 +338,22 @@ export function createEffects({ renderer, scene, camera }) {
   );
   const grade = createGradePass();
   tuneGrade(grade);
+  const smaa = new SMAAPass();
 
   // Порядок: сцена отдаёт цвет и глубину, датамош копит себя на свежей глубине, трип-проход
   // собирает разрушение ещё в линейном HDR, чтобы свечение подхватило сами следы, и только
   // потом тонмаппинг и цветокоррекция, иначе зерно размылось бы свечением.
+  //
+  // Сглаживание стоит после тонмаппинга и до цветокоррекции: SMAA ищет края по готовым
+  // экранным цветам, а зерно обязано лечь поверх него, иначе оно само сгладится в кисель.
+  // Зал состоит ровно из того, что рвётся лесенкой: прутья розы, рёбра свода, звенья цепей
+  // и фаска заголовка.
   composer.addPass(new RenderPass(scene, camera));
   composer.addPass(mosh);
   composer.addPass(trip);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
+  composer.addPass(smaa);
   composer.addPass(grade);
 
   const controls = createControls({ mosh, trip, bloom, grade });
