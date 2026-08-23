@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import fontData from './fonts/unifraktur-cook-bold.typeface.json';
+import { GOTHIC_FACE, GOTHIC_TYPEFACE, loadGothic } from './gothic.js';
 import { BEAT, PALETTE } from './palette.js';
-import { createStencil, measureWidthPerCap } from './text-texture.js';
+import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.js';
 
 /**
  * Типографика сцены UNDERSTAV: заголовок, тэглайн, лайнап, дата и отсчёт дней.
@@ -20,7 +20,10 @@ const NAVE_HEADROOM = 2;
 
 const TITLE_WIDTH_RATIO = 0.95;
 const LINEUP_WIDTH_RATIO = 0.7;
-const TAGLINE_WIDTH_RATIO = 0.68;
+// Хедлайнеру отдана почти вся коробка: длинный ник на узкой плите садится на мелкий кегль
+// и оказывается меньше короткого имени из поддержки.
+const HEADLINE_WIDTH_RATIO = 0.94;
+const TAGLINE_WIDTH_RATIO = 0.94;
 const DATE_WIDTH_RATIO = 0.38;
 
 const TITLE_Z = 0.3;
@@ -42,7 +45,15 @@ const BURN_FLAT = 0.94;
 const BURN_EDGE = 0.2;
 
 const CAP_SCALE = [0.28, 0.36, 0.46, 0.58, 0.72, 0.9];
+const HEADLINE_CAP = 0.9;
+// Кегль задаёт ранг, а не длина имени: без своего потолка короткий ник поддержки набирается
+// крупнее хедлайнера просто потому, что влез в плиту целиком.
+const SUPPORT_CAP = 0.46;
+const DEFAULT_HEADLINERS = 1;
 const PLATE_TRACKING = 0.22;
+// Готика плотнее гротеска и на разгоне разваливается на отдельные знаки, поэтому её строка
+// набирается почти вплотную.
+const GOTHIC_TRACKING = 0.06;
 const PLATE_PAD_X = 0.3;
 const PLATE_PAD_Y = 0.12;
 const PLATE_DEPTH = 0.09;
@@ -115,13 +126,13 @@ function facingTint(facing, tints) {
   return tints.wall;
 }
 
-/** Цвет вершины несёт и металл, и силу прожога: фаска ембер, стенки ржавчина, лицо железо. */
+/** Цвет вершины несёт и металл, и силу прожога: фаска кровь, стенки ржавчина, лицо железо. */
 function paintBurn(geometry) {
   const normal = geometry.getAttribute('normal');
   const tints = {
     flat: new THREE.Color(PALETTE.iron),
     wall: new THREE.Color(PALETTE.rust),
-    edge: new THREE.Color(PALETTE.ember),
+    edge: new THREE.Color(PALETTE.blood),
   };
   const colors = new Float32Array(normal.count * 3);
   for (let i = 0; i < normal.count; i += 1) {
@@ -169,7 +180,7 @@ function letterGeometry(font, glyph, rng) {
  * в одну геометрию, иначе за каждую букву платили бы отдельным вызовом отрисовки.
  */
 function createTitle({ text, rng, targetWidth }) {
-  const font = new FontLoader().parse(fontData);
+  const font = new FontLoader().parse(GOTHIC_TYPEFACE);
   const trackingUnits = TITLE_TRACKING / TITLE_NARROW;
   const letters = [];
   let cursor = 0;
@@ -207,7 +218,7 @@ function createTitle({ text, rng, targetWidth }) {
     vertexColors: true,
     metalness: 0.95,
     roughness: 0.42,
-    emissive: PALETTE.emberHalo,
+    emissive: PALETTE.blood,
     emissiveIntensity: TITLE_EMISSIVE_BASE,
   });
   burnEmissiveByVertexColor(material);
@@ -228,12 +239,12 @@ function createTitle({ text, rng, targetWidth }) {
 }
 
 /** Кегль подбирается по шкале: имена разной длины, а коробка одна. */
-function fitCapHeight(widthPerCap, maxWidth) {
+function fitCapHeight(widthPerCap, maxWidth, capLimit) {
   const usable = maxWidth - PLATE_PAD_X * 2;
   for (let step = CAP_SCALE.length - 1; step >= 0; step -= 1) {
-    if (CAP_SCALE[step] * widthPerCap <= usable) return CAP_SCALE[step];
+    if (CAP_SCALE[step] <= capLimit && CAP_SCALE[step] * widthPerCap <= usable) return CAP_SCALE[step];
   }
-  return usable / widthPerCap;
+  return Math.min(capLimit, usable / widthPerCap);
 }
 
 function createPlateMaterials() {
@@ -252,15 +263,19 @@ function slab(geometry, material, width, height, depth, z) {
   return mesh;
 }
 
-function createPlate({ text, maxWidth, emissive, rng, shared, worn = false }) {
-  const widthPerCap = measureWidthPerCap(text, PLATE_TRACKING);
-  const capHeight = fitCapHeight(widthPerCap, maxWidth);
+function createPlate({
+  text, maxWidth, emissive, rng, shared,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, capLimit = HEADLINE_CAP,
+}) {
+  const widthPerCap = measureWidthPerCap(text, tracking, face);
+  const capHeight = fitCapHeight(widthPerCap, maxWidth, capLimit);
   const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
   const height = capHeight + PLATE_PAD_Y * 2;
 
   const stencil = createStencil({ width, height, rng, worn });
   stencil.paint(text, {
-    tracking: PLATE_TRACKING,
+    face,
+    tracking,
     capFraction: capHeight / height,
     padding: PLATE_PAD_X / width,
   });
@@ -278,8 +293,8 @@ function createPlate({ text, maxWidth, emissive, rng, shared, worn = false }) {
     roughness: 0.35,
   });
 
-  const faceDepth = PLATE_DEPTH + PLATE_FACE_RELIEF;
-  const face = slab(shared.box, shared.materials.face, width, height, faceDepth, PLATE_Z);
+  const frontDepth = PLATE_DEPTH + PLATE_FACE_RELIEF;
+  const front = slab(shared.box, shared.materials.face, width, height, frontDepth, PLATE_Z);
   const rim = slab(
     shared.box,
     shared.materials.rim,
@@ -295,12 +310,12 @@ function createPlate({ text, maxWidth, emissive, rng, shared, worn = false }) {
     width,
     height,
     1,
-    PLATE_Z + faceDepth / 2 + STENCIL_LIFT,
+    PLATE_Z + frontDepth / 2 + STENCIL_LIFT,
   );
   stencilFace.castShadow = false;
 
   const group = new THREE.Group();
-  group.add(rim, face, stencilFace);
+  group.add(rim, front, stencilFace);
   group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
 
   return {
@@ -350,12 +365,20 @@ function createCountdown({ rng, todayLabel }) {
       if (label === painted) return;
       painted = label;
       stencil.paint(label, {
+        face: NARROW_FACE,
         tracking: COUNTDOWN_TRACKING,
         capFraction: COUNTDOWN_CAP_FRACTION,
         padding: COUNTDOWN_PADDING,
       });
     },
   };
+}
+
+/** Первое имя горит кровью, одному из поддержки достаётся трип, остальным холодная кость. */
+function lineupTint(index, poisoned) {
+  if (index === 0) return PALETTE.blood;
+  if (index === poisoned) return PALETTE.trip;
+  return PALETTE.bone;
 }
 
 /** Строки кладутся сверху вниз; если набор перерос коробку, первыми жмутся промежутки. */
@@ -383,6 +406,7 @@ function breath(elapsed, omega) {
  */
 export async function createTypography({ event, rng, bounds, box = resolveBox(bounds) }) {
   requireEventFields(event);
+  await loadGothic();
   const shared = {
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
@@ -397,15 +421,20 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     emissive: PALETTE.blood,
     rng,
     shared,
+    face: GOTHIC_FACE,
+    tracking: GOTHIC_TRACKING,
   }) : null;
 
-  const poisoned = rng.int(0, event.lineup.length - 1);
+  const headliners = event.headliners ?? DEFAULT_HEADLINERS;
+  // Ядовитое пятно достаётся поддержке: хедлайнеры горят своим цветом и жребию не подлежат.
+  const poisoned = rng.int(headliners, event.lineup.length - 1);
   const lineup = event.lineup.map((name, index) => createPlate({
     text: name,
-    maxWidth: box.width * LINEUP_WIDTH_RATIO,
-    emissive: index === poisoned ? PALETTE.trip : PALETTE.bone,
+    maxWidth: box.width * (index < headliners ? HEADLINE_WIDTH_RATIO : LINEUP_WIDTH_RATIO),
+    emissive: lineupTint(index, poisoned),
     rng,
     shared,
+    capLimit: index < headliners ? HEADLINE_CAP : SUPPORT_CAP,
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
   }));
