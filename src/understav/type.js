@@ -59,6 +59,19 @@ const RULE_WIDTH_RATIO = 0.44;
 const RULE_THICKNESS = 0.06;
 const RULE_DEPTH = 0.05;
 const RULE_EMISSIVE = 1.1;
+
+// Колючая проволока по кромкам имён: зал жуёт афишу, и лайнап в нём не висит, а отгорожен.
+const WIRE_SIDES = 4;
+const WIRE_RADIUS = 0.017;
+const WIRE_SPANS = 9;
+const WIRE_OVERHANG = 0.22;
+const WIRE_SAG = 0.055;
+const WIRE_Z = PLATE_Z + 0.24;
+const WIRE_EMISSIVE = 0.16;
+const BARB_EVERY = 1;
+const BARB_LENGTH = 0.14;
+const BARB_RADIUS = 0.026;
+const BARB_TILT = 0.55;
 const PLATE_RIM = 0.05;
 const PLATE_FACE_RELIEF = 0.02;
 const STENCIL_LIFT = 0.006;
@@ -122,9 +135,14 @@ const SWAY_BEATS_MAX = 11;
 
 const TAU = Math.PI * 2;
 
-// Черновик матрицы инстанса: пересчёт идёт каждый кадр, и новых объектов он заводить не должен.
+// Черновики матриц инстансов: пересчёт идёт каждый кадр, и новых объектов он заводить не должен.
 const localSlab = new THREE.Object3D();
 const slabMatrix = new THREE.Matrix4();
+const draftPoint = new THREE.Vector3();
+const draftScale = new THREE.Vector3();
+const draftTurn = new THREE.Quaternion();
+const IDENTITY_TURN = new THREE.Quaternion();
+const UP = new THREE.Vector3(0, 1, 0);
 
 const REQUIRED_EVENT_FIELDS = ['event', 'dateLabel', 'lineup'];
 
@@ -323,6 +341,13 @@ function createPlateMaterials() {
   return {
     rim: new THREE.MeshStandardMaterial({ color: PALETTE.rust, metalness: 0.8, roughness: 0.9 }),
     face: new THREE.MeshStandardMaterial({ color: PALETTE.iron, metalness: 0.9, roughness: 0.55 }),
+    wire: new THREE.MeshStandardMaterial({
+      color: PALETTE.rust,
+      emissive: PALETTE.ember,
+      emissiveIntensity: WIRE_EMISSIVE,
+      metalness: 0.95,
+      roughness: 0.55,
+    }),
   };
 }
 
@@ -335,6 +360,23 @@ function slab(geometry, material, width, height, depth, z) {
   return mesh;
 }
 
+/** Локальная матрица предмета на строке: строка качается, предмет едет вместе с ней. */
+function anchoredAt(anchor, { position, quaternion, scale }) {
+  localSlab.position.copy(position);
+  localSlab.quaternion.copy(quaternion ?? IDENTITY_TURN);
+  localSlab.scale.copy(scale);
+  localSlab.updateMatrix();
+  return { anchor, matrix: localSlab.matrix.clone() };
+}
+
+/** Плита строки: коробка стоит под якорем строки, отсчёт габаритов идёт от её верхней кромки. */
+function anchoredSlab(anchor, { width, height, depth, z }) {
+  return anchoredAt(anchor, {
+    position: draftPoint.set(0, -height / 2, z),
+    scale: draftScale.set(width, height, depth),
+  });
+}
+
 /**
  * Железо всех плит двумя инстансами: кант и лицо.
  *
@@ -342,20 +384,17 @@ function slab(geometry, material, width, height, depth, z) {
  * трижды: глубина, тени, цвет), то есть трети всего бюджета кадра на текст. Форма и материал
  * у плит общие, разнятся только габариты, и это ровно случай инстанса.
  */
-function buildSlabInstances(slabs, geometry, material) {
-  const mesh = new THREE.InstancedMesh(geometry, material, slabs.length);
+function buildAnchoredInstances(plans, geometry, material) {
+  const mesh = new THREE.InstancedMesh(geometry, material, plans.length);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.frustumCulled = false;
   return {
     mesh,
     refresh() {
-      for (const [index, plan] of slabs.entries()) {
+      for (const [index, plan] of plans.entries()) {
         plan.anchor.updateMatrixWorld();
-        localSlab.position.set(0, -plan.height / 2, plan.z);
-        localSlab.scale.set(plan.width, plan.height, plan.depth);
-        localSlab.updateMatrix();
-        mesh.setMatrixAt(index, slabMatrix.multiplyMatrices(plan.anchor.matrixWorld, localSlab.matrix));
+        mesh.setMatrixAt(index, slabMatrix.multiplyMatrices(plan.anchor.matrixWorld, plan.matrix));
       }
       mesh.instanceMatrix.needsUpdate = true;
     },
@@ -384,9 +423,52 @@ function createRule({ shared, width }) {
   return { group, height: RULE_THICKNESS };
 }
 
+/** Узлы прута вдоль кромки: провис вниз-вверх через один, чтобы прут не читался линейкой. */
+function wireKnots(width, edgeY, rng) {
+  const span = width + WIRE_OVERHANG * 2;
+  return Array.from({ length: WIRE_SPANS + 1 }, (unused, index) => {
+    const along = index / WIRE_SPANS;
+    const sag = index % 2 === 0 ? -WIRE_SAG : WIRE_SAG;
+    return new THREE.Vector3(
+      -span / 2 + span * along,
+      edgeY + sag * rng.range(0.6, 1.4),
+      WIRE_Z + rng.range(-1, 1) * WIRE_SAG,
+    );
+  });
+}
+
+/**
+ * Прут и колючки одной кромки.
+ *
+ * Прут собирается отрезками между узлами, а не сплайном: у отрезка есть готовая геометрия,
+ * которая уже едет инстансом, и колючке есть на чём сидеть.
+ */
+function planBarbedEdge({ shared, rng, anchor, width, edgeY, outward }) {
+  const knots = wireKnots(width, edgeY, rng);
+  for (let index = 0; index < knots.length - 1; index += 1) {
+    const from = knots[index];
+    const to = knots[index + 1];
+    const along = to.clone().sub(from);
+    const turn = draftTurn.clone().setFromUnitVectors(UP, along.clone().normalize());
+    shared.slabs.wire.push(anchoredAt(anchor, {
+      position: from.clone().add(to).multiplyScalar(0.5),
+      quaternion: turn,
+      scale: draftScale.set(WIRE_RADIUS, along.length(), WIRE_RADIUS),
+    }));
+
+    if (index % BARB_EVERY !== 0) continue;
+    const lean = new THREE.Vector3(rng.range(-BARB_TILT, BARB_TILT), outward, rng.range(-1, 1) * BARB_TILT);
+    shared.slabs.barb.push(anchoredAt(anchor, {
+      position: from.clone().lerp(to, 0.5),
+      quaternion: draftTurn.clone().setFromUnitVectors(UP, lean.normalize()),
+      scale: draftScale.set(BARB_RADIUS, BARB_LENGTH * rng.range(0.8, 1.3), BARB_RADIUS),
+    }));
+  }
+}
+
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
-  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, barbed = false,
 }) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
   const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
@@ -415,14 +497,13 @@ function createPlate({
 
   const frontDepth = PLATE_DEPTH + PLATE_FACE_RELIEF;
   const group = new THREE.Group();
-  shared.slabs.rim.push({
-    anchor: group,
+  shared.slabs.rim.push(anchoredSlab(group, {
     width: width + PLATE_RIM * 2,
     height: height + PLATE_RIM * 2,
     depth: PLATE_DEPTH,
     z: PLATE_Z,
-  });
-  shared.slabs.front.push({ anchor: group, width, height, depth: frontDepth, z: PLATE_Z });
+  }));
+  shared.slabs.front.push(anchoredSlab(group, { width, height, depth: frontDepth, z: PLATE_Z }));
 
   const stencilFace = slab(
     shared.plane,
@@ -436,6 +517,11 @@ function createPlate({
 
   group.add(stencilFace);
   group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
+
+  if (barbed) {
+    planBarbedEdge({ shared, rng, anchor: group, width, edgeY: PLATE_RIM, outward: 1 });
+    planBarbedEdge({ shared, rng, anchor: group, width, edgeY: -height - PLATE_RIM, outward: -1 });
+  }
 
   return {
     group,
@@ -522,8 +608,12 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   const shared = {
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
+    wire: new THREE.CylinderGeometry(1, 1, 1, WIRE_SIDES, 1, true),
+    barb: new THREE.ConeGeometry(1, 1, WIRE_SIDES),
     materials: createPlateMaterials(),
-    slabs: { rim: [], front: [] },
+    slabs: {
+      rim: [], front: [], wire: [], barb: [],
+    },
   };
 
   const title = createTitle({ text: event.event, rng, targetWidth: box.width * TITLE_WIDTH_RATIO });
@@ -554,6 +644,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     shared,
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
+    barbed: true,
   }));
 
   const dateFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
@@ -603,8 +694,10 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   group.add(countdown.mesh);
 
   const iron = [
-    buildSlabInstances(shared.slabs.rim, shared.box, shared.materials.rim),
-    buildSlabInstances(shared.slabs.front, shared.box, shared.materials.face),
+    buildAnchoredInstances(shared.slabs.rim, shared.box, shared.materials.rim),
+    buildAnchoredInstances(shared.slabs.front, shared.box, shared.materials.face),
+    buildAnchoredInstances(shared.slabs.wire, shared.wire, shared.materials.wire),
+    buildAnchoredInstances(shared.slabs.barb, shared.barb, shared.materials.wire),
   ];
   group.add(...iron.map((instance) => instance.mesh));
 
