@@ -15,6 +15,7 @@ import {
 } from './nave.js';
 import { createFloorSmoke, createGodRay, createHaze, createSparks } from './embers.js';
 import { createCat } from './cat.js';
+import { createRoses } from './roses.js';
 import { createRandom } from './random.js';
 import { buildInstanced } from '../procedural/instancing.js';
 import { planChain } from '../procedural/chain.js';
@@ -2414,6 +2415,8 @@ export function createArchitecture({ rng }) {
   });
   const haze = createHaze({ rng });
   const smoke = createFloorSmoke({ rng });
+  const roses = createRoses({ rng });
+  group.add(roses.object);
   const ray = createGodRay({ rng });
   group.add(sparks.object, haze.object, smoke.object, ray.object);
 
