@@ -64,8 +64,8 @@ const HAZE = {
 const FLOOR_SMOKE = {
   layers: 9,
   width: 17,
-  height: 4.2,
-  y: 1.5,
+  height: 3.6,
+  y: 1.1,
   farZ: -13,
   nearZ: 9,
   opacity: 0.15,
