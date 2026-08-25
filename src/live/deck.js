@@ -1,24 +1,31 @@
 /**
- * Пульт живого выхода: источник, слух, поле, разгром, цвет и вывод.
+ * Пульт живого выхода: источник, слух, машина, разложение, картинка, разгром, цвет, вывод.
  *
- * Ряды кнопок строятся перебором словарей источников, полей, наложений и приёмов: добавили
- * приём в `mangle.js`, и кнопка появилась сама. Состояния пульт не держит: правда живёт в
- * `view` страницы, пульт только показывает её через `showState`, поэтому кнопка не может
+ * Ряды кнопок строятся перебором словарей: добавили источник в движок PX или приём в
+ * `mangle.js`, и кнопка появилась сама. Состояния пульт не держит: правда живёт в `view`
+ * страницы, пульт только показывает её через `showState`, поэтому кнопка не может
  * разъехаться с картинкой.
  *
  * Ползунки здесь слушают `input`, а не `change`, в отличие от пульта афиш: там движение
  * ползунка перерисовывало шесть тяжёлых карточек, здесь оно меняет число, которое и так
- * читается на следующем кадре.
+ * читается на следующем кадре. Исключение одно и оно важное: ползунки, которые заставляют
+ * машину считать кадр заново, слушают `change`. Источник PX считается от десятков
+ * миллисекунд до секунды, и пересчёт на каждый пиксель хода ползунка вешает страницу.
  */
 
 import { create } from '../ui/dom.js';
-import { BLENDS } from './blend.js';
-import { FIELDS } from './field.js';
+import { WILDNESS } from '../px/paint.js';
+import { BLENDS } from '../procedural/blend.js';
+import { MACHINE_OPS, MACHINE_PALETTES, MACHINE_SOURCES } from './machine.js';
 import { MANGLES } from './mangle.js';
+import { OVERLAY_PLACES } from './overlay.js';
 import { SOURCES } from './source.js';
 
 const ACTIVE_CLASS = 'is-active';
 const PERCENT = 100;
+
+// Мутация в ударах: ноль это «не менять никогда», дальше от такта до целого куска трека.
+const MUTATE_STEPS = [0, 1, 2, 4, 8, 16, 32, 64];
 
 const EARS = [
   { id: 'microphone', label: 'Микрофон' },
@@ -31,17 +38,30 @@ export function createDeck({ root, view, actions }) {
 
   const sourceButtons = mountChoice(pick('sources'), SOURCES, actions.setSource);
   const earButtons = mountChoice(pick('ears'), EARS, actions.setEar);
-  const fieldButtons = mountChoice(pick('fields'), FIELDS, actions.setField);
-  const blendButtons = mountChoice(pick('blends'), BLENDS, actions.setBlend);
+  const machineButtons = mountChoice(pick('machines'), MACHINE_SOURCES, actions.setMachineSource, wildTitle);
+  const paletteButtons = mountChoice(pick('palettes'), MACHINE_PALETTES, actions.setPalette);
+  const opButtons = mountChoice(pick('ops'), MACHINE_OPS, actions.setOp, (op) => op.desc);
+  const blendButtons = mountChoice(pick('blends'), BLENDS, actions.setMachineBlend);
+  const placeButtons = mountChoice(pick('overlay-places'), OVERLAY_PLACES, actions.setOverlayPlace);
+  const overlayBlendButtons = mountChoice(pick('overlay-blends'), BLENDS, actions.setOverlayBlend);
   const mangleButtons = mountChoice(pick('mangles'), MANGLES, actions.toggleMangle);
 
   const sliders = {
-    threshold: mountSlider(pick('threshold'), actions.setThreshold),
+    trim: mountSlider(pick('trim'), actions.setTrim),
+    spread: mountSlider(pick('spread'), actions.setSpread, 'change'),
+    wreck: mountSlider(pick('wreck'), actions.setWreck, 'change'),
+    strength: mountSlider(pick('strength'), actions.setStrength),
+    feed: mountSlider(pick('feed'), actions.setFeed),
     alpha: mountSlider(pick('alpha'), actions.setAlpha),
-    speed: mountSlider(pick('speed'), actions.setSpeed),
+    overlayScale: mountSlider(pick('overlay-scale'), actions.setOverlayScale),
+    overlayAlpha: mountSlider(pick('overlay-alpha'), actions.setOverlayAlpha),
     power: mountSlider(pick('power'), actions.setPower),
     density: mountSlider(pick('density'), actions.setDensity),
   };
+
+  const mutateField = pick('mutate');
+  mutateField.max = String(MUTATE_STEPS.length - 1);
+  mutateField.addEventListener('input', () => actions.setMutate(MUTATE_STEPS[Number(mutateField.value)]));
 
   const fileField = pick('file');
   fileField.addEventListener('change', () => {
@@ -51,32 +71,54 @@ export function createDeck({ root, view, actions }) {
   const urlField = pick('url');
   urlField.addEventListener('change', () => actions.openUrl(urlField.value.trim()));
 
+  const overlayFile = pick('overlay-file');
+  overlayFile.addEventListener('change', () => {
+    if (overlayFile.files[0]) actions.openOverlay(overlayFile.files[0]);
+  });
+  pick('overlay-pick').addEventListener('click', actions.pickOverlay);
+  pick('overlay-drop').addEventListener('click', () => {
+    overlayFile.value = '';
+    actions.dropOverlay();
+  });
+  pick('overlay-tint').addEventListener('click', actions.toggleOverlayTint);
+
   const hotWell = pick('ink-hot');
   const coldWell = pick('ink-cold');
   const applyInks = () => actions.setInks(hotWell.value, coldWell.value);
   hotWell.addEventListener('input', applyInks);
   coldWell.addEventListener('input', applyInks);
 
+  pick('roll').addEventListener('click', actions.roll);
   pick('video').addEventListener('click', actions.toggleVideo);
   pick('freeze').addEventListener('click', actions.toggleFreeze);
   pick('full').addEventListener('click', actions.goFullscreen);
 
   const meterBar = pick('meter-bar');
+  const meterMark = pick('meter-mark');
+  const machineDesc = pick('machine-desc');
+  const opDesc = pick('op-desc');
+  const mutateDesc = pick('mutate-desc');
   const note = pick('note');
   const rate = pick('rate');
 
-  function mountChoice(holder, options, apply) {
+  function wildTitle(source) {
+    return `${WILDNESS[source.wild].note}\n\n${source.desc}`;
+  }
+
+  function mountChoice(holder, options, apply, title = null) {
     return options.map((option) => {
-      const button = create('button', '', option.label);
+      const mark = option.wild ? `${WILDNESS[option.wild].mark} ` : '';
+      const button = create('button', '', `${mark}${option.label}`);
       button.type = 'button';
+      if (title) button.title = title(option);
       button.addEventListener('click', () => apply(option.id));
       holder.append(button);
       return { id: option.id, button };
     });
   }
 
-  function mountSlider(input, apply) {
-    input.addEventListener('input', () => apply(Number(input.value) / PERCENT));
+  function mountSlider(input, apply, event = 'input') {
+    input.addEventListener(event, () => apply(Number(input.value) / PERCENT));
     return input;
   }
 
@@ -84,27 +126,57 @@ export function createDeck({ root, view, actions }) {
     for (const { id, button } of buttons) button.classList.toggle(ACTIVE_CLASS, isOn(id));
   }
 
+  const percent = (input, value) => { input.value = String(Math.round(value * PERCENT)); };
+
   return {
     showState(state) {
+      const set = state.machine;
       light(sourceButtons, (id) => id === state.source);
       light(earButtons, (id) => id === state.ear);
-      light(fieldButtons, (id) => id === state.field);
-      light(blendButtons, (id) => id === state.blend);
+      light(machineButtons, (id) => id === set.source);
+      light(paletteButtons, (id) => id === set.palette);
+      light(opButtons, (id) => id === set.op);
+      light(blendButtons, (id) => id === set.blend);
+      light(placeButtons, (id) => id === state.overlay.place);
+      light(overlayBlendButtons, (id) => id === state.overlay.blend);
       light(mangleButtons, (id) => state.mangles.has(id));
-      sliders.threshold.value = String(Math.round(state.threshold * PERCENT));
-      sliders.alpha.value = String(Math.round(state.alpha * PERCENT));
-      sliders.speed.value = String(Math.round(state.speed * PERCENT));
-      sliders.power.value = String(Math.round(state.power * PERCENT));
-      sliders.density.value = String(Math.round(state.density * PERCENT));
+
+      percent(sliders.trim, state.trim);
+      percent(sliders.spread, set.spread);
+      percent(sliders.wreck, set.wreck);
+      percent(sliders.strength, set.strength);
+      percent(sliders.feed, set.feed);
+      percent(sliders.alpha, set.alpha);
+      percent(sliders.overlayScale, state.overlay.scale);
+      percent(sliders.overlayAlpha, state.overlay.alpha);
+      percent(sliders.power, state.power);
+      percent(sliders.density, state.density);
+      mutateField.value = String(Math.max(0, MUTATE_STEPS.indexOf(set.mutate)));
+      mutateDesc.textContent = set.mutate
+        ? `бросок каждые ${set.mutate} удар${ending(set.mutate)}`
+        : 'машина стоит, пока её не бросят рукой';
+
+      const source = MACHINE_SOURCES.find(({ id }) => id === set.source);
+      machineDesc.textContent = `${WILDNESS[source.wild].mark} ${source.desc}`;
+      opDesc.textContent = MACHINE_OPS.find(({ id }) => id === set.op).desc;
+
       hotWell.value = state.hot;
       coldWell.value = state.cold;
+      pick('overlay-tint').classList.toggle(ACTIVE_CLASS, state.overlay.tint);
       pick('video').classList.toggle(ACTIVE_CLASS, state.showVideo);
       pick('freeze').classList.toggle(ACTIVE_CLASS, state.freeze);
     },
-    /** Полоска уровня и счётчик кадров: единственное, что пульт рисует каждый кадр. */
-    showPulse({ level, hit, fps }) {
+    /**
+     * Полоска уровня и счётчик кадров: единственное, что пульт рисует каждый кадр.
+     *
+     * Метка калибровки горит, пока слух ещё меряет зал. Без неё тихая комната и
+     * неразогретый слух выглядят одинаково, и человек за пультом крутит громкость вместо
+     * того, чтобы подождать секунду.
+     */
+    showPulse({ level, hit, measuring, fps }) {
       meterBar.style.width = `${Math.round(level * PERCENT)}%`;
       meterBar.classList.toggle('is-hit', hit);
+      meterMark.hidden = !measuring;
       rate.textContent = `${fps} кадр/с`;
     },
     note(text) {
@@ -112,3 +184,5 @@ export function createDeck({ root, view, actions }) {
     },
   };
 }
+
+const ending = (beats) => (beats === 1 ? '' : beats < 5 ? 'а' : 'ов');

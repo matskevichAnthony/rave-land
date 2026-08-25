@@ -36,6 +36,13 @@
   background: var(--bone);
 }
 
+/* Ряды, где кнопок больше десятка: имя алгоритма короткое, и мельче они читаются в темноте
+   не хуже, зато весь набор виден разом и не уезжает пультом вниз на два экрана. */
+.deck__row--wide button {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
 .deck__ink {
   display: flex;
   align-items: center;

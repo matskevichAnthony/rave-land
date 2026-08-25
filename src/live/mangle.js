@@ -44,6 +44,22 @@ const SCAN_ALPHA = 0.45;
 
 const SHAKE_THROW = 0.03;
 
+// Обратная связь: кадр наступает сам на себя с наездом и поворотом, и результат остаётся в
+// памяти до следующего кадра. Приём древний, аналоговый и самый страшный из всех: камера,
+// направленная в собственный монитор, уходит в бесконечный тоннель за секунду, и здесь
+// ровно то же самое, только тоннель крутит звук.
+const FEEDBACK_ZOOM = 0.06;
+const FEEDBACK_SPIN = 0.035;
+const FEEDBACK_ALPHA = 0.82;
+
+// Зеркало: калейдоскоп в одну ось на слабой руке и в две на сильной.
+const MIRROR_SECOND_AXIS = 0.55;
+
+// Щелевой скан: кадр не показывается целиком, показывается одна его полоса, а всё
+// остальное на экране это та же полоса, снятая раньше. Время едет по вертикали.
+const SLIT_STEP = 0.02;
+const SLIT_BAND = 6;
+
 const between = (min, max) => min + Math.random() * (max - min);
 const count = (range, power) => Math.max(1, Math.round(between(range[0], range[1]) * power));
 
@@ -144,14 +160,74 @@ function shake(ctx, { width, height }, { shot }, power) {
   );
 }
 
+/**
+ * Обратная связь: кадр складывается с самим собой из памяти, увеличенным и повёрнутым.
+ *
+ * Память обновляется результатом, а не входом, поэтому наезд накапливается: то, что попало
+ * в кадр один раз, уезжает вглубь и живёт там ещё десятки кадров. Это и делает тоннель.
+ */
+function feedback(ctx, { width, height }, { tape }, power) {
+  const grow = 1 + FEEDBACK_ZOOM * power;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = FEEDBACK_ALPHA * power;
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate(between(-1, 1) * FEEDBACK_SPIN * power);
+  ctx.scale(grow, grow);
+  ctx.drawImage(tape.canvas, -width / 2, -height / 2, width, height);
+  ctx.restore();
+  tape.ctx.drawImage(ctx.canvas, 0, 0);
+}
+
+/** Зеркало: половина кадра отражается в свою пару, и картинка становится симметричной. */
+function mirror(ctx, { width, height }, { shot }, power) {
+  ctx.save();
+  ctx.globalAlpha = power;
+  ctx.translate(width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(shot.canvas, 0, 0, width / 2, height, 0, 0, width / 2, height);
+  ctx.restore();
+  if (power < MIRROR_SECOND_AXIS) return;
+  ctx.save();
+  ctx.globalAlpha = power;
+  ctx.translate(0, height);
+  ctx.scale(1, -1);
+  ctx.drawImage(ctx.canvas, 0, 0, width, height / 2, 0, 0, width, height / 2);
+  ctx.restore();
+}
+
+/**
+ * Щелевой скан: на экране одна полоса кадра, размазанная по времени.
+ *
+ * Лента едет вниз на несколько пикселей за кадр, сверху штампуется свежая полоса из центра
+ * кадра. Что попало в полосу секунду назад, сейчас внизу экрана: движение читается как
+ * рисунок, а не как движение.
+ */
+function slit(ctx, { width, height }, { tape, shot }, power) {
+  const step = Math.max(1, Math.round(height * SLIT_STEP * power));
+  tape.ctx.drawImage(tape.canvas, 0, step);
+  tape.ctx.drawImage(
+    shot.canvas,
+    0, (height - SLIT_BAND) / 2, width, SLIT_BAND,
+    0, 0, width, step + SLIT_BAND,
+  );
+  ctx.save();
+  ctx.globalAlpha = power;
+  ctx.drawImage(tape.canvas, 0, 0);
+  ctx.restore();
+}
+
 // Порядок словаря это порядок наложения: сначала геометрия, потом цвет, тряска последней.
 // В обратном порядке негативные полосы разъезжались бы вместе с кадром и читались мусором.
-const TOOLS = { mosh, smear, echo, chroma, invert, scan, shake };
+const TOOLS = { mosh, smear, slit, feedback, echo, mirror, chroma, invert, scan, shake };
 
 export const MANGLES = [
   { id: 'mosh', label: 'Мош' },
   { id: 'smear', label: 'Размаз' },
+  { id: 'slit', label: 'Щель' },
+  { id: 'feedback', label: 'Тоннель' },
   { id: 'echo', label: 'Эхо' },
+  { id: 'mirror', label: 'Зеркало' },
   { id: 'chroma', label: 'Каналы' },
   { id: 'invert', label: 'Негатив' },
   { id: 'scan', label: 'Развёртка' },
@@ -163,7 +239,7 @@ const ON_HIT = new Set(['shake', 'invert']);
 
 // Кому нужен снимок кадра: заливки и негатив работают прямо по экрану, и ради них копию
 // снимать незачем.
-const NEEDS_SHOT = new Set(['mosh', 'smear', 'echo', 'chroma', 'shake']);
+const NEEDS_SHOT = new Set(['mosh', 'smear', 'slit', 'echo', 'mirror', 'chroma', 'shake']);
 
 function buffer(width, height) {
   const canvas = document.createElement('canvas');
@@ -174,7 +250,13 @@ function buffer(width, height) {
 
 export function createMangle(width, height) {
   const half = [Math.round(width * CHROMA_SCALE), Math.round(height * CHROMA_SCALE)];
-  const shop = { shot: buffer(width, height), tint: buffer(...half), mix: buffer(...half) };
+  // Лента живёт между кадрами: тоннель и щель тем и работают, что помнят прошлое.
+  const shop = {
+    shot: buffer(width, height),
+    tint: buffer(...half),
+    mix: buffer(...half),
+    tape: buffer(width, height),
+  };
 
   return {
     /** Проход всех включённых приёмов по кадру: сила общая, звук решает, добираем ли до неё. */

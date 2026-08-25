@@ -1,15 +1,25 @@
 /**
- * Слух: уровень и полосы звука, из которых кормится всё живое на экране.
+ * Слух: уровень, полосы и удар, из которых кормится всё живое на экране.
  *
  * Источников звука два и оба нужны. Микрофон слышит зал целиком, с бочкой из колонок и
  * криком толпы, но ловит и то, что говорят рядом с ноутбуком. Дорожка самого видео чистая,
  * но знает только то, что в клипе. Переключатель ставится на пульт, а не выбирается за
  * человека: на репетиции честнее дорожка, в зале честнее микрофон.
  *
- * Порог здесь не украшение. Без него любая тишина всё равно шевелит картинку шумом
- * усилителя, и «реакция на звук» превращается в дрожь. Ниже порога уровень честно нулевой,
- * выше он растянут обратно на всю шкалу, поэтому картинка отвечает только на то, что
- * действительно громче фона.
+ * Порог здесь не ползунок, а калибровка, и это главное решение файла. Фиксированный порог
+ * врёт всегда: в клубе микрофон упирается в потолок и любое число ниже единицы означает
+ * «всё громкое», дома тот же микрофон не доползает и до трети, и та же цифра означает
+ * «тишина». Одна настройка не может обслужить оба зала, потому что мерить надо не
+ * громкость, а то, насколько сейчас громче, чем было только что.
+ *
+ * Поэтому слух ведёт две линии, пол и потолок, и растягивает уровень между ними. Пол
+ * падает быстро и поднимается медленно, потолок наоборот: так шум усилителя уезжает в ноль
+ * за секунды, а редкий пик держит шкалу и не даёт ей схлопнуться на затихшем месте.
+ * Расстояние между линиями это и есть ответ на вопрос, звучит ли что-нибудь вообще: пока
+ * оно уже мёртвой зоны, в комнате тихо, и картинка честно стоит, сколько бы ни шипел вход.
+ *
+ * Ползунок остаётся, но означает другое: это подрез снизу поверх калибровки. Ноль значит
+ * «верю калибровке целиком», и это рабочее положение в обоих залах.
  */
 
 const FFT = 1024;
@@ -21,16 +31,40 @@ const DECIBEL_CEIL = -20;
 // поэтому на любом железе делят звук одинаково.
 const BANDS = { low: [0, 0.06], mid: [0.06, 0.3], high: [0.3, 0.8] };
 
+// Ход калибровки за кадр. Пол падает за десятые доли секунды и всплывает за минуту: зал,
+// который стал тише, слух заметит сразу, а паузу между треками не примет за новый зал.
+// Потолок берёт пик мгновенно и сдаёт его за те же полминуты, иначе один хлопок дверью
+// оставил бы шкалу задранной до конца сета.
+const FLOOR_FALL = 0.08;
+const FLOOR_RISE = 0.0004;
+const CEIL_RISE = 0.5;
+const CEIL_FALL = 0.0009;
+
+// Мёртвая зона: пока пол и потолок ближе этого, в комнате нет звука, а есть вход. Число
+// подобрано по шуму встроенного микрофона ноутбука в тихой комнате: он даёт около трёх
+// сотых шкалы и не даёт разброса вовсе, потому что шум ровный.
+const DEAD_SPAN = 0.07;
+
+// Разгон калибровки: первые секунды линии ещё сходятся, и растягивать по ним нечего.
+const WARMUP_MS = 1200;
+
 // Удар не повторяется чаще, чем раз в такт быстрого техно: иначе один затянутый рёв
-// синтезатора отбивает по удару на кадр и картинка захлёбывается. Сам удар считается по
-// низу, перешедшему заметно выше порога: шипение тарелок бочкой не считается.
+// синтезатора отбивает по удару на кадр и картинка захлёбывается.
 const HIT_HOLD_MS = 110;
-const HIT_LEVEL = 0.35;
+
+// Удар это низ, вышедший над собственным средним, а не над абсолютной цифрой. Средний низ
+// в клубе и дома отличается в разы, отношение к нему не отличается вовсе: бочка всегда
+// заметно громче того, что было в полосе секунду назад.
+const BEAT_RATIO = 1.35;
+const BEAT_FLOOR = 0.12;
+const BEAT_MEMORY = 0.06;
 
 // Сглаживание уровня по кадрам: картинка должна дышать вместе со звуком, а не дёргаться на
 // каждом пике. Атака быстрая, отпускание медленное, как у компрессора.
 const ATTACK = 0.55;
 const RELEASE = 0.12;
+
+const clamp01 = (value) => (value < 0 ? 0 : value > 1 ? 1 : value);
 
 /**
  * Полоса меряется по своему пику, а не по среднему.
@@ -47,9 +81,29 @@ function bandLevel(bins, [from, to]) {
   return peak / 255;
 }
 
-/** Порог снизу, растяжка сверху: тишина не шевелит картинку, громкое отдаёт всю шкалу. */
-function gate(value, threshold) {
-  return threshold >= 1 ? 0 : Math.max(0, (value - threshold) / (1 - threshold));
+/**
+ * Калибровка одной полосы: пол, потолок и растянутое между ними значение.
+ *
+ * Каждая полоса ведёт свои линии. Общие линии на все три означали бы, что тарелки меряются
+ * потолком бочки и никогда до него не доходят, то есть верх шкалы у них не наступает вовсе.
+ */
+function createRange() {
+  let floor = 1;
+  let ceil = 0;
+
+  return {
+    get span() {
+      return ceil - floor;
+    },
+    /** Возвращает долю от 0 до 1 или ноль, пока в полосе нет разброса. */
+    stretch(raw, ready) {
+      floor += (raw - floor) * (raw < floor ? FLOOR_FALL : FLOOR_RISE);
+      ceil += (raw - ceil) * (raw > ceil ? CEIL_RISE : CEIL_FALL);
+      const span = ceil - floor;
+      if (!ready || span < DEAD_SPAN) return 0;
+      return clamp01((raw - floor) / span);
+    },
+  };
 }
 
 export function createListening() {
@@ -65,9 +119,11 @@ export function createListening() {
   // Узел элемента заводится ровно один раз: второй `createMediaElementSource` на том же
   // теге браузер отвергает, а тег у всех источников общий.
   let elementNode = null;
+  const ranges = { low: createRange(), mid: createRange(), high: createRange() };
   let level = 0;
+  let beatMean = 0;
   let hitAt = 0;
-  let wasLoud = false;
+  let listenAt = 0;
 
   function connect(node) {
     feed?.disconnect();
@@ -75,17 +131,31 @@ export function createListening() {
     node.connect(analyser);
   }
 
+  /** Новый источник это новый зал: линии калибровки начинаются заново. */
+  function recalibrate(now) {
+    ranges.low = createRange();
+    ranges.mid = createRange();
+    ranges.high = createRange();
+    beatMean = 0;
+    level = 0;
+    listenAt = now;
+  }
+
   return {
     /** Микрофон: слышит зал, включая то, что не выходит из ноутбука. */
     async microphone() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false } });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
       await context.resume();
       connect(context.createMediaStreamSource(stream));
+      recalibrate(performance.now());
       return 'microphone';
     },
     /** Дорожка источника: у захвата вкладки берётся её звук, у файла звук самого файла. */
     async source({ stream, video }) {
       await context.resume();
+      recalibrate(performance.now());
       if (stream?.getAudioTracks().length) {
         connect(context.createMediaStreamSource(stream));
         return 'source';
@@ -101,23 +171,31 @@ export function createListening() {
       level = 0;
     },
     /**
-     * Замер кадра: полосы, общий уровень и удар.
+     * Замер кадра: полосы, общий уровень, удар и состояние калибровки.
      *
-     * Удар это переход через порог, а не громкость сама по себе: он выстреливает один раз
-     * на атаку и молчит, пока звук держится наверху.
+     * `trim` это ползунок пульта, подрез снизу поверх калибровки, а не абсолютный порог.
+     * `ready` говорит пульту, слышит слух зал или ещё меряет его: без этого тихая комната и
+     * неразогретая калибровка выглядят одинаково, и человек за пультом крутит громкость
+     * вместо того, чтобы подождать секунду.
      */
-    read({ threshold, now }) {
+    read({ trim, now }) {
+      if (!feed) return { level: 0, low: 0, mid: 0, high: 0, hit: false, ready: false, span: 0 };
       analyser.getByteFrequencyData(bins);
-      const low = gate(bandLevel(bins, BANDS.low), threshold);
-      const mid = gate(bandLevel(bins, BANDS.mid), threshold);
-      const high = gate(bandLevel(bins, BANDS.high), threshold);
+      const ready = now - listenAt > WARMUP_MS;
+      const cut = (value) => (trim >= 1 ? 0 : clamp01((value - trim) / (1 - trim)));
+      const low = cut(ranges.low.stretch(bandLevel(bins, BANDS.low), ready));
+      const mid = cut(ranges.mid.stretch(bandLevel(bins, BANDS.mid), ready));
+      const high = cut(ranges.high.stretch(bandLevel(bins, BANDS.high), ready));
       const raw = Math.max(low, mid * 0.9, high * 0.7);
       level += (raw - level) * (raw > level ? ATTACK : RELEASE);
-      const loud = low > HIT_LEVEL;
-      const hit = loud && !wasLoud && now - hitAt > HIT_HOLD_MS;
-      wasLoud = loud;
+
+      // Удар: низ обогнал собственное среднее и не повторяется чаще такта. Среднее ведётся
+      // по калиброванному низу, поэтому отношение одинаково работает в зале и в комнате.
+      const hit = ready && low > BEAT_FLOOR && low > beatMean * BEAT_RATIO && now - hitAt > HIT_HOLD_MS;
+      beatMean += (low - beatMean) * BEAT_MEMORY;
       if (hit) hitAt = now;
-      return { level, low, mid, high, hit };
+
+      return { level, low, mid, high, hit, ready, span: ranges.low.span };
     },
   };
 }
