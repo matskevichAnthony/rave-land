@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { burnIron, emissiveBoost } from './burn.js';
 import { gothicFaceFor, loadGothic } from './gothic.js';
 import { createWordmark } from './wordmark.js';
 import { BEAT, PALETTE } from './palette.js';
@@ -36,10 +37,6 @@ const PLATE_Z = -0.35;
 
 const TITLE_TILT = 0.022;
 
-const BURN_FLAT = 0.94;
-const BURN_EDGE = 0.2;
-// Доля крови на стенке буквы: единица это фаска, раскалённая на полную.
-const BURN_WALL = 0.5;
 
 const CAP_SCALE = [0.28, 0.36, 0.46, 0.58, 0.72, 0.9];
 const PLATE_TRACKING = 0.22;
@@ -94,26 +91,9 @@ const COUNTDOWN_PULSE = 0.035;
 /** В схеме события пока нет своего слова для нулевого дня, поэтому оно ждёт поля `todayLabel`. */
 const DEFAULT_TODAY_LABEL = 'СЕГОДНЯ';
 
-const TITLE_EMISSIVE_BASE = 2.1;
-// Жар не мигает в такт, а ползёт по фаске, как по остывающему прокату, и изредка срывается
-// дугой: ровный пульс в бит читается дискотечной гирляндой, а не раскалённым железом.
-const TITLE_HEAT_WAVES = 1.6;
-const TITLE_HEAT_SECONDS = 14;
-const TITLE_HEAT_LOW = 0.32;
-const TITLE_HEAT_HIGH = 1.35;
-const ARC_GAP_MIN = 2.4;
-const ARC_GAP_MAX = 7;
-const ARC_BLINK_MIN = 0.03;
-const ARC_BLINK_MAX = 0.11;
-const ARC_DEPTH_MIN = 0.18;
-const ARC_DEPTH_MAX = 0.45;
 const PLATE_EMISSIVE_BASE = 1.6;
 const HEADLINER_GLOW = 0.62;
 const HEADLINER_INK = '#2a0509';
-// Блум берёт по яркости, а не по цвету: у крови её вдвое меньше, чем у кости, и красная
-// плита не доходит до порога свечения. Множитель выравнивает именно это.
-const EMISSIVE_LUMA_REFERENCE = 0.55;
-const EMISSIVE_LUMA_BOOST_CAP = 2.2;
 const PLATE_EMISSIVE_CAP = 0.58;
 const PLATE_EMISSIVE_BOOST = 1.6;
 const COUNTDOWN_EMISSIVE_BASE = 1.4;
@@ -155,80 +135,6 @@ function resolveBox(bounds) {
   };
 }
 
-function facingTint(facing, tints) {
-  if (facing > BURN_FLAT) return tints.flat;
-  if (facing > BURN_EDGE) return tints.edge;
-  return tints.wall;
-}
-
-/** Цвет вершины несёт и металл, и силу прожога: фаска кровь, стенки ржавчина, лицо железо. */
-function paintBurn(geometry) {
-  const normal = geometry.getAttribute('normal');
-  // Лицо буквы чёрное железо, а горит только обрамление: раскалённой ржавчиной стенки
-  // уводили всю строку в оранжевый, поэтому и фаска, и стенка идут кровью, а не жаром.
-  const tints = {
-    flat: new THREE.Color(PALETTE.iron),
-    wall: new THREE.Color(PALETTE.blood).multiplyScalar(BURN_WALL),
-    edge: new THREE.Color(PALETTE.blood),
-  };
-  const colors = new Float32Array(normal.count * 3);
-  for (let i = 0; i < normal.count; i += 1) {
-    const tint = facingTint(Math.abs(normal.getZ(i)), tints);
-    colors[i * 3] = tint.r;
-    colors[i * 3 + 1] = tint.g;
-    colors[i * 3 + 2] = tint.b;
-  }
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-}
-
-/**
- * Эмиссия горит только по фаске (её гасит цвет вершины) и волной идёт вдоль строки.
- *
- * Волна живёт в шейдере, потому что она разная в каждой точке буквы: из JS такое пришлось бы
- * гнать отдельным материалом на каждую букву, то есть отдельным вызовом отрисовки.
- */
-function burnEmissiveByVertexColor(material, span) {
-  const heat = { value: 0 };
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uHeat = heat;
-    shader.uniforms.uSpan = { value: span };
-    shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nvarying float vHeatX;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n\tvHeatX = position.x;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nvarying float vHeatX;\nuniform float uHeat;\nuniform float uSpan;')
-      .replace(
-        '#include <emissivemap_fragment>',
-        `#include <emissivemap_fragment>
-\tfloat wave = 0.5 + 0.5 * sin(vHeatX / uSpan * ${TITLE_HEAT_WAVES.toFixed(2)} * 6.2831853 - uHeat);
-\ttotalEmissiveRadiance *= vColor * mix(${TITLE_HEAT_LOW.toFixed(2)}, ${TITLE_HEAT_HIGH.toFixed(2)}, wave);`,
-      );
-  };
-  return heat;
-}
-
-/** Дуга не мигает по расписанию: горит ровно, изредка срывается и снова садится на ток. */
-function createArcFlicker(rng) {
-  let nextAt = rng.range(ARC_GAP_MIN, ARC_GAP_MAX);
-  let until = 0;
-  let depth = 1;
-  return function flicker(elapsed) {
-    if (elapsed >= nextAt) {
-      until = elapsed + rng.range(ARC_BLINK_MIN, ARC_BLINK_MAX);
-      depth = rng.range(ARC_DEPTH_MIN, ARC_DEPTH_MAX);
-      nextAt = until + rng.range(ARC_GAP_MIN, ARC_GAP_MAX);
-    }
-    return elapsed < until ? depth : 1;
-  };
-}
-
-/** Насколько поднять эмиссию, чтобы цвет любой светлоты дотянулся до порога блума. */
-function lumaBoost(color) {
-  const { r, g, b } = new THREE.Color(color);
-  const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return Math.min(EMISSIVE_LUMA_REFERENCE / luma, EMISSIVE_LUMA_BOOST_CAP);
-}
-
 /**
  * Заголовок афиши: знак события, отлитый в железо и раскалённый по фаске.
  *
@@ -238,25 +144,11 @@ function lumaBoost(color) {
  * съедает место под лайнап.
  */
 function createTitle({ wordmark, rng, targetWidth, targetHeight }) {
-  const geometry = wordmark.geometry;
   const height = Math.min(targetHeight, targetWidth / wordmark.aspect);
   const width = height * wordmark.aspect;
-  paintBurn(geometry);
+  const iron = burnIron({ geometry: wordmark.geometry, span: wordmark.aspect, rng });
 
-  const material = new THREE.MeshStandardMaterial({
-    color: '#ffffff',
-    vertexColors: true,
-    metalness: 0.95,
-    roughness: 0.42,
-    emissive: PALETTE.blood,
-    emissiveIntensity: TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood),
-  });
-  // Волна жара меряется шириной знака в его собственных долях: в метрах она растянулась бы
-  // и сжалась вместе с кадрированием, и на вертикальной афише прокатывалась бы вдвое реже.
-  const heat = burnEmissiveByVertexColor(material, wordmark.aspect);
-  const flicker = createArcFlicker(rng);
-
-  const mesh = new THREE.Mesh(geometry, material);
+  const mesh = new THREE.Mesh(wordmark.geometry, iron.material);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
   mesh.scale.setScalar(height);
@@ -267,14 +159,7 @@ function createTitle({ wordmark, rng, targetWidth, targetHeight }) {
 
   const group = new THREE.Group();
   group.add(mesh);
-  return {
-    group,
-    height,
-    burn(elapsed) {
-      heat.value = (elapsed / TITLE_HEAT_SECONDS) * TAU;
-      material.emissiveIntensity = TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood) * flicker(elapsed);
-    },
-  };
+  return { group, height, burn: iron.burn };
 }
 
 /** Кегль подбирается по шкале: имена разной длины, а коробка одна. */
@@ -362,7 +247,7 @@ function createRule({ shared, width }) {
   const material = new THREE.MeshStandardMaterial({
     color: PALETTE.iron,
     emissive: PALETTE.ember,
-    emissiveIntensity: RULE_EMISSIVE * lumaBoost(PALETTE.ember),
+    emissiveIntensity: RULE_EMISSIVE * emissiveBoost(PALETTE.ember),
     metalness: 0.9,
     roughness: 0.4,
   });
@@ -397,7 +282,7 @@ function createPlate({
     emissive,
     // Шкала кеглей не должна менять яркость строки: длинное имя садится на мелкий кегль,
     // его штрих тоньше и на экране гаснет, поэтому мелкая плита светит сильнее крупной.
-    emissiveIntensity: PLATE_EMISSIVE_BASE * (glow ?? lumaBoost(emissive))
+    emissiveIntensity: PLATE_EMISSIVE_BASE * (glow ?? emissiveBoost(emissive))
       * Math.min(PLATE_EMISSIVE_CAP / capHeight, PLATE_EMISSIVE_BOOST),
     alphaMap: stencil.texture,
     alphaTest: STENCIL_ALPHA_TEST,
