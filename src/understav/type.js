@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { burnIron, emissiveBoost } from './burn.js';
 import { gothicFaceFor, loadGothic } from './gothic.js';
+import { createWordline } from './wordline.js';
 import { createWordmark } from './wordmark.js';
 import { BEAT, PALETTE } from './palette.js';
 import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.js';
@@ -24,6 +25,9 @@ const NAVE_HEADROOM = 2;
 // в высоту, и обе останутся внутри коробки.
 const TITLE_HEIGHT_RATIO = 0.5;
 const TITLE_WIDTH_RATIO = 0.95;
+// Название словом стоит вдвое уже знака и читается подписью под ним. Шире оно начинает
+// спорить со знаком за главное место в кадре, а знак у события один и спорить ему не с чем.
+const WORDLINE_WIDTH_RATIO = 0.5;
 const LINEUP_WIDTH_RATIO = 0.72;
 // Подзаголовок чуть шире коробки лайнапа: коробку держит длина имён, а подзаголовок вдвое
 // длиннее самого длинного из них и по ней читался бы петитом. Дальше единицы он не идёт,
@@ -71,6 +75,7 @@ const ASSEMBLE_SPAN = 1.7;
 // Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
 const GAP_AFTER_TITLE = 0.34;
+const GAP_AFTER_WORDLINE = 0.3;
 const GAP_AFTER_TAGLINE = 1.2;
 const GAP_IN_LINEUP = 0.24;
 const GAP_AFTER_LINEUP = 0.75;
@@ -409,8 +414,15 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     },
   };
 
+  // Знак и словесная строка едут разными файлами и оба спрашивают сеть, поэтому спрашивают
+  // одновременно: последовательно это две задержки подряд там, где хватает одной.
+  const [wordmark, wordline] = await Promise.all([
+    createWordmark({ rng, tilt: TITLE_TILT }),
+    createWordline({ text: event.event, rng, targetWidth: box.width * WORDLINE_WIDTH_RATIO }),
+  ]);
+
   const title = createTitle({
-    wordmark: await createWordmark({ rng, tilt: TITLE_TILT }),
+    wordmark,
     rng,
     targetWidth: box.width * TITLE_WIDTH_RATIO,
     targetHeight: box.height * TITLE_HEIGHT_RATIO,
@@ -483,6 +495,9 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
 
   const rows = [
     { row: title, gap: GAP_AFTER_TITLE },
+    // Название словом идёт сразу под знаком: знак читается силуэтом, и без строки под ним
+    // тот, кто видит его впервые, слова в нём не разбирает.
+    { row: wordline, gap: GAP_AFTER_WORDLINE },
     // Тэглайн стоит подписью под названием, а не отдельной строкой внизу: он объясняет, что
     // это за вечер, и читается только рядом с тем, к чему относится.
     ...(tagline ? [{ row: tagline, gap: GAP_AFTER_TAGLINE }] : []),
@@ -543,6 +558,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     },
     update(dt, elapsed) {
       title.burn(elapsed);
+      wordline.burn(elapsed);
 
       for (const plate of plates) {
         const angle = elapsed * plate.sway.omega + plate.sway.phase;

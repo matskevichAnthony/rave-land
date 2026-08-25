@@ -216,6 +216,14 @@
       "license": "OFL 1.1",
       "url": "https://github.com/google/fonts/tree/main/ofl/ruslandisplay",
       "note": "Кириллическая пара к Grenze Gotisch: в самой Grenze кириллицы нет, и русская строка тэглайна вышла бы из неё системным гротеском. Текст лицензии лежит рядом файлом OFL-ruslan-display.txt."
+    },
+    "assets/fonts/grenze-gotisch.typeface.json": {
+      "title": "Готика афиши, разобранная в кривые",
+      "source": "understav",
+      "author": "Omnibus-Type",
+      "license": "OFL 1.1",
+      "tool": "tools/gen/ttf2typeface.mjs из assets/fonts/grenze-gotisch.ttf",
+      "note": "Тот же Grenze Gotisch, что лежит рядом файлом TTF, но в формате typeface: объёмную надпись строит TextGeometry, а она другого формата не понимает. Это производная, а не второй ассет: шрифт один, правится он в TTF, после чего кривые пересобираются инструментом. Едет из public файлом, а не импортом: полмегабайта в сборке возили бы и те страницы, которым объём не нужен. Текст лицензии лежит рядом файлом OFL-grenze-gotisch.txt."
     }
   }
 }
