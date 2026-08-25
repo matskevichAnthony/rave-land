@@ -22,7 +22,10 @@ const CAMERA_FOV = 34;
 const CAMERA_Z = 3.1;
 
 const KINDS = ['knot', 'shard', 'cage', 'blob', 'ribbon', 'stack'];
-const SKINS = ['wire', 'normal', 'glitch', 'points'];
+const SKINS = ['wire', 'facet', 'glitch', 'points'];
+
+// Фасеточная кожа: доля тени в рампе и разброс направления света.
+const FACET_SHADOW = 0.85;
 
 const KNOT_TUBES = [1, 4];
 const KNOT_TWISTS = [2, 7];
@@ -180,6 +183,35 @@ function glitchTexture(random, inks) {
   return texture;
 }
 
+/**
+ * Фасеточная кожа: каждая грань выкрашена вручную по своей нормали рампой из красок
+ * серии, тень уходит в чернильную тьму. Спектральный MeshNormalMaterial здесь запрещён:
+ * его радуга не знает про глобальные цвета пульта и вываливает предмет из серии.
+ */
+function facetSkin(geometry, random, inks) {
+  const flat = geometry.index ? geometry.toNonIndexed() : geometry;
+  // Развёрнутая копия замещает исходник: тот больше никому не виден, чистится сразу.
+  if (flat !== geometry) geometry.dispose();
+  const position = flat.getAttribute('position');
+  const normal = flat.getAttribute('normal');
+  const colors = new Float32Array(position.count * 3);
+  const light = new THREE.Vector3(random.range(-1, 1), random.range(0.2, 1), random.range(0.4, 1)).normalize();
+  const lit = new THREE.Color(random.pick([inks.ember, inks.moon]));
+  const dark = new THREE.Color(inks.void);
+  const face = new THREE.Vector3();
+  const shade = new THREE.Color();
+  for (let corner = 0; corner < position.count; corner += 3) {
+    face.set(normal.getX(corner), normal.getY(corner), normal.getZ(corner));
+    const tone = Math.max(0, face.dot(light));
+    shade.copy(dark).lerp(lit, 1 - FACET_SHADOW + tone * FACET_SHADOW);
+    for (let point = 0; point < 3; point += 1) {
+      colors.set([shade.r, shade.g, shade.b], (corner + point) * 3);
+    }
+  }
+  flat.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return new THREE.Mesh(flat, new THREE.MeshBasicMaterial({ vertexColors: true }));
+}
+
 /** Кожа предмета: во что одета геометрия решает сид, а не вид геометрии. */
 function dress(geometry, skin, random, inks) {
   if (skin === 'points') {
@@ -188,8 +220,8 @@ function dress(geometry, skin, random, inks) {
       size: random.range(POINT_SIZE[0], POINT_SIZE[1]),
     }));
   }
-  if (skin === 'normal') {
-    return new THREE.Mesh(geometry, new THREE.MeshNormalMaterial({ flatShading: random() < 0.5 }));
+  if (skin === 'facet') {
+    return facetSkin(geometry, random, inks);
   }
   if (skin === 'glitch') {
     return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: glitchTexture(random, inks) }));
