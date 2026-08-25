@@ -124,6 +124,9 @@ export function renderCard({
     frame,
     random: createRandom(cardSeed(own(seed), index)),
     bgRandom: createRandom(cardSeed(own(bgSeed ?? seed), index + BACKGROUND_SALT)),
+    // Серийный поток фона: он раздаёт мутанту генеративные семейства так, чтобы в серии
+    // не встретились две карточки одного устройства.
+    bgSeries: seriesRandom(bgSeed ?? seed, BACKGROUND_SALT),
     event,
     artist,
     logo,
