@@ -25,6 +25,7 @@ import { applyChaos, createChaosRecipe } from './chaos.js';
 import { drawBorder } from './border.js';
 import { drawSigils } from './sigils.js';
 import { directionById } from './directions/index.js';
+import { DEFAULT_OVERLAY, drawOverlay } from './overlay.js';
 import { createTypeset, defaultText } from './typeset.js';
 
 // Соль между карточками: без неё шесть афиш одного сида получают один и тот же поток и
@@ -103,6 +104,7 @@ export async function renderCard({
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
   objTone = 'heat', objAlpha = 0.92, objBehind = false,
   chaosPower = 1, chaosZone = 'all',
+  overlay = DEFAULT_OVERLAY,
   text = defaultText(), textOnly = false,
 }) {
   const size = FORMATS[format];
@@ -152,6 +154,9 @@ export async function renderCard({
   ));
 
   if (!textOnly) {
+    // Картинка под эффектом ложится первой: дальше её жуют фактура, объём, эффектор и рамка
+    // наравне с фоном.
+    if (overlay.place === 'under') drawOverlay(ctx, frame, overlay, inks);
     applyTexture(ctx, frame, createRandom(cardSeed(own(texBase), index)), inks);
     if (allow3d) {
       drawDimension(
@@ -184,6 +189,8 @@ export async function renderCard({
       createRandom(cardSeed(own(layBase), index + BORDER_SALT)),
       inks,
     );
+    // Картинка поверх ложится после всего разгрома, но до набора: знак цел, имя читается.
+    if (overlay.place === 'over') drawOverlay(ctx, frame, overlay, inks);
     if ((split || plaque || glow) && anyText) {
       const set = createLayer(frame.width, frame.height);
       await directionById(direction).paint(paintArgs(set.ctx, true));

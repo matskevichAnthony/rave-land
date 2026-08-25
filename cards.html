@@ -105,6 +105,35 @@
     </section>
 
     <section class="deck__block">
+      <h2 class="deck__label">Картинка</h2>
+      <div class="deck__row">
+        <button type="button" data-js-overlay-pick>Загрузить</button>
+        <button type="button" data-js-overlay-drop>Убрать</button>
+        <button type="button" data-js-overlay-tint>В жар</button>
+      </div>
+      <input class="deck__hidden" type="file" accept="image/*" data-js-overlay-file />
+      <div class="deck__row" data-js-overlay-places></div>
+      <div class="deck__row" data-js-overlay-blends></div>
+      <label class="deck__slider">
+        <span>Размер</span>
+        <input type="range" min="10" max="140" step="5" data-js-overlay-scale
+          aria-label="Размер картинки в процентах колонки" />
+      </label>
+      <label class="deck__slider">
+        <span>Плотность</span>
+        <input type="range" min="10" max="100" step="5" data-js-overlay-alpha
+          aria-label="Непрозрачность картинки в процентах" />
+      </label>
+      <p class="deck__hint">
+        Свой знак, лого или скан ложится на все шесть карточек. «Под эффектом» отдаёт его
+        фактуре, объёму, эффектору и рамке: картинка живёт внутри кадра, а не поверх него.
+        «Поверх» кладёт её после всего разгрома, но под набор, поэтому имя читается всегда.
+        Способ наложения решает, останется картинка плашкой или вплавится в фон. «В жар»
+        выжигает её собственные цвета и оставляет форму краской серии.
+      </p>
+    </section>
+
+    <section class="deck__block">
       <h2 class="deck__label">Цвет</h2>
       <div class="deck__row deck__row--inks">
         <label class="deck__ink">

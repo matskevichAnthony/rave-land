@@ -138,3 +138,8 @@ input.deck__seed:focus {
   inline-size: 100%;
   accent-color: var(--ember);
 }
+
+/* Файл-инпут картинки живёт скрытым: его открывает кнопка пульта. */
+.deck__hidden {
+  display: none;
+}

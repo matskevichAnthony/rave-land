@@ -19,6 +19,7 @@ import { createGallery } from './gallery.js';
 import { loadEvent } from './event.js';
 import { loadLogo } from './logo.js';
 import { DEFAULT_DIRECTION } from './directions/index.js';
+import { DEFAULT_OVERLAY, loadOverlay } from './overlay.js';
 import { DEFAULT_FORMAT } from './format.js';
 import { PLAIN_SCALE, defaultText } from './typeset.js';
 
@@ -66,6 +67,8 @@ async function boot() {
     // Пункты набора: показан ли пункт, каким кеглем относительно направления и какой
     // краской. Пустая краска оставляет пункту цвета направления.
     text: defaultText(),
+    // Своя картинка на всех шести афишах: файл, место в стопке и как она ложится.
+    overlay: { ...DEFAULT_OVERLAY },
     // Локальные сиды карточек: номер в серии переродился, остальные стоят как стояли.
     cardSeeds: {},
   };
@@ -107,6 +110,15 @@ async function boot() {
         }
       },
       setInks: (hot, cold) => redraw({ hot, cold }),
+      setOverlayImage: (file) => loadOverlay(file)
+        .then((image) => patchOverlay({ image }))
+        .catch((error) => deck.note(`Картинка: ${error.message}`)),
+      dropOverlay: () => patchOverlay({ image: null }),
+      setOverlayPlace: (place) => patchOverlay({ place }),
+      setOverlayBlend: (blend) => patchOverlay({ blend }),
+      setOverlayScale: (scale) => patchOverlay({ scale }),
+      setOverlayAlpha: (alpha) => patchOverlay({ alpha }),
+      toggleOverlayTint: () => patchOverlay({ tint: !view.overlay.tint }),
       resetInks: () => redraw({ hot: DEFAULT_HOT, cold: DEFAULT_COLD }),
       setBorder: (border) => redraw({ border }),
       toggle3d: () => redraw({ allow3d: !view.allow3d }),
@@ -128,6 +140,11 @@ async function boot() {
       saveAll: () => gallery.saveAll(),
     },
   });
+
+  // Правка слоя картинки: остальной вид стоит на месте, лист перерисовывается целиком.
+  function patchOverlay(change) {
+    redraw({ overlay: { ...view.overlay, ...change } });
+  }
 
   // Правка одного пункта набора: остальные пункты и весь остальной вид стоят на месте.
   function patchText(role, change) {

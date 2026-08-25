@@ -15,6 +15,8 @@ import { BORDERS } from './border.js';
 import { DIRECTIONS } from './directions/index.js';
 import { FORMATS } from './format.js';
 import { SCALE_RANGE, TEXT_ROLES } from './typeset.js';
+import { OVERLAY_PLACES } from './overlay.js';
+import { BLENDS } from '../procedural/blend.js';
 
 const ACTIVE_CLASS = 'is-active';
 
@@ -56,6 +58,8 @@ export function createDeck({ root, event, view, actions }) {
   mountChoice(pick('borders'), BORDERS, view.border, actions.setBorder);
   mountChoice(pick('obj-tones'), OBJ_TONES, view.objTone, actions.setObjTone);
   mountChoice(pick('chaos-zones'), CHAOS_ZONES, view.chaosZone, actions.setChaosZone);
+  mountChoice(pick('overlay-places'), OVERLAY_PLACES, view.overlay.place, actions.setOverlayPlace);
+  mountChoice(pick('overlay-blends'), BLENDS, view.overlay.blend, actions.setOverlayBlend);
 
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('new-lay').addEventListener('click', actions.newLay);
@@ -84,6 +88,26 @@ export function createDeck({ root, event, view, actions }) {
   seedField.addEventListener('change', () => actions.setSeed(seedField.value));
   seedField.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) seedField.blur();
+  });
+
+  const overlayFile = pick('overlay-file');
+  pick('overlay-pick').addEventListener('click', () => overlayFile.click());
+  overlayFile.addEventListener('change', () => {
+    if (overlayFile.files[0]) actions.setOverlayImage(overlayFile.files[0]);
+  });
+  pick('overlay-drop').addEventListener('click', () => {
+    overlayFile.value = '';
+    actions.dropOverlay();
+  });
+  pick('overlay-tint').addEventListener('click', actions.toggleOverlayTint);
+
+  const overlayScale = pick('overlay-scale');
+  overlayScale.addEventListener('change', () => {
+    actions.setOverlayScale(Number(overlayScale.value) / PERCENT);
+  });
+  const overlayAlpha = pick('overlay-alpha');
+  overlayAlpha.addEventListener('change', () => {
+    actions.setOverlayAlpha(Number(overlayAlpha.value) / PERCENT);
   });
 
   const hotWell = pick('ink-hot');
@@ -174,6 +198,10 @@ export function createDeck({ root, event, view, actions }) {
       pick('new-obj').disabled = !state.allow3d;
       hotWell.value = state.hot;
       coldWell.value = state.cold;
+      pick('overlay-tint').classList.toggle(ACTIVE_CLASS, state.overlay.tint);
+      pick('overlay-drop').disabled = !state.overlay.image;
+      overlayScale.value = String(Math.round(state.overlay.scale * PERCENT));
+      overlayAlpha.value = String(Math.round(state.overlay.alpha * PERCENT));
     },
     note(text) {
       pick('note').textContent = text;
