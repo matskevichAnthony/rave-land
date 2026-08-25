@@ -16,7 +16,7 @@
   display: none;
 }
 
-/* Полоска уровня: единственное, что пульт рисует каждый кадр, поэтому она без переходов. */
+/* Полоски уровня: единственное, что пульт рисует каждый кадр, поэтому они без переходов. */
 .deck__meter {
   block-size: 6px;
   background: rgba(203, 194, 178, 0.12);
@@ -34,6 +34,31 @@
 
 .deck__meter-bar.is-hit {
   background: var(--bone);
+}
+
+/* Сырой звук с метками ползунков: по нему шкала и ставится, поэтому метки должны быть
+   видны прямо на полоске, а не подписаны цифрами рядом. */
+.deck__meter--raw {
+  position: relative;
+  block-size: 10px;
+  margin-block-start: 0;
+  overflow: visible;
+}
+
+.deck__meter--raw .deck__meter-bar {
+  background: var(--muted);
+  opacity: 0.55;
+}
+
+.deck__meter-tick {
+  position: absolute;
+  inset-block: -2px;
+  inline-size: 2px;
+  background: var(--bone);
+}
+
+.deck__meter-tick--punch {
+  background: var(--ember);
 }
 
 /* Ряды, где кнопок больше десятка: имя алгоритма короткое, и мельче они читаются в темноте

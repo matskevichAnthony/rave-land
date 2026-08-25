@@ -32,18 +32,34 @@
       <h2 class="deck__label">Слух</h2>
       <div class="deck__row" data-js-ears></div>
       <div class="deck__meter"><span class="deck__meter-bar" data-js-meter-bar></span></div>
-      <p class="deck__spot" data-js-meter-mark>меряю зал…</p>
+      <div class="deck__meter deck__meter--raw">
+        <span class="deck__meter-bar" data-js-meter-raw></span>
+        <span class="deck__meter-tick" data-js-meter-quiet></span>
+        <span class="deck__meter-tick" data-js-meter-loud></span>
+        <span class="deck__meter-tick deck__meter-tick--punch" data-js-meter-punch></span>
+      </div>
       <label class="deck__slider">
-        <span>Подрез</span>
-        <input type="range" min="0" max="90" step="1" data-js-trim
-          aria-label="Подрез тихого края в процентах" />
+        <span>Тишина</span>
+        <input type="range" min="0" max="100" step="1" data-js-quiet
+          aria-label="Где кончается фон комнаты, в процентах" />
+      </label>
+      <label class="deck__slider">
+        <span>Громко</span>
+        <input type="range" min="0" max="100" step="1" data-js-loud
+          aria-label="Где начинается полная шкала, в процентах" />
+      </label>
+      <label class="deck__slider">
+        <span>Импульс</span>
+        <input type="range" min="0" max="100" step="1" data-js-punch
+          aria-label="Планка импульса по низу, в процентах" />
       </label>
       <p class="deck__hint">
-        Порога здесь нет и не будет: слух сам меряет зал и растягивает шкалу между тишиной
-        и пиком, поэтому в клубе на полной громкости и дома на четверти картинка отвечает
-        одинаково. Пара секунд на калибровку после включения, дальше он держит её сам.
-        Подрез отрезает тихий край сверх калибровки: ноль это рабочее положение, выше
-        оставляет только громкое.
+        Шкала ставится руками, автоматики здесь нет намеренно. Нижняя полоска это сырой
+        звук как он есть, три метки на ней это три ползунка. «Тишина» ставится чуть выше
+        того, куда полоска падает в паузе, «громко» туда, куда она доходит на бочке, между
+        ними картинка отдаёт всю шкалу. «Импульс» это отдельная планка по низу: по ней
+        считает автопилот, по ней же бьют негатив и тряска. Картинка не отвечает: опусти
+        «громко». Дёргается от всего подряд: подними «тишину».
       </p>
     </section>
 

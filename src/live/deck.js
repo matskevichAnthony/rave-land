@@ -47,7 +47,9 @@ export function createDeck({ root, view, actions }) {
   const mangleButtons = mountChoice(pick('mangles'), MANGLES, actions.toggleMangle);
 
   const sliders = {
-    trim: mountSlider(pick('trim'), actions.setTrim),
+    quiet: mountSlider(pick('quiet'), actions.setQuiet),
+    loud: mountSlider(pick('loud'), actions.setLoud),
+    punch: mountSlider(pick('punch'), actions.setPunch),
     spread: mountSlider(pick('spread'), actions.setSpread, 'change'),
     wreck: mountSlider(pick('wreck'), actions.setWreck, 'change'),
     strength: mountSlider(pick('strength'), actions.setStrength),
@@ -94,7 +96,10 @@ export function createDeck({ root, view, actions }) {
   pick('full').addEventListener('click', actions.goFullscreen);
 
   const meterBar = pick('meter-bar');
-  const meterMark = pick('meter-mark');
+  const meterRaw = pick('meter-raw');
+  const meterQuiet = pick('meter-quiet');
+  const meterLoud = pick('meter-loud');
+  const meterPunch = pick('meter-punch');
   const machineDesc = pick('machine-desc');
   const opDesc = pick('op-desc');
   const mutateDesc = pick('mutate-desc');
@@ -141,7 +146,9 @@ export function createDeck({ root, view, actions }) {
       light(overlayBlendButtons, (id) => id === state.overlay.blend);
       light(mangleButtons, (id) => state.mangles.has(id));
 
-      percent(sliders.trim, state.trim);
+      percent(sliders.quiet, state.quiet);
+      percent(sliders.loud, state.loud);
+      percent(sliders.punch, state.punch);
       percent(sliders.spread, set.spread);
       percent(sliders.wreck, set.wreck);
       percent(sliders.strength, set.strength);
@@ -167,16 +174,22 @@ export function createDeck({ root, view, actions }) {
       pick('freeze').classList.toggle(ACTIVE_CLASS, state.freeze);
     },
     /**
-     * Полоска уровня и счётчик кадров: единственное, что пульт рисует каждый кадр.
+     * Полоски уровня и счётчик кадров: единственное, что пульт рисует каждый кадр.
      *
-     * Метка калибровки горит, пока слух ещё меряет зал. Без неё тихая комната и
-     * неразогретый слух выглядят одинаково, и человек за пультом крутит громкость вместо
-     * того, чтобы подождать секунду.
+     * Полосок две, и вторая тут не для красоты. Верхняя показывает то, что уходит в
+     * картинку, нижняя сырой звук как он есть, с метками трёх ползунков поверх. Ставить
+     * шкалу руками, не видя сырого звука, значит крутить ползунок вслепую и гадать, почему
+     * картинка молчит.
      */
-    showPulse({ level, hit, measuring, fps }) {
+    showPulse({ level, raw, hit, scale, fps }) {
       meterBar.style.width = `${Math.round(level * PERCENT)}%`;
       meterBar.classList.toggle('is-hit', hit);
-      meterMark.hidden = !measuring;
+      meterRaw.style.width = `${Math.round(raw * PERCENT)}%`;
+      // Метки едут вместе с ползунком, а не с перерисовкой пульта: их и тянут рукой,
+      // глядя на сырую полоску, поэтому отставание на кадр здесь недопустимо.
+      meterQuiet.style.left = `${scale.quiet * PERCENT}%`;
+      meterLoud.style.left = `${scale.loud * PERCENT}%`;
+      meterPunch.style.left = `${scale.punch * PERCENT}%`;
       rate.textContent = `${fps} кадр/с`;
     },
     note(text) {

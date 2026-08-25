@@ -30,7 +30,7 @@ import { createMangle } from './mangle.js';
 import { DEFAULT_PLACE, createOverlay } from './overlay.js';
 import { createSource } from './source.js';
 
-const SILENCE = { level: 0, low: 0, mid: 0, high: 0, hit: false, ready: false, span: 0 };
+const SILENCE = { level: 0, low: 0, mid: 0, high: 0, hit: false, raw: 0 };
 const RATE_WINDOW_MS = 500;
 const HIDE_KEY = 'h';
 const FULL_KEY = 'f';
@@ -49,7 +49,13 @@ const overlay = createOverlay();
 const view = {
   source: null,
   ear: 'off',
-  trim: 0,
+  // Шкала звука руками: где кончается фон комнаты, где начинается громко и где импульс.
+  // Начальные три числа сняты с комнаты, а не с зала: домашние колонки в микрофон ноутбука
+  // дают доли шкалы, и человек, который первым делом видит мёртвую картинку, закрывает
+  // вкладку, а не ищет ползунок. В клубе шкала уезжает вверх рукой за пять секунд.
+  quiet: 0.05,
+  loud: 0.45,
+  punch: 0.3,
   machine: {
     source: DEFAULT_SOURCE,
     palette: DEFAULT_PALETTE,
@@ -198,7 +204,12 @@ function mutate(hit) {
 function tick(now) {
   requestAnimationFrame(tick);
   fit();
-  const pulse = view.ear === 'off' ? SILENCE : listening.read({ trim: view.trim, now });
+  const pulse = view.ear === 'off' ? SILENCE : listening.read({
+    quiet: view.quiet,
+    loud: view.loud,
+    punch: view.punch,
+    now,
+  });
   mutate(pulse.hit);
   paint(pulse);
 
@@ -210,9 +221,9 @@ function tick(now) {
   }
   deck.showPulse({
     level: pulse.level,
+    raw: pulse.raw,
     hit: pulse.hit,
-    // Метка калибровки касается только включённого слуха: в тишине мерять нечего.
-    measuring: view.ear !== 'off' && !pulse.ready,
+    scale: { quiet: view.quiet, loud: view.loud, punch: view.punch },
     fps,
   });
 }
@@ -280,7 +291,9 @@ const deck = createDeck({
       deck.note(ear === 'off' ? 'Слух выключен' : 'Слух меряет зал: пара секунд, и шкала растянется по нему');
       deck.showState(view);
     }),
-    setTrim: (trim) => { view.trim = trim; },
+    setQuiet: (quiet) => { view.quiet = quiet; },
+    setLoud: (loud) => { view.loud = loud; },
+    setPunch: (punch) => { view.punch = punch; },
     setMachineSource: (id) => setMachine({ source: id }, true),
     setPalette: (id) => setMachine({ palette: id }, true),
     setSpread: (spread) => setMachine({ spread }, true),
