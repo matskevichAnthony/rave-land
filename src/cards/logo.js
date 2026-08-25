@@ -9,8 +9,11 @@
  * ленте плывёт, а этот знак нарисован руками и держит форму на ногте.
  */
 
-import LOGO_URL from '../../UNVERSTAV_logo_solid.svg?url';
 import { createLayer } from './layer.js';
+
+// Знак лежит рядом с прочими ассетами и достаётся по пути, а не сборкой: сцена берёт тот же
+// файл, и второй способ добраться до него развёл бы одну картинку на две копии в дереве.
+const LOGO_URL = 'assets/logo/understav-wordmark.svg';
 
 const WORDMARK_GROUP = 'logotype';
 const CROSSES_GROUP = 'frame-pluses';

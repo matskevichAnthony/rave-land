@@ -1,8 +1,6 @@
 import * as THREE from 'three';
-import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { GOTHIC_TYPEFACE, gothicFaceFor, loadGothic } from './gothic.js';
+import { gothicFaceFor, loadGothic } from './gothic.js';
+import { createWordmark } from './wordmark.js';
 import { BEAT, PALETTE } from './palette.js';
 import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.js';
 
@@ -20,6 +18,10 @@ const BOX_HEIGHT = 9.4;
 const BOX_TOP = 11.8;
 const NAVE_HEADROOM = 2;
 
+// Знак почти квадратный, и посаженный по ширине коробки он закрывает её целиком. Поэтому
+// его держит доля высоты, а ширина остаётся потолком: длинная афиша упрётся в неё, высокая
+// в высоту, и обе останутся внутри коробки.
+const TITLE_HEIGHT_RATIO = 0.5;
 const TITLE_WIDTH_RATIO = 0.95;
 const LINEUP_WIDTH_RATIO = 0.72;
 // Подзаголовок чуть шире коробки лайнапа: коробку держит длина имён, а подзаголовок вдвое
@@ -32,17 +34,7 @@ const VENUE_WIDTH_RATIO = 0.52;
 const TITLE_Z = 0.3;
 const PLATE_Z = -0.35;
 
-const UNIT_SIZE = 1;
-const TITLE_NARROW = 0.72;
-const TITLE_TRACKING = 0.12;
-const TITLE_DEPTH = 0.16;
-const TITLE_DEPTH_JITTER = 0.22;
-const TITLE_BEVEL = 0.018;
-const TITLE_BEVEL_SEGMENTS = 1;
-const TITLE_CURVE_SEGMENTS = 2;
 const TITLE_TILT = 0.022;
-const TITLE_TILT_X = 0.03;
-const TITLE_SPACE_ADVANCE = 0.32;
 
 const BURN_FLAT = 0.94;
 const BURN_EDGE = 0.2;
@@ -237,64 +229,19 @@ function lumaBoost(color) {
   return Math.min(EMISSIVE_LUMA_REFERENCE / luma, EMISSIVE_LUMA_BOOST_CAP);
 }
 
-function tiltLetter(geometry, halfWidth, rng) {
-  geometry.translate(-halfWidth, -UNIT_SIZE / 2, 0);
-  geometry.rotateZ(rng.range(-TITLE_TILT, TITLE_TILT));
-  geometry.rotateX(rng.range(-TITLE_TILT_X, TITLE_TILT_X));
-  geometry.translate(halfWidth, UNIT_SIZE / 2, 0);
-}
-
-function letterGeometry(font, glyph, rng) {
-  return new TextGeometry(glyph, {
-    font,
-    size: UNIT_SIZE,
-    depth: TITLE_DEPTH * rng.range(1 - TITLE_DEPTH_JITTER, 1 + TITLE_DEPTH_JITTER),
-    curveSegments: TITLE_CURVE_SEGMENTS,
-    bevelEnabled: true,
-    bevelThickness: TITLE_BEVEL,
-    bevelSize: TITLE_BEVEL,
-    bevelOffset: 0,
-    bevelSegments: TITLE_BEVEL_SEGMENTS,
-  });
-}
-
 /**
- * Заголовок: буквы строятся поштучно, разводятся своим трекингом и только потом сливаются
- * в одну геометрию, иначе за каждую букву платили бы отдельным вызовом отрисовки.
+ * Заголовок афиши: знак события, отлитый в железо и раскалённый по фаске.
+ *
+ * Знак приходит готовой геометрией в долях своей высоты, а метры ему назначают здесь: он
+ * почти квадратный, и что его сажает, высота или ширина коробки, зависит от кадрирования.
+ * Берётся меньшее из двух, иначе в вертикальном кадре знак вылезает за края, а в широком
+ * съедает место под лайнап.
  */
-function createTitle({ text, rng, targetWidth }) {
-  const font = new FontLoader().parse(GOTHIC_TYPEFACE);
-  const trackingUnits = TITLE_TRACKING / TITLE_NARROW;
-  const letters = [];
-  let cursor = 0;
-
-  for (const glyph of text) {
-    const geometry = letterGeometry(font, glyph, rng);
-    geometry.computeBoundingBox();
-    const width = geometry.boundingBox.max.x - geometry.boundingBox.min.x;
-    if (!(width > 0)) {
-      geometry.dispose();
-      cursor += UNIT_SIZE * TITLE_SPACE_ADVANCE + trackingUnits;
-      continue;
-    }
-    paintBurn(geometry);
-    geometry.translate(-geometry.boundingBox.min.x, 0, 0);
-    tiltLetter(geometry, width / 2, rng);
-    geometry.translate(cursor, 0, 0);
-    letters.push(geometry);
-    cursor += width + trackingUnits;
-  }
-
-  const merged = mergeGeometries(letters, false);
-  for (const letter of letters) letter.dispose();
-  merged.computeBoundingBox();
-
-  const unitWidth = merged.boundingBox.max.x - merged.boundingBox.min.x;
-  const scale = targetWidth / (unitWidth * TITLE_NARROW);
-  const inkTop = merged.boundingBox.max.y * scale;
-  // Строка меряется по всей краске, а не по высоте прописной: у текстура росчерк «A» уходит
-  // под базовую линию и без этого лёг бы на первую плиту лайнапа.
-  const inkHeight = inkTop - merged.boundingBox.min.y * scale;
+function createTitle({ wordmark, rng, targetWidth, targetHeight }) {
+  const geometry = wordmark.geometry;
+  const height = Math.min(targetHeight, targetWidth / wordmark.aspect);
+  const width = height * wordmark.aspect;
+  paintBurn(geometry);
 
   const material = new THREE.MeshStandardMaterial({
     color: '#ffffff',
@@ -304,24 +251,25 @@ function createTitle({ text, rng, targetWidth }) {
     emissive: PALETTE.blood,
     emissiveIntensity: TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood),
   });
-  const heat = burnEmissiveByVertexColor(material, unitWidth);
+  // Волна жара меряется шириной знака в его собственных долях: в метрах она растянулась бы
+  // и сжалась вместе с кадрированием, и на вертикальной афише прокатывалась бы вдвое реже.
+  const heat = burnEmissiveByVertexColor(material, wordmark.aspect);
   const flicker = createArcFlicker(rng);
 
-  const mesh = new THREE.Mesh(merged, material);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
-  mesh.scale.set(scale * TITLE_NARROW, scale, scale);
-  mesh.position.set(
-    -targetWidth / 2 - merged.boundingBox.min.x * scale * TITLE_NARROW,
-    -inkTop,
-    TITLE_Z,
-  );
+  mesh.scale.setScalar(height);
+  // Знак стоит краской от нуля вверх, а афиша строится сверху вниз: его опускают на всю
+  // высоту, и верх краски садится ровно на верхний край коробки.
+  mesh.position.set(-width / 2, -height, TITLE_Z);
+  mesh.rotation.z = rng.range(-TITLE_TILT, TITLE_TILT);
 
   const group = new THREE.Group();
   group.add(mesh);
   return {
     group,
-    height: inkHeight,
+    height,
     burn(elapsed) {
       heat.value = (elapsed / TITLE_HEAT_SECONDS) * TAU;
       material.emissiveIntensity = TITLE_EMISSIVE_BASE * lumaBoost(PALETTE.blood) * flicker(elapsed);
@@ -576,7 +524,12 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     },
   };
 
-  const title = createTitle({ text: event.event, rng, targetWidth: box.width * TITLE_WIDTH_RATIO });
+  const title = createTitle({
+    wordmark: await createWordmark({ rng, tilt: TITLE_TILT }),
+    rng,
+    targetWidth: box.width * TITLE_WIDTH_RATIO,
+    targetHeight: box.height * TITLE_HEIGHT_RATIO,
+  });
 
   const taglineFace = gothicFaceFor(event.tagline ?? '');
   const taglineFit = { tracking: GOTHIC_TRACKING, face: taglineFace, maxWidth: box.width * TAGLINE_WIDTH_RATIO };
