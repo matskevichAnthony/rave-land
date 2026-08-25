@@ -32,6 +32,7 @@ export default defineConfig({
         audio: resolve(import.meta.dirname, 'audio-probe.html'),
         cards: resolve(import.meta.dirname, 'cards.html'),
         generator: resolve(import.meta.dirname, 'generator.html'),
+        live: resolve(import.meta.dirname, 'live.html'),
         status: resolve(import.meta.dirname, 'status.html'),
         toolbox: resolve(import.meta.dirname, 'toolbox.html'),
         understav: resolve(import.meta.dirname, 'understav.html'),

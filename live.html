@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Живой выход UNDERSTAV</title>
+  <link rel="stylesheet" href="./styles/live.css" />
+</head>
+<body>
+  <canvas class="stage" data-js-stage></canvas>
+
+  <aside class="deck" data-js-deck>
+    <header class="deck__head">
+      <h1 class="deck__title">ЖИВОЙ ВЫХОД</h1>
+      <p class="deck__line" data-js-rate>0 кадр/с</p>
+    </header>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Источник</h2>
+      <div class="deck__row" data-js-sources></div>
+      <input class="deck__hidden" type="file" accept="video/*" data-js-file />
+      <input class="deck__seed" type="url" placeholder="ссылка на видеофайл" data-js-url
+        aria-label="Прямая ссылка на видеофайл" />
+      <p class="deck__hint">
+        Ютуб ссылкой не берётся: кадры чужой вкладки браузер не отдаёт. Берётся кнопкой
+        «Вкладка»: включаешь ролик, жмёшь, выбираешь эту вкладку и ставишь галку «поделиться
+        звуком». Дальше это обычный кадр, и с ним работает всё остальное. Файл можно просто
+        бросить на окно.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Слух</h2>
+      <div class="deck__row" data-js-ears></div>
+      <div class="deck__meter"><span class="deck__meter-bar" data-js-meter-bar></span></div>
+      <label class="deck__slider">
+        <span>Порог</span>
+        <input type="range" min="0" max="90" step="1" data-js-threshold
+          aria-label="Порог тишины в процентах" />
+      </label>
+      <p class="deck__hint">
+        Ниже порога картинка не шевелится вовсе, выше отвечает всей шкалой. Микрофон слышит
+        зал целиком, звук источника чистый, но знает только то, что в клипе.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Поле</h2>
+      <div class="deck__row" data-js-fields></div>
+      <div class="deck__row" data-js-blends></div>
+      <label class="deck__slider">
+        <span>Плотность краски</span>
+        <input type="range" min="0" max="100" step="1" data-js-alpha
+          aria-label="Непрозрачность поля в процентах" />
+      </label>
+      <label class="deck__slider">
+        <span>Скорость</span>
+        <input type="range" min="0" max="100" step="1" data-js-speed
+          aria-label="Скорость поля в процентах" />
+      </label>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Разгром</h2>
+      <div class="deck__row" data-js-mangles></div>
+      <label class="deck__slider">
+        <span>Сила</span>
+        <input type="range" min="0" max="100" step="1" data-js-power
+          aria-label="Сила разгрома в процентах" />
+      </label>
+      <p class="deck__hint">
+        Ползунок задаёт потолок, звук решает, добираем ли до него. Негатив и тряска бьют
+        только по удару, остальное идёт непрерывно.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Цвет</h2>
+      <div class="deck__row deck__row--inks">
+        <label class="deck__ink">
+          <input type="color" data-js-ink-hot />
+          <span>Жар</span>
+        </label>
+        <label class="deck__ink">
+          <input type="color" data-js-ink-cold />
+          <span>Холод</span>
+        </label>
+      </div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Вывод</h2>
+      <div class="deck__row">
+        <button type="button" data-js-video>Видео</button>
+        <button type="button" data-js-freeze>Стоп-кадр</button>
+        <button type="button" data-js-full>Во весь экран</button>
+      </div>
+      <label class="deck__slider">
+        <span>Плотность пикселей</span>
+        <input type="range" min="30" max="100" step="5" data-js-density
+          aria-label="Плотность вывода в процентах" />
+      </label>
+      <p class="deck__hint">
+        «Видео» гасит кадр источника и оставляет одно поле на чёрном. Стоп-кадр держит
+        картинку, а разгром продолжает её жевать. Клавиша H убирает пульт, F разворачивает
+        во весь экран.
+      </p>
+      <p class="deck__note" data-js-note></p>
+    </section>
+
+    <nav class="deck__nav">
+      <a href="./cards.html">Афиши</a>
+      <a href="./understav.html">В сцену</a>
+    </nav>
+  </aside>
+
+  <script type="module" src="./src/live/main.js"></script>
+</body>
+</html>
