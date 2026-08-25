@@ -20,6 +20,7 @@ import { loadEvent } from './event.js';
 import { loadLogo } from './logo.js';
 import { DEFAULT_DIRECTION } from './directions/index.js';
 import { DEFAULT_FORMAT } from './format.js';
+import { PLAIN_SCALE, defaultText } from './typeset.js';
 
 const SEED_PARAM = 'seed';
 const SEED_PATTERN = /^[0-9a-f]{1,8}$/i;
@@ -62,9 +63,9 @@ async function boot() {
     glow: false,
     sigils: false,
     border: 'none',
-    showName: true,
-    showMeta: true,
-    showCredit: true,
+    // Пункты набора: показан ли пункт, каким кеглем относительно направления и какой
+    // краской. Пустая краска оставляет пункту цвета направления.
+    text: defaultText(),
     // Локальные сиды карточек: номер в серии переродился, остальные стоят как стояли.
     cardSeeds: {},
   };
@@ -119,13 +120,19 @@ async function boot() {
       togglePlaque: () => redraw({ plaque: !view.plaque }),
       toggleGlow: () => redraw({ glow: !view.glow }),
       toggleSigils: () => redraw({ sigils: !view.sigils }),
-      toggleName: () => redraw({ showName: !view.showName }),
-      toggleMeta: () => redraw({ showMeta: !view.showMeta }),
-      toggleCredit: () => redraw({ showCredit: !view.showCredit }),
+      toggleText: (role) => patchText(role, { on: !view.text[role].on }),
+      setTextScale: (role, scale) => patchText(role, { scale }),
+      setTextInk: (role, ink) => patchText(role, { ink }),
+      resetText: (role) => patchText(role, { scale: PLAIN_SCALE, ink: null }),
       copySeed,
       saveAll: () => gallery.saveAll(),
     },
   });
+
+  // Правка одного пункта набора: остальные пункты и весь остальной вид стоят на месте.
+  function patchText(role, change) {
+    redraw({ text: { ...view.text, [role]: { ...view.text[role], ...change } } });
+  }
 
   function redraw(change) {
     Object.assign(view, change);

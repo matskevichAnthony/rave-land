@@ -25,6 +25,7 @@ import { applyChaos, createChaosRecipe } from './chaos.js';
 import { drawBorder } from './border.js';
 import { drawSigils } from './sigils.js';
 import { directionById } from './directions/index.js';
+import { createTypeset, defaultText } from './typeset.js';
 
 // Соль между карточками: без неё шесть афиш одного сида получают один и тот же поток и
 // расходятся только текстом. Число простое и большое, чтобы соседние номера не пересекались.
@@ -102,7 +103,7 @@ export function renderCard({
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
   objTone = 'heat', objAlpha = 0.92, objBehind = false,
   chaosPower = 1, chaosZone = 'all',
-  showName = true, showMeta = true, showCredit = true, textOnly = false,
+  text = defaultText(), textOnly = false,
 }) {
   const size = FORMATS[format];
   const { canvas, ctx } = createLayer(size.width, size.height);
@@ -115,7 +116,8 @@ export function renderCard({
   // перерождается одна, но остаётся в макете, рецепте и рамке своей серии.
   const own = (base) => localSeed ?? base;
   const look = createLook(createRandom(layBase), createRandom(cardSeed(own(layBase), index)));
-  const show = { name: showName, meta: showMeta, credit: showCredit };
+  const type = createTypeset(text);
+  const show = type.show;
 
   const paintArgs = (target, asText, gates = show) => ({
     ctx: target,
@@ -127,6 +129,7 @@ export function renderCard({
     logo,
     inks,
     look,
+    type,
     madness,
     show: gates,
     textOnly: asText,
@@ -176,17 +179,17 @@ export function renderCard({
       inks,
     );
     if ((split || plaque || glow) && anyText) {
-      const text = createLayer(frame.width, frame.height);
-      directionById(direction).paint(paintArgs(text.ctx, true));
+      const set = createLayer(frame.width, frame.height);
+      directionById(direction).paint(paintArgs(set.ctx, true));
       // Зона «текст»: рецепт бьёт только по слою набора, фон остаётся целым.
       if (chaos && split && chaosZone === 'text') {
-        applyChaos(text.ctx, frame, chaosRandom(), inks, recipe, chaosPower);
+        applyChaos(set.ctx, frame, chaosRandom(), inks, recipe, chaosPower);
       }
-      if (glow) stampGlow(ctx, frame, text.canvas, inks);
+      if (glow) stampGlow(ctx, frame, set.canvas, inks);
       if (plaque) {
-        stampPlaque(ctx, frame, text.canvas, inks);
+        stampPlaque(ctx, frame, set.canvas, inks);
       } else if (split) {
-        ctx.drawImage(text.canvas, 0, 0);
+        ctx.drawImage(set.canvas, 0, 0);
       }
     }
   }

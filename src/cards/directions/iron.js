@@ -8,7 +8,7 @@
  * Раскладку решает `look` (верх плиты, кегли, масштаб знака), краски решает `inks`.
  */
 
-import { halo, rgba, verticalFade } from '../ink.js';
+import { halo, mix, rgba, verticalFade } from '../ink.js';
 import { logoLayer } from '../logo.js';
 import { createLayer } from '../layer.js';
 import {
@@ -106,7 +106,7 @@ function burnLogo(ctx, frame, logo, inks, look) {
   ctx.restore();
 }
 
-function namePlacement(ctx, frame, name, look) {
+function namePlacement(ctx, frame, name, look, scale) {
   const top = frame.height * look.plateTop;
   const height = frame.height * PLATE_HEIGHT_RATIO;
   const fit = justifyLine(ctx, name, {
@@ -114,21 +114,28 @@ function namePlacement(ctx, frame, name, look) {
     maxPixels: height * NAME_HEIGHT_RATIO * look.nameScale,
     tracking: NAME_TRACKING,
     face: NARROW_FACE,
+    scale,
   });
   const cap = capHeight(ctx, name, { pixels: fit.pixels, face: NARROW_FACE });
-  return { top, height, fit, baseline: top + height / 2 + cap / 2 };
+  return {
+    top,
+    height,
+    fit,
+    baseline: top + height / 2 + cap / 2,
+    x: frame.left + (frame.innerWidth - fit.width) / 2,
+  };
 }
 
-function paintPlate(ctx, frame, name, inks, place) {
+function paintPlate(ctx, frame, name, inks, place, light) {
   const { top, height, fit, baseline } = place;
   const rim = frame.unit * PLATE_RIM_UNITS;
 
   // Свет за плитой смещён к низу: прорезь имени стоит в нижней половине, и на прежней
   // раскладке в буквы попадала ржавчина, а не пламя.
   ctx.fillStyle = verticalFade(ctx, top, top + height, [
-    [0, inks.ember, 1],
-    [0.7, inks.flame, 1],
-    [1, inks.ember, 1],
+    [0, light, 1],
+    [0.7, mix(light, '#ffffff', 0.72), 1],
+    [1, light, 1],
   ]);
   ctx.fillRect(0, top, frame.width, height);
 
@@ -156,7 +163,7 @@ function paintPlate(ctx, frame, name, inks, place) {
   // Спрятанное имя оставляет плиту глухой: свет за прорезью пропадает вместе с прорезью.
   if (name !== null) {
     punchStencil(plate.ctx, name, {
-      x: frame.left,
+      x: place.x,
       y: baseline,
       pixels: fit.pixels,
       tracking: fit.tracking,
@@ -171,7 +178,7 @@ function paintPlate(ctx, frame, name, inks, place) {
 export default {
   id: 'iron',
   label: 'Железо',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, type, textOnly, show }) {
     if (!textOnly) {
       paintGround(ctx, frame, random, inks);
 
@@ -184,7 +191,8 @@ export default {
       burnLogo(ctx, frame, logo, inks, look);
     }
 
-    const setPixels = frame.unit * SET_PIXELS_UNITS;
+    const metaScale = type.scale('meta');
+    const setPixels = frame.unit * SET_PIXELS_UNITS * metaScale;
     if (show.meta) {
       const setWidth = measureLine(ctx, artist.set, { pixels: setPixels, tracking: SET_TRACKING, face: NARROW_FACE });
       fillTracked(ctx, artist.set, {
@@ -193,7 +201,7 @@ export default {
         pixels: setPixels,
         tracking: SET_TRACKING,
         face: NARROW_FACE,
-        color: inks.flame,
+        color: type.ink('meta', inks.flame),
       });
       fillTracked(ctx, artist.number, {
         x: frame.left,
@@ -201,46 +209,50 @@ export default {
         pixels: setPixels,
         tracking: SET_TRACKING,
         face: NARROW_FACE,
-        color: inks.bone,
+        color: type.ink('meta', inks.bone),
       });
     }
 
-    const place = namePlacement(ctx, frame, artist.name, look);
+    const place = namePlacement(ctx, frame, artist.name, look, type.scale('name'));
     let plateBottom = place.top + place.height;
     if (textOnly) {
       // В текстовом слое плиты нет: имя ложится краской там же, где стояла прорезь.
       if (show.name) {
         fillTracked(ctx, artist.name, {
-          x: frame.left,
+          x: place.x,
           y: place.baseline,
           pixels: place.fit.pixels,
           tracking: place.fit.tracking,
           face: NARROW_FACE,
-          color: inks.flame,
+          color: type.ink('name', inks.flame),
         });
       }
     } else {
-      plateBottom = paintPlate(ctx, frame, show.name ? artist.name : null, inks, place);
+      // Краска имени здесь это свет за плитой: букв на железе нет, есть прорезь, и цвет
+      // пульта приходит в неё пламенем, а не заливкой поверх.
+      plateBottom = paintPlate(
+        ctx, frame, show.name ? artist.name : null, inks, place, type.ink('name', inks.ember),
+      );
     }
 
     if (show.credit) {
       fillTracked(ctx, artist.credit, {
         x: frame.left,
         y: plateBottom + frame.unit * MICRO_LEAD_UNITS,
-        pixels: frame.unit * CREDIT_PIXELS_UNITS,
+        pixels: frame.unit * CREDIT_PIXELS_UNITS * type.scale('credit'),
         tracking: CREDIT_TRACKING,
         face: gothicFaceFor(artist.credit),
-        color: inks.emberHalo,
+        color: type.ink('credit', inks.emberHalo),
       });
     }
     if (show.meta) {
       fillTracked(ctx, `${event.dateLabel} · ${event.venue}`, {
         x: frame.left,
         y: frame.bottom,
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * metaScale,
         tracking: MICRO_TRACKING,
         face: NARROW_FACE,
-        color: inks.bone,
+        color: type.ink('meta', inks.bone),
       });
     }
 

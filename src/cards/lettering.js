@@ -59,19 +59,28 @@ export function capHeight(ctx, text, { pixels, face }) {
 }
 
 /**
- * Кегль и разрядка, при которых имя займёт колонку ровно по краям.
+ * Кегль, разрядка и ширина, при которых имя займёт колонку ровно по краям.
  *
  * Сначала кегль: он растёт до тех пор, пока строка не упрётся в ширину или в потолок.
  * Короткое имя вроде VXLX упирается в потолок раньше ширины, и остаток колонки добирается
  * разрядкой: иначе в серии из шести карточек два имени стояли бы вполовину поля.
+ *
+ * Множитель пульта ломает эту выключку намеренно. Пока он равен единице, имя стоит по
+ * краям полей, как и стояло. Как только его двинули, разрядка замирает на своей, а строка
+ * встаёт натуральной шириной: иначе ужатое вдвое имя расползлось бы по колонке разрядкой и
+ * читалось бы не мельче прежнего. Ширину возвращаем наружу, потому что по ней направление
+ * заново ставит строку в середину колонки.
  */
-export function justifyLine(ctx, text, { width, maxPixels, tracking, face }) {
+export function justifyLine(ctx, text, { width, maxPixels, tracking, face, scale = 1 }) {
   ctx.font = fontOf(face, REFERENCE_PX);
   const perPixel = trackedWidth(ctx, text, REFERENCE_PX, tracking) / REFERENCE_PX;
-  const pixels = Math.min(perPixel > 0 ? width / perPixel : maxPixels, maxPixels);
+  const pixels = Math.min(perPixel > 0 ? width / perPixel : maxPixels, maxPixels) * scale;
   const gaps = [...text].length - 1;
-  const slack = gaps > 0 ? (width - measureLine(ctx, text, { pixels, tracking, face })) / gaps : 0;
-  return { pixels, tracking: tracking + Math.max(0, slack / pixels) };
+  const slack = scale === 1 && gaps > 0
+    ? (width - measureLine(ctx, text, { pixels, tracking, face })) / gaps
+    : 0;
+  const spread = tracking + Math.max(0, slack / pixels);
+  return { pixels, tracking: spread, width: measureLine(ctx, text, { pixels, tracking: spread, face }) };
 }
 
 /**

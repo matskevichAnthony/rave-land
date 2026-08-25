@@ -14,6 +14,7 @@ import { create } from '../ui/dom.js';
 import { BORDERS } from './border.js';
 import { DIRECTIONS } from './directions/index.js';
 import { FORMATS } from './format.js';
+import { SCALE_RANGE, TEXT_ROLES } from './typeset.js';
 
 const ACTIVE_CLASS = 'is-active';
 
@@ -33,8 +34,14 @@ const CHAOS_ZONES = [
 // Ползунки ходят в процентах, view держит доли.
 const PERCENT = 100;
 
+// Пустая краска пункта это цвет направления, и показать его колодцу нечем: он держит фон
+// пульта (`--iron`) и гаснет до пунктира, пока цвет не назначили руками.
+const PLAIN_CLASS = 'is-plain';
+const PLAIN_INK_VAR = '--iron';
+
 export function createDeck({ root, event, view, actions }) {
   const pick = (hook) => root.querySelector(`[data-js-${hook}]`);
+  const plainWell = () => getComputedStyle(root).getPropertyValue(PLAIN_INK_VAR).trim();
 
   pick('event').textContent = event.event;
   pick('lineup').textContent = event.lineup.join(' / ');
@@ -71,9 +78,6 @@ export function createDeck({ root, event, view, actions }) {
   pick('plaque').addEventListener('click', actions.togglePlaque);
   pick('glow').addEventListener('click', actions.toggleGlow);
   pick('sigils').addEventListener('click', actions.toggleSigils);
-  pick('text-name').addEventListener('click', actions.toggleName);
-  pick('text-meta').addEventListener('click', actions.toggleMeta);
-  pick('text-credit').addEventListener('click', actions.toggleCredit);
 
   // Сид пишется руками: Enter или уход с поля применяют, мусор вернёт прежнее значение.
   const seedField = pick('seed');
@@ -89,6 +93,46 @@ export function createDeck({ root, event, view, actions }) {
   coldWell.addEventListener('input', applyInks);
   pick('ink-reset').addEventListener('click', actions.resetInks);
 
+  /**
+   * Ряд на пункт набора: тумблер, ползунок величины, колодец краски и возврат к
+   * направлению. Ряды строятся перебором `TEXT_ROLES`, поэтому названия пунктов живут в
+   * одном месте и разметка про них ничего не знает.
+   */
+  function mountText(holder) {
+    return TEXT_ROLES.map((role) => {
+      const row = create('div', 'deck__type');
+
+      const toggle = create('button', 'deck__type-show', role.label);
+      toggle.type = 'button';
+      toggle.title = 'Показать или спрятать пункт';
+      toggle.addEventListener('click', () => actions.toggleText(role.id));
+
+      const scale = create('input', 'deck__type-scale');
+      scale.type = 'range';
+      scale.min = String(SCALE_RANGE.min * PERCENT);
+      scale.max = String(SCALE_RANGE.max * PERCENT);
+      scale.step = String(SCALE_RANGE.step * PERCENT);
+      scale.setAttribute('aria-label', `Величина текста: ${role.label}`);
+      scale.addEventListener('change', () => {
+        actions.setTextScale(role.id, Number(scale.value) / PERCENT);
+      });
+
+      const ink = create('input', 'deck__type-ink');
+      ink.type = 'color';
+      ink.setAttribute('aria-label', `Цвет текста: ${role.label}`);
+      ink.addEventListener('input', () => actions.setTextInk(role.id, ink.value));
+
+      const plain = create('button', 'deck__type-plain', '×');
+      plain.type = 'button';
+      plain.title = 'Вернуть величину и цвет направления';
+      plain.addEventListener('click', () => actions.resetText(role.id));
+
+      row.append(toggle, scale, ink, plain);
+      holder.append(row);
+      return { role, toggle, scale, ink };
+    });
+  }
+
   function mountChoice(holder, options, current, apply) {
     const buttons = options.map((option) => {
       const button = create('button', '', option.label);
@@ -102,6 +146,8 @@ export function createDeck({ root, event, view, actions }) {
     });
     holder.append(...buttons);
   }
+
+  const textRows = mountText(pick('types'));
 
   return {
     showSeed(seed) {
@@ -117,9 +163,13 @@ export function createDeck({ root, event, view, actions }) {
       pick('plaque').classList.toggle(ACTIVE_CLASS, state.plaque);
       pick('glow').classList.toggle(ACTIVE_CLASS, state.glow);
       pick('sigils').classList.toggle(ACTIVE_CLASS, state.sigils);
-      pick('text-name').classList.toggle(ACTIVE_CLASS, state.showName);
-      pick('text-meta').classList.toggle(ACTIVE_CLASS, state.showMeta);
-      pick('text-credit').classList.toggle(ACTIVE_CLASS, state.showCredit);
+      for (const { role, toggle, scale, ink } of textRows) {
+        const item = state.text[role.id];
+        toggle.classList.toggle(ACTIVE_CLASS, item.on);
+        scale.value = String(Math.round(item.scale * PERCENT));
+        ink.value = item.ink ?? plainWell();
+        ink.classList.toggle(PLAIN_CLASS, item.ink === null);
+      }
       // Переброс объёма без включённого 3D рисует вхолостую, кнопка честно гаснет.
       pick('new-obj').disabled = !state.allow3d;
       hotWell.value = state.hot;

@@ -57,8 +57,8 @@ function paintColumns(ctx, frame, inks) {
   }
 }
 
-function paintNumber(ctx, frame, number, inks, look) {
-  const pixels = frame.height * NUMBER_HEIGHT_RATIO * look.numberScale;
+function paintNumber(ctx, frame, number, inks, look, type) {
+  const pixels = frame.height * NUMBER_HEIGHT_RATIO * look.numberScale * type.scale('meta');
   const width = measureLine(ctx, number, { pixels, tracking: 0, face: NARROW_FACE });
   fillTracked(ctx, number, {
     x: (frame.width - width) / 2 + frame.width * look.drift,
@@ -66,15 +66,15 @@ function paintNumber(ctx, frame, number, inks, look) {
     pixels,
     tracking: 0,
     face: NARROW_FACE,
-    color: inks.iron,
+    color: type.ink('meta', inks.iron),
   });
 }
 
-function microLine(ctx, text, { x, y, frame, color }) {
+function microLine(ctx, text, { x, y, frame, color, scale }) {
   return fillTracked(ctx, text, {
     x,
     y,
-    pixels: frame.unit * MICRO_PIXELS_UNITS,
+    pixels: frame.unit * MICRO_PIXELS_UNITS * scale,
     tracking: MICRO_TRACKING,
     face: NARROW_FACE,
     color,
@@ -84,7 +84,7 @@ function microLine(ctx, text, { x, y, frame, color }) {
 export default {
   id: 'stencil',
   label: 'Трафарет',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, type, textOnly, show }) {
     if (!textOnly) {
       ctx.fillStyle = inks.void;
       ctx.fillRect(0, 0, frame.width, frame.height);
@@ -97,7 +97,7 @@ export default {
       ctx.restore();
     }
 
-    if (show.meta) paintNumber(ctx, frame, artist.number, inks, look);
+    if (show.meta) paintNumber(ctx, frame, artist.number, inks, look, type);
 
     const logoUnits = LOGO_HEIGHT_UNITS * look.logoScale;
     const mark = logoLayer(logo.wordmark, {
@@ -109,9 +109,18 @@ export default {
 
     const headTop = frame.top + frame.unit * MICRO_LEAD_UNITS;
     const headX = look.logoRight ? frame.left : frame.left + mark.width + frame.unit * 2;
+    const metaScale = type.scale('meta');
     if (show.meta) {
-      microLine(ctx, event.dateLabel, { x: headX, y: headTop, frame, color: inks.ember });
-      microLine(ctx, event.venue, { x: headX, y: headTop + frame.unit * MICRO_LEAD_UNITS, frame, color: inks.bone });
+      microLine(ctx, event.dateLabel, {
+        x: headX, y: headTop, frame, color: type.ink('meta', inks.ember), scale: metaScale,
+      });
+      microLine(ctx, event.venue, {
+        x: headX,
+        y: headTop + frame.unit * MICRO_LEAD_UNITS,
+        frame,
+        color: type.ink('meta', inks.bone),
+        scale: metaScale,
+      });
     }
 
     const name = justifyLine(ctx, artist.name, {
@@ -119,9 +128,13 @@ export default {
       maxPixels: frame.unit * NAME_MAX_UNITS * look.nameScale,
       tracking: NAME_TRACKING,
       face: NARROW_FACE,
+      scale: type.scale('name'),
     });
     const cap = capHeight(ctx, artist.name, { pixels: name.pixels, face: NARROW_FACE });
     const baseline = frame.height * look.nameCenter + cap / 2;
+    // Имя нетронутого кегля стоит по краям полей, ужатое или раздутое пультом встаёт в
+    // середину колонки: иначе оно съезжало бы к левому полю и рвало ось карточки.
+    const nameX = frame.left + (frame.innerWidth - name.width) / 2;
 
     if (show.name) {
       ctx.save();
@@ -129,31 +142,42 @@ export default {
       ctx.rotate(look.tilt);
       ctx.translate(-frame.width / 2, -baseline);
       stencilLine(ctx, artist.name, {
-        x: frame.left,
+        x: nameX,
         y: baseline,
         pixels: name.pixels,
         tracking: name.tracking,
         face: NARROW_FACE,
-        color: inks.ember,
+        color: type.ink('name', inks.ember),
       });
       ctx.restore();
     }
 
     const ruleY = baseline + frame.unit * RULE_GAP_UNITS;
     if (!textOnly && show.name) {
-      ctx.fillStyle = inks.ember;
+      ctx.fillStyle = type.ink('name', inks.ember);
       ctx.fillRect(frame.left, ruleY, frame.innerWidth, frame.unit * RULE_THICKNESS_UNITS);
     }
 
     const under = ruleY + frame.unit * (RULE_THICKNESS_UNITS + MICRO_LEAD_UNITS);
-    if (show.credit) microLine(ctx, artist.credit, { x: frame.left, y: under, frame, color: inks.bone });
+    const creditScale = type.scale('credit');
+    if (show.credit) {
+      microLine(ctx, artist.credit, {
+        x: frame.left, y: under, frame, color: type.ink('credit', inks.bone), scale: creditScale,
+      });
+    }
     if (show.meta) {
       const setWidth = measureLine(ctx, artist.set, {
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * metaScale,
         tracking: MICRO_TRACKING,
         face: NARROW_FACE,
       });
-      microLine(ctx, artist.set, { x: frame.right - setWidth, y: under, frame, color: inks.ember });
+      microLine(ctx, artist.set, {
+        x: frame.right - setWidth,
+        y: under,
+        frame,
+        color: type.ink('meta', inks.ember),
+        scale: metaScale,
+      });
     }
 
     fillTracked(ctx, blockRail(random, RAIL_LENGTH), {
@@ -168,10 +192,10 @@ export default {
       fillTracked(ctx, event.tagline, {
         x: frame.left,
         y: frame.bottom,
-        pixels: frame.unit * TAGLINE_PIXELS_UNITS,
+        pixels: frame.unit * TAGLINE_PIXELS_UNITS * creditScale,
         tracking: TAGLINE_TRACKING,
         face: gothicFaceFor(event.tagline),
-        color: inks.bone,
+        color: type.ink('credit', inks.bone),
       });
     }
 

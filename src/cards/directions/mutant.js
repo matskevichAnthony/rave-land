@@ -253,7 +253,7 @@ function centred(ctx, frame, text, { y, pixels, tracking, color }) {
 export default {
   id: 'mutant',
   label: 'Мутант',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show, bgRandom, madness }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, type, textOnly, show, bgRandom, madness }) {
     if (!textOnly) {
       paintBackground(ctx, frame, bgRandom ?? random, inks, madness);
 
@@ -271,6 +271,7 @@ export default {
         maxPixels: frame.unit * NAME_MAX_UNITS * look.nameScale,
         tracking: NAME_TRACKING,
         face: NARROW_FACE,
+        scale: type.scale('name'),
       });
       const cap = capHeight(ctx, artist.name, { pixels: name.pixels, face: NARROW_FACE });
       const baseline = frame.height * look.nameCenter + cap / 2;
@@ -279,12 +280,13 @@ export default {
       ctx.rotate(look.tilt);
       ctx.translate(-frame.width / 2, -baseline);
       fillTracked(ctx, artist.name, {
-        x: frame.left,
+        // Двинутое пультом имя уже не выключено по краям полей и встаёт в середину колонки.
+        x: frame.left + (frame.innerWidth - name.width) / 2,
         y: baseline,
         pixels: name.pixels,
         tracking: name.tracking,
         face: NARROW_FACE,
-        color: inks.flame,
+        color: type.ink('name', inks.flame),
       });
       ctx.restore();
     }
@@ -292,17 +294,17 @@ export default {
     if (show.meta) {
       centred(ctx, frame, `${artist.number} / ${event.dateLabel} / ${event.venue}`, {
         y: frame.bottom,
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * type.scale('meta'),
         tracking: MICRO_TRACKING,
-        color: inks.bone,
+        color: type.ink('meta', inks.bone),
       });
     }
     if (show.credit && artist.credit) {
       centred(ctx, frame, artist.credit, {
         y: frame.bottom - frame.unit * MICRO_LEAD_UNITS,
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * type.scale('credit'),
         tracking: MICRO_TRACKING,
-        color: inks.ember,
+        color: type.ink('credit', inks.ember),
       });
     }
 

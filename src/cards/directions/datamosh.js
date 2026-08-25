@@ -99,8 +99,8 @@ function paintNoise(ctx, frame, random, name, inks) {
   ctx.globalAlpha = 1;
 }
 
-function microSlab(ctx, frame, text, { x, y, ink, slab, textOnly }) {
-  const pixels = frame.unit * MICRO_PIXELS_UNITS;
+function microSlab(ctx, frame, text, { x, y, ink, slab, textOnly, scale }) {
+  const pixels = frame.unit * MICRO_PIXELS_UNITS * scale;
   const width = measureLine(ctx, text, { pixels, tracking: MICRO_TRACKING, face: NARROW_FACE });
   const pad = frame.unit * SLAB_PAD_UNITS;
   if (!textOnly) {
@@ -114,7 +114,7 @@ function microSlab(ctx, frame, text, { x, y, ink, slab, textOnly }) {
 export default {
   id: 'datamosh',
   label: 'Датамош',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, type, textOnly, show }) {
     if (!textOnly) {
       ctx.fillStyle = inks.void;
       ctx.fillRect(0, 0, frame.width, frame.height);
@@ -141,11 +141,13 @@ export default {
       maxPixels: frame.unit * NAME_MAX_UNITS * look.nameScale,
       tracking: NAME_TRACKING,
       face: NARROW_FACE,
+      scale: type.scale('name'),
     });
     const cap = capHeight(ctx, artist.name, { pixels: name.pixels, face: NARROW_FACE });
     const baseline = frame.height * look.nameCenter + cap / 2;
     const line = {
-      x: frame.left,
+      // Двинутое пультом имя уже не выключено по краям полей и встаёт в середину колонки.
+      x: frame.left + (frame.innerWidth - name.width) / 2,
       y: baseline,
       pixels: name.pixels,
       tracking: name.tracking,
@@ -165,7 +167,7 @@ export default {
         fillTracked(ctx, artist.name, { ...line, x: line.x + frame.unit * GHOST_OFFSET_UNITS, color: inks.moon });
         ctx.restore();
       }
-      fillTracked(ctx, artist.name, { ...line, color: inks.flame });
+      fillTracked(ctx, artist.name, { ...line, color: type.ink('name', inks.flame) });
       ctx.restore();
     }
 
@@ -186,33 +188,42 @@ export default {
     }
 
     const head = frame.top + frame.unit * MICRO_LEAD_UNITS;
+    const metaScale = type.scale('meta');
     if (show.meta) {
-      microSlab(ctx, frame, artist.number, { x: frame.left, y: head, ink: inks.flame, slab: inks.blood, textOnly });
+      microSlab(ctx, frame, artist.number, {
+        x: frame.left,
+        y: head,
+        ink: type.ink('meta', inks.flame),
+        slab: inks.blood,
+        textOnly,
+        scale: metaScale,
+      });
       microSlab(ctx, frame, event.dateLabel, {
         x: frame.left,
         y: baseline + frame.unit * MICRO_LEAD_UNITS * 2,
         // На прозрачном текстовом слое чёрная строка теряется, там она идёт жаром.
-        ink: textOnly ? inks.ember : inks.void,
+        ink: type.ink('meta', textOnly ? inks.ember : inks.void),
         slab: inks.ember,
         textOnly,
+        scale: metaScale,
       });
       fillTracked(ctx, `${event.venue} · ${artist.set}`, {
         x: frame.left,
         y: frame.bottom,
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * metaScale,
         tracking: MICRO_TRACKING,
         face: NARROW_FACE,
-        color: inks.moon,
+        color: type.ink('meta', inks.moon),
       });
     }
     if (show.credit) {
       fillTracked(ctx, artist.credit, {
         x: frame.left,
         y: frame.bottom - frame.unit * MICRO_LEAD_UNITS,
-        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS * type.scale('credit'),
         tracking: MICRO_TRACKING,
         face: NARROW_FACE,
-        color: inks.bone,
+        color: type.ink('credit', inks.bone),
       });
     }
 
