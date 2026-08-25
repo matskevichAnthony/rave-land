@@ -48,7 +48,7 @@ function createSheet(artist, index) {
   return sheet;
 }
 
-export function createGallery({ root, event, logo, note, reroll }) {
+export function createGallery({ root, event, logo, photos, note, reroll }) {
   const artists = artistCards(event);
   const sheets = artists.map(createSheet);
   const canvases = new Map();
@@ -83,7 +83,7 @@ export function createGallery({ root, event, logo, note, reroll }) {
     lastView = { ...view };
     for (const [index, artist] of artists.entries()) {
       const canvas = renderCard({
-        ...view, localSeed: view.cardSeeds?.[index] ?? null, event, artist, logo, index,
+        ...view, localSeed: view.cardSeeds?.[index] ?? null, event, artist, logo, photos, index,
       });
       canvas.className = 'sheet__card';
       canvases.set(artist.number, {

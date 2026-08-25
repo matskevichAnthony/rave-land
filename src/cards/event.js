@@ -31,6 +31,7 @@ export function artistCards(event) {
       number: String(index + 1).padStart(NUMBER_PAD, '0'),
       set: extra.set ?? '',
       credit: [extra.role, extra.city].filter(Boolean).join(' · '),
+      photo: extra.photo ?? null,
     };
   });
 }

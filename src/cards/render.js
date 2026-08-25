@@ -24,6 +24,7 @@ import { drawDimension } from './dimension.js';
 import { applyChaos, createChaosRecipe } from './chaos.js';
 import { drawBorder } from './border.js';
 import { drawSigils } from './sigils.js';
+import { drawPhoto } from './photo.js';
 import { directionById } from './directions/index.js';
 
 // Соль между карточками: без неё шесть афиш одного сида получают один и тот же поток и
@@ -37,6 +38,7 @@ const CHAOS_SALT = 202;
 const BACKGROUND_SALT = 303;
 const SIGIL_SALT = 404;
 const BORDER_SALT = 505;
+const PHOTO_SALT = 606;
 
 // Плашка: размытие тени в юнитах и её плотность.
 const PLAQUE_BLUR_UNITS = 1.3;
@@ -100,6 +102,7 @@ export function renderCard({
   event, artist, logo, direction, format, index,
   seed, laySeed, texSeed, bgSeed, objSeed, localSeed = null, hot, cold,
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
+  photo = false, photos = null,
   objTone = 'heat', objAlpha = 0.92, objBehind = false,
   chaosPower = 1, chaosZone = 'all',
   showName = true, showMeta = true, showCredit = true, textOnly = false,
@@ -133,16 +136,27 @@ export function renderCard({
   });
 
   const anyText = show.name || show.meta || show.credit;
+  const shot = photo ? photos?.get(artist.name) : null;
   // Раздельная сборка: текст уходит на свой слой, когда его надо защитить от 3D
-  // (за текстом) или от эффектора (зона не «всё»). Иначе конвейер прежний, цельный.
+  // (за текстом), от эффектора (зона не «всё») или от снимка: набор всегда поверх лица.
   const split = !textOnly && anyText
-    && ((allow3d && objBehind) || (chaos && chaosZone !== 'all'));
+    && (shot || (allow3d && objBehind) || (chaos && chaosZone !== 'all'));
 
   directionById(direction).paint(paintArgs(
     ctx, textOnly, split ? { name: false, meta: false, credit: false } : show,
   ));
 
   if (!textOnly) {
+    // Снимок после фона, но до фактуры: сыпь px-77 и разгром ложатся и на лицо тоже,
+    // фото врастает в карточку, а не липнет поверх неё стикером.
+    if (shot) {
+      drawPhoto(
+        ctx, frame, shot,
+        seriesRandom(layBase, PHOTO_SALT),
+        createRandom(cardSeed(own(texBase), index + PHOTO_SALT)),
+        inks,
+      );
+    }
     applyTexture(ctx, frame, createRandom(cardSeed(own(texBase), index)), inks);
     if (allow3d) {
       drawDimension(

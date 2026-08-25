@@ -18,7 +18,8 @@
     "PRIZRAK (KRD)": {
       "role": "ХЕДЛАЙНЕР",
       "city": "КРАСНОДАР",
-      "set": "01:00"
+      "set": "01:00",
+      "photo": "assets/photos/prizrak.png"
     },
     "ANTON+MATZKAIM": {
       "role": "ЖИВОЙ СЕТ",
@@ -26,7 +27,8 @@
     },
     "LESTAI": {
       "role": "DJ-СЕТ",
-      "set": "23:00"
+      "set": "23:00",
+      "photo": "assets/photos/lestai.png"
     },
     "ANA-WIR": {
       "role": "DJ-СЕТ",

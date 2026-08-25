@@ -18,6 +18,7 @@ import { createDeck } from './deck.js';
 import { createGallery } from './gallery.js';
 import { loadEvent } from './event.js';
 import { loadLogo } from './logo.js';
+import { loadPhotos } from './photo.js';
 import { DEFAULT_DIRECTION } from './directions/index.js';
 import { DEFAULT_FORMAT } from './format.js';
 
@@ -38,7 +39,7 @@ function showError(error) {
 
 async function boot() {
   const event = await loadEvent();
-  const [logo] = await Promise.all([loadLogo(), loadGothic()]);
+  const [logo, photos] = await Promise.all([loadLogo(), loadPhotos(event), loadGothic()]);
 
   const view = {
     direction: DEFAULT_DIRECTION,
@@ -61,6 +62,7 @@ async function boot() {
     plaque: false,
     glow: false,
     sigils: false,
+    photo: false,
     border: 'none',
     showName: true,
     showMeta: true,
@@ -74,6 +76,7 @@ async function boot() {
     root: document.querySelector('[data-js-sheet]'),
     event,
     logo,
+    photos,
     note: (text) => deck.note(text),
     reroll: (index) => redraw({ cardSeeds: { ...view.cardSeeds, [index]: randomSeed() } }),
   });
@@ -119,6 +122,14 @@ async function boot() {
       togglePlaque: () => redraw({ plaque: !view.plaque }),
       toggleGlow: () => redraw({ glow: !view.glow }),
       toggleSigils: () => redraw({ sigils: !view.sigils }),
+      // Фото включается на всю серию, но живёт только у артистов с полем `photo` в данных.
+      togglePhoto: () => {
+        if (!photos.size) {
+          deck.note('Снимков нет: добавь поле photo артисту в public/understav.json');
+          return;
+        }
+        redraw({ photo: !view.photo });
+      },
       toggleName: () => redraw({ showName: !view.showName }),
       toggleMeta: () => redraw({ showMeta: !view.showMeta }),
       toggleCredit: () => redraw({ showCredit: !view.showCredit }),

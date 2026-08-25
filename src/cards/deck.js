@@ -71,6 +71,7 @@ export function createDeck({ root, event, view, actions }) {
   pick('plaque').addEventListener('click', actions.togglePlaque);
   pick('glow').addEventListener('click', actions.toggleGlow);
   pick('sigils').addEventListener('click', actions.toggleSigils);
+  pick('photo').addEventListener('click', actions.togglePhoto);
   pick('text-name').addEventListener('click', actions.toggleName);
   pick('text-meta').addEventListener('click', actions.toggleMeta);
   pick('text-credit').addEventListener('click', actions.toggleCredit);
@@ -117,6 +118,7 @@ export function createDeck({ root, event, view, actions }) {
       pick('plaque').classList.toggle(ACTIVE_CLASS, state.plaque);
       pick('glow').classList.toggle(ACTIVE_CLASS, state.glow);
       pick('sigils').classList.toggle(ACTIVE_CLASS, state.sigils);
+      pick('photo').classList.toggle(ACTIVE_CLASS, state.photo);
       pick('text-name').classList.toggle(ACTIVE_CLASS, state.showName);
       pick('text-meta').classList.toggle(ACTIVE_CLASS, state.showMeta);
       pick('text-credit').classList.toggle(ACTIVE_CLASS, state.showCredit);
