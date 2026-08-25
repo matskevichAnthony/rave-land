@@ -134,14 +134,25 @@ class AoPass extends GTAOPass {
  *
  * Глубину проход берёт готовую, а не рисует сцену второй раз материалом глубины, как делает
  * штатный: второй обход зала стоит столько же вызовов отрисовки, сколько сам зал. Шейдер боке
- * читает обычную текстуру глубины напрямую, если снять с него распаковку, и тогда расфокус
- * стоит одного полноэкранного прохода.
+ * читает обычную текстуру глубины напрямую, если снять с него распаковку.
+ *
+ * Берётся она у пробы, а не у сцены, и это не выбор из удобства. Композитор к этому месту уже
+ * поменял буферы местами, и расфокус пишет ровно в тот буфер, на котором висит глубина сцены.
+ * Читать текстуру, привязанную к своей же мишени, драйверу нельзя: он снимает вызов целиком,
+ * и кадр остаётся цветом очистки, то есть чёрным. У пробы своя мишень, петли не выходит.
+ *
+ * Очистки здесь тоже нет намеренно: она стирает не только цвет, но и глубину буфера, а по
+ * этой глубине следом работают датамош и хроматика. Квад кроет кадр целиком без проверки
+ * глубины и без смешивания, поэтому очищать нечего.
  */
 class DofPass extends BokehPass {
   constructor(scene, camera, depthSource) {
     super(scene, camera, { aperture: DOF.aperture, maxblur: 0 });
     this.depthSource = depthSource;
     this.materialBokeh.defines.DEPTH_PACKING = 0;
+    this.materialBokeh.blending = THREE.NoBlending;
+    this.materialBokeh.depthTest = false;
+    this.materialBokeh.depthWrite = false;
     this.materialBokeh.needsUpdate = true;
   }
 
@@ -157,7 +168,6 @@ class DofPass extends BokehPass {
     this.uniforms.nearClip.value = this.camera.near;
     this.uniforms.farClip.value = this.camera.far;
     renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
-    if (!this.renderToScreen) renderer.clear();
     this._fsQuad.render(renderer);
   }
 }
@@ -463,9 +473,13 @@ export function createEffects({ renderer, scene, camera }) {
 
   const composer = new EffectComposer(renderer, sceneTarget);
 
+  // Проба снимает глубину непрозрачной сцены в свою мишень до отрисовки кадра, и расфокус
+  // читает именно её: подробности в `DofPass`.
+  const depthProbe = createDepthProbe({ renderer, scene, camera });
+
   const scenePass = new ScenePass(scene, camera, sceneTarget.depthTexture);
   const ao = new AoPass(scene, camera, buffer.x, buffer.y, scenePass);
-  const dof = new DofPass(scene, camera, scenePass);
+  const dof = new DofPass(scene, camera, depthProbe);
   const mosh = new MoshPass(scenePass);
   const trip = new TripPass(mosh, scenePass);
   const bloom = new UnrealBloomPass(
@@ -500,8 +514,6 @@ export function createEffects({ renderer, scene, camera }) {
   composer.addPass(grade);
 
   const controls = createControls({ ao, dof, mosh, trip, bloom, grade });
-
-  const depthProbe = createDepthProbe({ renderer, scene, camera });
 
   const view = new THREE.Matrix4();
   const viewProjection = new THREE.Matrix4();

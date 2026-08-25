@@ -100,6 +100,12 @@ export function createDepthProbe({ renderer, scene, camera, scale = DEPTH_SCALE 
   }
 
   return {
+    // Глубина пробы не висит ни на одном буфере композитора, поэтому её может читать и тот
+    // проход, который в буферы пишет: своя привязка не образует петли обратной связи.
+    get depthTexture() {
+      return target.depthTexture;
+    },
+
     update() {
       sceneDepth.uSceneDepthRange.value.set(camera.near, camera.far);
       scene.traverse(hideTransparent);
