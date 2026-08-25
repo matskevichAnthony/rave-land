@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { burnIron, emissiveBoost } from './burn.js';
 import { gothicFaceFor, loadGothic } from './gothic.js';
-import { createWordline } from './wordline.js';
 import { createWordmark } from './wordmark.js';
 import { BEAT, PALETTE } from './palette.js';
 import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.js';
@@ -32,7 +31,7 @@ const TITLE_HEIGHT_RATIO = 0.36;
 const TITLE_WIDTH_RATIO = 0.95;
 // Название словом стоит вдвое уже знака и читается подписью под ним. Шире оно начинает
 // спорить со знаком за главное место в кадре, а знак у события один и спорить ему не с чем.
-const WORDLINE_WIDTH_RATIO = 0.5;
+const NAMELINE_WIDTH_RATIO = 0.5;
 const LINEUP_WIDTH_RATIO = 0.72;
 // Подзаголовок чуть шире коробки лайнапа: коробку держит длина имён, а подзаголовок вдвое
 // длиннее самого длинного из них и по ней читался бы петитом. Дальше единицы он не идёт,
@@ -86,7 +85,7 @@ const MIN_SQUEEZE = 0.34;
 // Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
 const GAP_AFTER_TITLE = 0.34;
-const GAP_AFTER_WORDLINE = 0.3;
+const GAP_AFTER_NAMELINE = 0.5;
 const GAP_AFTER_TAGLINE = 1.2;
 const GAP_IN_LINEUP = 0.24;
 const GAP_AFTER_LINEUP = 0.75;
@@ -427,18 +426,24 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     },
   };
 
-  // Знак и словесная строка едут разными файлами и оба спрашивают сеть, поэтому спрашивают
-  // одновременно: последовательно это две задержки подряд там, где хватает одной.
-  const [wordmark, wordline] = await Promise.all([
-    createWordmark({ rng, tilt: TITLE_TILT }),
-    createWordline({ text: event.event, rng, targetWidth: box.width * WORDLINE_WIDTH_RATIO }),
-  ]);
-
   const title = createTitle({
-    wordmark,
+    wordmark: await createWordmark({ rng, tilt: TITLE_TILT }),
     rng,
     targetWidth: box.width * TITLE_WIDTH_RATIO,
     targetHeight: box.height * TITLE_HEIGHT_RATIO,
+  });
+
+  // Название словом набрано тем же узким гротеском, что имена и дата, а не готикой в объёме.
+  // Готическая строка под знаком читалась вторым знаком и спорила с ним; обычный текст этого
+  // не делает и работает подписью, ради которой его сюда и ставили.
+  const nameFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * NAMELINE_WIDTH_RATIO };
+  const nameline = createPlate({
+    text: event.event,
+    maxWidth: nameFit.maxWidth,
+    capHeight: fitCapHeight(event.event, nameFit),
+    emissive: PALETTE.bone,
+    rng,
+    shared,
   });
 
   const taglineFace = gothicFaceFor(event.tagline ?? '');
@@ -510,7 +515,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     { row: title, gap: GAP_AFTER_TITLE },
     // Название словом идёт сразу под знаком: знак читается силуэтом, и без строки под ним
     // тот, кто видит его впервые, слова в нём не разбирает.
-    { row: wordline, gap: GAP_AFTER_WORDLINE },
+    { row: nameline, gap: GAP_AFTER_NAMELINE },
     // Тэглайн стоит подписью под названием, а не отдельной строкой внизу: он объясняет, что
     // это за вечер, и читается только рядом с тем, к чему относится.
     ...(tagline ? [{ row: tagline, gap: GAP_AFTER_TAGLINE }] : []),
@@ -536,7 +541,7 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   ];
   group.add(...iron.map((instance) => instance.mesh));
 
-  const plates = [...(tagline ? [tagline] : []), ...lineup, date, ...(venue ? [venue] : [])];
+  const plates = [nameline, ...(tagline ? [tagline] : []), ...lineup, date, ...(venue ? [venue] : [])];
   const beatOmega = TAU / BEAT.seconds;
 
   // Строки прилетают в том же порядке, в каком стоят в афише, и через одну с разных сторон.
@@ -571,7 +576,6 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
     },
     update(dt, elapsed) {
       title.burn(elapsed);
-      wordline.burn(elapsed);
 
       for (const plate of plates) {
         const angle = elapsed * plate.sway.omega + plate.sway.phase;
