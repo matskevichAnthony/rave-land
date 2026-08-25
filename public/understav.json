@@ -1,7 +1,7 @@
 {
   "version": 1,
   "event": "UNDERSTAV",
-  "tagline": "INDUSTRIAL GOTHIC RITUAL",
+  "tagline": "+ РИТУАЛ ИНДУСТРИАЛЬНОЙ ГОТИКИ +",
   "date": "2026-09-25",
   "dateLabel": "25.09.2026",
   "venue": "БАР СПЕКУЛЯНТ",
@@ -14,6 +14,33 @@
     "VXLX",
     "CATHEARTSIS"
   ],
+  "artists": {
+    "PRIZRAK (KRD)": {
+      "role": "ХЕДЛАЙНЕР",
+      "city": "КРАСНОДАР",
+      "set": "01:00"
+    },
+    "ANTON+MATZKAIM": {
+      "role": "ЖИВОЙ СЕТ",
+      "set": "22:00"
+    },
+    "LESTAI": {
+      "role": "DJ-СЕТ",
+      "set": "23:00"
+    },
+    "ANA-WIR": {
+      "role": "DJ-СЕТ",
+      "set": "00:00"
+    },
+    "VXLX": {
+      "role": "DJ-СЕТ",
+      "set": "02:30"
+    },
+    "CATHEARTSIS": {
+      "role": "ЗАКРЫТИЕ",
+      "set": "04:00"
+    }
+  },
   "cast": {
     "crowd": 7,
     "radius": [

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Афиши UNDERSTAV</title>
+  <link rel="stylesheet" href="./styles/cards.css" />
+</head>
+<body>
+  <aside class="deck" data-js-deck>
+    <header class="deck__head">
+      <h1 class="deck__title" data-js-event></h1>
+      <p class="deck__line" data-js-lineup></p>
+    </header>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Сид</h2>
+      <output class="deck__seed" data-js-seed></output>
+      <div class="deck__row">
+        <button type="button" data-js-new-seed>Новый сид</button>
+        <button type="button" data-js-copy-seed>Скопировать</button>
+      </div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Направление</h2>
+      <div class="deck__row" data-js-directions></div>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Формат</h2>
+      <div class="deck__row" data-js-formats></div>
+      <p class="deck__hint">
+        Лента это пост в инстаграме, четыре к пяти. Стена даёт сторону в степень двойки и
+        непрозрачный край: такую картинку берут текстурой на стену коридора сцены.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Выгрузка</h2>
+      <div class="deck__row">
+        <button type="button" data-js-save-all>Скачать все шесть</button>
+      </div>
+      <p class="deck__hint">
+        Одна карточка скачивается кнопкой под ней. Браузер спросит разрешение на пачку файлов.
+      </p>
+      <p class="deck__note" data-js-note></p>
+    </section>
+
+    <nav class="deck__nav">
+      <a href="./understav.html">В сцену</a>
+      <a href="./index.html">В мир</a>
+    </nav>
+  </aside>
+
+  <main class="sheet-list">
+    <p class="sheet-list__error" data-js-error hidden></p>
+    <div class="sheet-list__grid" data-js-sheet></div>
+  </main>
+
+  <script type="module" src="./src/cards/main.js"></script>
+</body>
+</html>

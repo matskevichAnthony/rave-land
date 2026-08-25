@@ -1,0 +1,26 @@
+/* Одна афиша на листе: холст, подпись и кнопка выгрузки. */
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: start;
+}
+
+.sheet__card {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+}
+
+.sheet__caption {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sheet__save {
+  align-self: stretch;
+}

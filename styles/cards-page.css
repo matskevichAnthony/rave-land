@@ -1,0 +1,35 @@
+/* Лист генератора афиш: шесть карточек в сетке и пульт у правого края. */
+
+/* Страница сцены заперта по высоте — там холст занимает всё окно и прокручивать нечего.
+   Здесь наоборот: серия проверяется прокруткой листа, поэтому запрет снимается. */
+html,
+body {
+  overflow-y: auto;
+}
+
+.sheet-list {
+  padding: 24px;
+  padding-right: 304px;
+}
+
+.sheet-list__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.sheet-list__error:not([hidden]) {
+  color: var(--ember);
+  border: 1px solid var(--ember);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
+/* На телефоне пульт ложится нижним листом, и место справа под него больше не нужно. */
+@media (max-width: 560px) {
+  .sheet-list {
+    padding-right: 24px;
+    padding-bottom: 62vh;
+  }
+}
