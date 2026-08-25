@@ -11,6 +11,7 @@
  */
 
 import { create } from '../ui/dom.js';
+import { BORDERS } from './border.js';
 import { DIRECTIONS } from './directions/index.js';
 import { FORMATS } from './format.js';
 
@@ -29,20 +30,31 @@ export function createDeck({ root, event, view, actions }) {
     view.format,
     actions.setFormat,
   );
+  mountChoice(pick('borders'), BORDERS, view.border, actions.setBorder);
 
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('new-lay').addEventListener('click', actions.newLay);
   pick('new-tex').addEventListener('click', actions.newTex);
   pick('new-bg').addEventListener('click', actions.newBg);
+  pick('new-obj').addEventListener('click', actions.newObj);
   pick('copy-seed').addEventListener('click', actions.copySeed);
   pick('save-all').addEventListener('click', actions.saveAll);
   pick('allow-3d').addEventListener('click', actions.toggle3d);
   pick('chaos').addEventListener('click', actions.toggleChaos);
   pick('madness').addEventListener('click', actions.toggleMadness);
   pick('plaque').addEventListener('click', actions.togglePlaque);
+  pick('glow').addEventListener('click', actions.toggleGlow);
+  pick('sigils').addEventListener('click', actions.toggleSigils);
   pick('text-name').addEventListener('click', actions.toggleName);
   pick('text-meta').addEventListener('click', actions.toggleMeta);
   pick('text-credit').addEventListener('click', actions.toggleCredit);
+
+  // Сид пишется руками: Enter или уход с поля применяют, мусор вернёт прежнее значение.
+  const seedField = pick('seed');
+  seedField.addEventListener('change', () => actions.setSeed(seedField.value));
+  seedField.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.isComposing && event.keyCode !== 229) seedField.blur();
+  });
 
   const hotWell = pick('ink-hot');
   const coldWell = pick('ink-cold');
@@ -67,16 +79,20 @@ export function createDeck({ root, event, view, actions }) {
 
   return {
     showSeed(seed) {
-      pick('seed').textContent = seed;
+      seedField.value = seed;
     },
     showState(state) {
       pick('allow-3d').classList.toggle(ACTIVE_CLASS, state.allow3d);
       pick('chaos').classList.toggle(ACTIVE_CLASS, state.chaos);
       pick('madness').classList.toggle(ACTIVE_CLASS, state.madness);
       pick('plaque').classList.toggle(ACTIVE_CLASS, state.plaque);
+      pick('glow').classList.toggle(ACTIVE_CLASS, state.glow);
+      pick('sigils').classList.toggle(ACTIVE_CLASS, state.sigils);
       pick('text-name').classList.toggle(ACTIVE_CLASS, state.showName);
       pick('text-meta').classList.toggle(ACTIVE_CLASS, state.showMeta);
       pick('text-credit').classList.toggle(ACTIVE_CLASS, state.showCredit);
+      // Переброс объёма без включённого 3D рисует вхолостую, кнопка честно гаснет.
+      pick('new-obj').disabled = !state.allow3d;
       hotWell.value = state.hot;
       coldWell.value = state.cold;
     },

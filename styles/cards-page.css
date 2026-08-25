@@ -18,6 +18,21 @@ body {
   gap: 24px;
 }
 
+/* Сид стал полем ввода: наследует моноширинный вид, получает рамку и фокус жаром. */
+input.deck__seed {
+  inline-size: 100%;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+}
+
+input.deck__seed:focus {
+  outline: none;
+  border-color: var(--ember);
+}
+
 /* Колодцы глобального цвета: input[type=color] в ряду пульта, подпись рядом. */
 .deck__row--inks {
   align-items: center;

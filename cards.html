@@ -15,7 +15,8 @@
 
     <section class="deck__block">
       <h2 class="deck__label">Сид</h2>
-      <output class="deck__seed" data-js-seed></output>
+      <input class="deck__seed" data-js-seed spellcheck="false" autocomplete="off"
+        aria-label="Сид серии, hex до восьми знаков" />
       <div class="deck__row">
         <button type="button" data-js-new-seed>Всё заново</button>
         <button type="button" data-js-copy-seed>Скопировать</button>
@@ -24,11 +25,12 @@
         <button type="button" data-js-new-lay>Компоновка</button>
         <button type="button" data-js-new-tex>Фактура</button>
         <button type="button" data-js-new-bg>Фон</button>
+        <button type="button" data-js-new-obj>Объём</button>
       </div>
       <p class="deck__hint">
-        «Всё заново» бросает общий сид. «Компоновка» переставляет только текст и знак,
-        «фактура» перебрасывает сыпь, объём и разгром, «фон» переберает генеративный фон
-        мутанта: удачное остаётся на месте.
+        Сид пишется руками: hex до восьми знаков, Enter применяет. «Всё заново» бросает общий
+        сид. «Компоновка» двигает макет серии, «фактура» перебрасывает сыпь и разгром, «фон»
+        переберает фон мутанта, «объём» перевыращивает 3D-предметы: удачное остаётся на месте.
       </p>
     </section>
 
@@ -39,11 +41,25 @@
         <button type="button" data-js-chaos>Эффектор</button>
         <button type="button" data-js-madness>Сумасшествие</button>
       </div>
+      <div class="deck__row">
+        <button type="button" data-js-glow>Свечение</button>
+        <button type="button" data-js-sigils>Сигилы</button>
+      </div>
       <p class="deck__hint">
-        3D выращивает в карточке генеративный предмет: каплю из шума, ленту, башню, со
-        случайной кожей от чертежа до глитч-текстуры. Эффектор разрушает готовый кадр.
-        Сумасшествие спускает мутанта с цепи: до трёх слоёв алгоритмов со случайными
-        способами наложения.
+        3D выращивает генеративный предмет со случайной кожей; кнопка «объём» выше
+        перевыращивает его. Эффектор громит кадр по серийному рецепту: приёмы и сила одни
+        на все шесть карточек, места ударов свои. Сумасшествие спускает мутанта с цепи.
+        Свечение кладёт под набор ореол жара, сигилы штампуют готические знаки андерстава
+        одним узором на серию.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Рамка</h2>
+      <div class="deck__row" data-js-borders></div>
+      <p class="deck__hint">
+        Оправа серии: арка кладёт стрельчатый портал, клёпка обшивает край сталью, шипы
+        режут кромку пилой. «Хаос» отдаёт выбор сиду компоновки: стиль один на серию.
       </p>
     </section>
 

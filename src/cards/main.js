@@ -47,12 +47,16 @@ async function boot() {
     laySeed: null,
     texSeed: null,
     bgSeed: null,
+    objSeed: null,
     hot: DEFAULT_HOT,
     cold: DEFAULT_COLD,
     allow3d: false,
     chaos: false,
     madness: false,
     plaque: false,
+    glow: false,
+    sigils: false,
+    border: 'none',
     showName: true,
     showMeta: true,
     showCredit: true,
@@ -74,16 +78,30 @@ async function boot() {
       setDirection: (direction) => redraw({ direction }),
       setFormat: (format) => redraw({ format }),
       // Общий бросок сбрасывает частные сиды: серия начинается с чистого листа.
-      newSeed: () => redraw({ seed: randomSeed(), laySeed: null, texSeed: null, bgSeed: null }),
+      newSeed: () => redraw({ seed: randomSeed(), laySeed: null, texSeed: null, bgSeed: null, objSeed: null }),
       newLay: () => redraw({ laySeed: randomSeed() }),
       newTex: () => redraw({ texSeed: randomSeed() }),
       newBg: () => redraw({ bgSeed: randomSeed() }),
+      newObj: () => redraw({ objSeed: randomSeed() }),
+      // Рукописный сид: пульт принимает только чистый hex, мусор отбрасывается молча.
+      setSeed: (asked) => {
+        const clean = String(asked).trim().toLowerCase();
+        if (SEED_PATTERN.test(clean)) {
+          redraw({ seed: clean, laySeed: null, texSeed: null, bgSeed: null, objSeed: null });
+        } else {
+          deck.note(`Сид «${asked}» не hex: нужно от 1 до 8 знаков 0-9 a-f`);
+          deck.showSeed(view.seed);
+        }
+      },
       setInks: (hot, cold) => redraw({ hot, cold }),
       resetInks: () => redraw({ hot: DEFAULT_HOT, cold: DEFAULT_COLD }),
+      setBorder: (border) => redraw({ border }),
       toggle3d: () => redraw({ allow3d: !view.allow3d }),
       toggleChaos: () => redraw({ chaos: !view.chaos }),
       toggleMadness: () => redraw({ madness: !view.madness }),
       togglePlaque: () => redraw({ plaque: !view.plaque }),
+      toggleGlow: () => redraw({ glow: !view.glow }),
+      toggleSigils: () => redraw({ sigils: !view.sigils }),
       toggleName: () => redraw({ showName: !view.showName }),
       toggleMeta: () => redraw({ showMeta: !view.showMeta }),
       toggleCredit: () => redraw({ showCredit: !view.showCredit }),

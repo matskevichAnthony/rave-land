@@ -1,19 +1,17 @@
 /**
- * Отрисовка одной карточки: холст, четыре потока случайности, направление и слои поверх.
+ * Отрисовка одной карточки: холст, потоки случайности, направление и слои поверх.
  *
- * Потоков четыре, и это устройство пульта, а не украшение. Общий сид кормит направление
- * (износ, порча, поле), сид компоновки решает раскладку текста и знака, сид фактуры
- * держит блочную сыпь px-77, объём и эффектор, сид фона переберает генеративный фон
- * мутанта, не трогая остального. Каждый переброшивается отдельно, поэтому можно ловить
- * удачную раскладку, не теряя удачную фактуру или удачный фон.
+ * Случайность двухэтажная, и это главное устройство серии. Серийные потоки, по одному на
+ * сид без подмеса номера, решают всё общее: макет компоновки, рецепт эффектора, стиль
+ * рамки, набор сигилов. Карточные потоки, с подмесом номера, решают частное: куда упадёт
+ * пересадка, какой знак встанет в гнездо, как дрогнет строка. Так серия остаётся серией
+ * при любом сумасшествии: шесть карточек громятся одним почерком.
  *
- * Фон карточка заливает всегда и во всю сторону: ни одно направление не оставляет
- * прозрачных полей. Исключение одно и намеренное: текстовый слой. Он рисует только набор
- * на прозрачном холсте и уходит отдельным файлом тому, кто будет двигать строки руками.
+ * Сидов у пульта пять: общий, компоновка, фактура, фон, объём. Каждый переброшивается
+ * отдельно, поэтому удачное ловится и держится по частям.
  *
- * Плашка решает вечный спор эффектов с текстом: после всего разгрома набор перештамповывается
- * поверх со своей тёмной тенью, выращенной из его же формы. Тень шире букв на размытие,
- * поэтому она читается подложкой, а не обводкой.
+ * Текстовый слой прозрачный и уходит отдельным файлом. Плашка перештамповывает набор
+ * поверх разгрома с тенью из его же формы; свечение кладёт под набор ореол жара.
  */
 
 import { createRandom, seedToInt } from '../understav/random.js';
@@ -23,25 +21,40 @@ import { makeInks } from './ink.js';
 import { createLook } from './look.js';
 import { applyTexture } from './texture.js';
 import { drawDimension } from './dimension.js';
-import { applyChaos } from './chaos.js';
+import { applyChaos, createChaosRecipe } from './chaos.js';
+import { drawBorder } from './border.js';
+import { drawSigils } from './sigils.js';
 import { directionById } from './directions/index.js';
 
 // Соль между карточками: без неё шесть афиш одного сида получают один и тот же поток и
 // расходятся только текстом. Число простое и большое, чтобы соседние номера не пересекались.
 const CARD_SALT = 0x9e3779b1;
 
-// Свои соли у объёма, эффектора и фона: иначе они читали бы тот же поток, что фактура, и
-// переброс фактуры втихую переставлял бы и предмет, и фон.
+// Свои соли у объёма, эффектора, фона и сигилов: иначе они читали бы один поток и
+// переброс одного втихую переставлял бы остальные.
 const DIMENSION_SALT = 101;
 const CHAOS_SALT = 202;
 const BACKGROUND_SALT = 303;
+const SIGIL_SALT = 404;
+const BORDER_SALT = 505;
 
 // Плашка: размытие тени в юнитах и её плотность.
 const PLAQUE_BLUR_UNITS = 1.3;
 const PLAQUE_ALPHA = 0.85;
 
+// Свечение: ореол набора в юнитах размытия и его сила одним проходом. Сила сдержанная
+// намеренно: в текстовом слое живёт и номер-призрак, и на двойном проходе он раздувался
+// в шар, съедавший карточку.
+const GLOW_BLUR_UNITS = 1.8;
+const GLOW_ALPHA = 0.3;
+
 function cardSeed(seed, index) {
   return ((seedToInt(seed) + index * CARD_SALT) >>> 0).toString(16);
+}
+
+/** Серийный поток: сид с солью роли, но без номера карточки, один на всю серию. */
+function seriesRandom(seed, salt) {
+  return createRandom(((seedToInt(seed) + salt) >>> 0).toString(16));
 }
 
 /**
@@ -66,18 +79,38 @@ function stampPlaque(ctx, frame, textLayer, inks) {
   ctx.drawImage(textLayer, 0, 0);
 }
 
+/** Ореол жара из формы набора: размытый слой перекрашивается и вжимается сложением. */
+function stampGlow(ctx, frame, textLayer, inks) {
+  const halo = createLayer(frame.width, frame.height);
+  halo.ctx.filter = `blur(${frame.unit * GLOW_BLUR_UNITS}px)`;
+  halo.ctx.drawImage(textLayer, 0, 0);
+  halo.ctx.filter = 'none';
+  halo.ctx.globalCompositeOperation = 'source-in';
+  halo.ctx.fillStyle = inks.ember;
+  halo.ctx.fillRect(0, 0, frame.width, frame.height);
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = GLOW_ALPHA;
+  ctx.drawImage(halo.canvas, 0, 0);
+  ctx.restore();
+}
+
 export function renderCard({
   event, artist, logo, direction, format, index,
-  seed, laySeed, texSeed, bgSeed, hot, cold, allow3d, chaos, madness, plaque,
+  seed, laySeed, texSeed, bgSeed, objSeed, hot, cold,
+  allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
   showName = true, showMeta = true, showCredit = true, textOnly = false,
 }) {
   const size = FORMATS[format];
   const { canvas, ctx } = createLayer(size.width, size.height);
   const frame = createFrame(size);
   const inks = makeInks({ hot, cold });
-  const look = createLook(createRandom(cardSeed(laySeed ?? seed, index)));
-  const show = { name: showName, meta: showMeta, credit: showCredit };
+  const layBase = laySeed ?? seed;
   const texBase = texSeed ?? seed;
+  const objBase = objSeed ?? texBase;
+  const look = createLook(createRandom(layBase), createRandom(cardSeed(layBase, index)));
+  const show = { name: showName, meta: showMeta, credit: showCredit };
 
   const paintArgs = (target, asText) => ({
     ctx: target,
@@ -99,16 +132,36 @@ export function renderCard({
   if (!textOnly) {
     applyTexture(ctx, frame, createRandom(cardSeed(texBase, index)), inks);
     if (allow3d) {
-      drawDimension(ctx, frame, createRandom(cardSeed(texBase, index + DIMENSION_SALT)), inks);
+      drawDimension(ctx, frame, createRandom(cardSeed(objBase, index + DIMENSION_SALT)), inks);
+    }
+    if (sigils) {
+      drawSigils(
+        ctx,
+        frame,
+        seriesRandom(layBase, SIGIL_SALT),
+        createRandom(cardSeed(layBase, index + SIGIL_SALT)),
+        inks,
+      );
     }
     if (chaos) {
-      applyChaos(ctx, frame, createRandom(cardSeed(texBase, index + CHAOS_SALT)), inks);
+      const recipe = createChaosRecipe(seriesRandom(texBase, CHAOS_SALT));
+      applyChaos(ctx, frame, createRandom(cardSeed(texBase, index + CHAOS_SALT)), inks, recipe);
     }
-    // Плашка идёт последней: она возвращает набор поверх всего, что его закопало.
-    if (plaque && (show.name || show.meta || show.credit)) {
+    // Рамка после разгрома: оправа держит хаос внутри, как стекло витрины.
+    drawBorder(
+      ctx,
+      frame,
+      border,
+      seriesRandom(layBase, BORDER_SALT),
+      createRandom(cardSeed(layBase, index + BORDER_SALT)),
+      inks,
+    );
+    const anyText = show.name || show.meta || show.credit;
+    if ((plaque || glow) && anyText) {
       const text = createLayer(frame.width, frame.height);
       directionById(direction).paint(paintArgs(text.ctx, true));
-      stampPlaque(ctx, frame, text.canvas, inks);
+      if (glow) stampGlow(ctx, frame, text.canvas, inks);
+      if (plaque) stampPlaque(ctx, frame, text.canvas, inks);
     }
   }
   return canvas;
