@@ -73,6 +73,7 @@
         <button type="button" data-js-framing="square">1:1</button>
         <button type="button" data-js-framing="story">9:16</button>
         <button type="button" data-js-framing="wide">16:9</button>
+        <button type="button" data-js-framing="sheet">Лист</button>
         <button type="button" data-js-framing="full">Во всё окно</button>
       </div>
     </section>
@@ -82,6 +83,10 @@
       <label class="deck__toggle">
         <input type="checkbox" data-js-countdown />
         <span>Показать отсчёт: <b data-js-days></b> дн.</span>
+      </label>
+      <label class="deck__toggle">
+        <input type="checkbox" data-js-poster checked />
+        <span>Показать афишу: заголовок, лайнап, дата</span>
       </label>
     </section>
 
@@ -106,18 +111,40 @@
       <div class="deck__row">
         <button type="button" data-js-shoot>Снять</button>
         <button type="button" data-js-capture>Кадр</button>
+        <button type="button" data-js-photo>Фото</button>
       </div>
+      <label class="deck__toggle">
+        <input type="checkbox" data-js-print />
+        <span>Под печать: без зерна и разрушения, фото крупнее</span>
+      </label>
+      <p class="deck__hint">
+        Кадр это снимок экрана как есть. Фото уплотняет холст и снимает тот же кадр крупно:
+        2160 точек по высоте, а под печать 3508 — это триста точек на дюйм по длинной
+        стороне A4. Кадрирование «Лист» даёт пропорцию листа A-серии.
+      </p>
+      <p class="deck__hint">
+        Печатный вид виден на экране до снимка: зерно, разрушение и хроматика рассчитаны на
+        светящийся кадр в движении, а на неподвижной картинке читаются грязью. Выключишь
+        режим — ручки вернутся туда, где стояли.
+      </p>
       <p class="deck__note" data-js-note></p>
     </section>
 
     <section class="deck__block">
       <h2 class="deck__label">Файл сцены</h2>
       <div class="deck__row">
-        <button type="button" data-js-save-scene>Скачать сцену</button>
+        <button type="button" data-js-save-scene="glb">GLB</button>
+        <button type="button" data-js-save-scene="obj">OBJ</button>
+        <button type="button" data-js-save-scene="fbx">FBX</button>
       </div>
       <p class="deck__hint">
-        В .glb уходят зал и афиша с буквами: файл открывается на телефоне и в Blender.
-        Искры, дымка и лучи живут шейдером, поэтому в файл не попадают.
+        Наружу уходят зал и афиша с буквами. Искры, дымка и лучи живут шейдером, поэтому
+        в файл не попадают.
+      </p>
+      <p class="deck__hint">
+        GLB открывается на телефоне и в Blender, и только он несёт буквы лайнапа картинкой.
+        OBJ скачивается парой с .mtl рядом, переименовывать их порознь нельзя. FBX двоичный,
+        версии 7.4: его берут Blender, Maya, 3ds Max, Unity, Unreal и мобильные монтажки.
       </p>
     </section>
 

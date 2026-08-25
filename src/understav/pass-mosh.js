@@ -68,8 +68,11 @@ const createTarget = () => new THREE.WebGLRenderTarget(1, 1, {
 });
 
 export class MoshPass extends Pass {
-  constructor() {
+  // Глубину проход берёт у сцены, а не из буфера чтения: между ними стоят проходы с обменом
+  // буферов, и в том, что окажется буфером чтения, лежит копия глубины, в которую не пишут.
+  constructor(depthSource) {
     super();
+    this.depthSource = depthSource;
     // Проход пишет в свои мишени, буферы композитора не двигает
     this.needsSwap = false;
 
@@ -117,7 +120,7 @@ export class MoshPass extends Pass {
   render(renderer, writeBuffer, readBuffer) {
     const next = 1 - this.current;
     this.uniforms.tScene.value = readBuffer.texture;
-    this.uniforms.tDepth.value = readBuffer.depthTexture;
+    this.uniforms.tDepth.value = this.depthSource.depthTexture;
     this.uniforms.tHistory.value = this.targets[this.current].texture;
 
     renderer.setRenderTarget(this.targets[next]);

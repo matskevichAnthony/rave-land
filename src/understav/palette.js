@@ -12,6 +12,7 @@ export const PALETTE = {
   rust: '#5c2a15',
   bone: '#cbc2b2',
   ember: '#ff4d0d',
+  flame: '#ffe0c4',
   emberHalo: '#ffa04a',
   trip: '#9b30ff',
   blood: '#ff1f2e',

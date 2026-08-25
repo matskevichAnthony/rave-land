@@ -33,6 +33,15 @@ const SCRATCH_MAX_LENGTH = 1.8;
 const SCRATCH_MIN_THICKNESS = 0.0015;
 const SCRATCH_MAX_THICKNESS = 0.006;
 const SCRATCH_TILT = 0.08;
+// Грязь поверх крапа: она не выедает букву насквозь, а гасит её пятнами. Крап и царапины
+// работают дырой, и одним крапом имя чистят до трафарета из типографии либо съедают целиком,
+// среднего у них нет. Пятно вполсилы даёт как раз середину: буква залапана, но читается.
+const BLOT_COUNT = 34;
+const BLOT_RADIUS = [0.06, 0.26];
+const BLOT_ALPHA = [0.08, 0.3];
+
+// Предел растяжения буквы: дальше узкий гротеск теряет рисунок знака и читается набором плит.
+const JUSTIFY_STRETCH_MAX = 2.6;
 
 const MASK_INK = '#ffffff';
 const MASK_VOID = '#000000';
@@ -89,7 +98,13 @@ function rustMarks(rng) {
     thickness: rng.range(SCRATCH_MIN_THICKNESS, SCRATCH_MAX_THICKNESS),
     tilt: rng.range(-SCRATCH_TILT, SCRATCH_TILT),
   }));
-  return { specks, scratches };
+  const blots = Array.from({ length: BLOT_COUNT }, () => ({
+    x: rng(),
+    y: rng(),
+    radius: rng.range(...BLOT_RADIUS),
+    alpha: rng.range(...BLOT_ALPHA),
+  }));
+  return { specks, scratches, blots };
 }
 
 function erode(context, canvas, marks) {
@@ -106,6 +121,18 @@ function erode(context, canvas, marks) {
     );
     context.fill();
   }
+  for (const blot of marks.blots) {
+    context.globalAlpha = blot.alpha;
+    context.beginPath();
+    context.arc(
+      blot.x * canvas.width,
+      blot.y * canvas.height,
+      blot.radius * canvas.height,
+      0,
+      Math.PI * 2,
+    );
+    context.fill();
+  }
   context.globalAlpha = 1;
   for (const scratch of marks.scratches) {
     context.save();
@@ -116,7 +143,23 @@ function erode(context, canvas, marks) {
   }
 }
 
-function paintMask(context, canvas, marks, text, { face, tracking, capFraction, padding }) {
+/**
+ * Разгон строки до полной ширины плиты.
+ *
+ * Сначала буквы становятся шире, и только когда шире уже некрасиво, остаток добирается
+ * разрядкой: короткое имя, растянутое одной разрядкой, рассыпается на отдельные знаки,
+ * а растянутое одними буквами превращается в кашу из палок.
+ */
+function justifyRun(context, text, fontPixels, tracking, usableWidth) {
+  const natural = trackedWidth(context, text, fontPixels, tracking);
+  const gap = fontPixels * tracking;
+  if (natural >= usableWidth || natural <= 0) return { stretch: 1, gap };
+  const stretch = Math.min(usableWidth / natural, JUSTIFY_STRETCH_MAX);
+  const gaps = Math.max([...text].length - 1, 1);
+  return { stretch, gap: gap * stretch + (usableWidth - natural * stretch) / gaps };
+}
+
+function paintMask(context, canvas, marks, text, { face, tracking, capFraction, padding, justify = false }) {
   context.fillStyle = MASK_VOID;
   context.fillRect(0, 0, canvas.width, canvas.height);
   if (!text) return;
@@ -135,16 +178,23 @@ function paintMask(context, canvas, marks, text, { face, tracking, capFraction, 
 
   const capPixels = capRatio * fontPixels;
   const baseline = (canvas.height + capPixels) / 2;
-  const gap = fontPixels * tracking;
-  let cursor = (canvas.width - width) / 2;
+  const run = justify
+    ? justifyRun(context, text, fontPixels, tracking, usableWidth)
+    : { stretch: 1, gap: fontPixels * tracking };
+  let cursor = justify ? (canvas.width - usableWidth) / 2 : (canvas.width - width) / 2;
 
   context.textAlign = 'left';
   context.textBaseline = 'alphabetic';
   context.fillStyle = MASK_INK;
+  // Растяжение живёт в преобразовании холста, а ширина буквы меряется без него: `measureText`
+  // отдаёт размер в системе шрифта и текущего преобразования не знает.
+  context.save();
+  context.scale(run.stretch, 1);
   for (const glyph of text) {
-    context.fillText(glyph, cursor, baseline);
-    cursor += glyphAdvance(context, glyph, fontPixels) + gap;
+    context.fillText(glyph, cursor / run.stretch, baseline);
+    cursor += glyphAdvance(context, glyph, fontPixels) * run.stretch + run.gap;
   }
+  context.restore();
   if (marks) erode(context, canvas, marks);
 }
 

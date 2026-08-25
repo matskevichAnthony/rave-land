@@ -1,19 +1,27 @@
 import * as THREE from 'three';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { writeObj } from './export-obj.js';
+import { writeFbx } from './export-fbx.js';
 
 /**
- * Выгрузка сцены в .glb, который открывается на телефоне и в Blender штатным импортом.
+ * Выгрузка сцены в файл: GLB, OBJ с MTL или двоичный FBX.
+ *
+ * Запекание у всех трёх одно, и оно здесь, а форматы живут по своим модулям: разница между
+ * ними в том, как записать готовые треугольники, а не в том, что считать сценой.
  *
  * Наружу уходит не сама сцена, а её копия, потому что кадр и файл живут по разным правилам.
  * Инстансы запекаются в обычную геометрию: положенное им расширение glTF чужие импортёры
  * читают через раз. Трафарет афиши переезжает из альфа-маски в цветовую текстуру: отдельной
  * альфа-карты в glTF нет, и без переноса от лайнапа остаются пустые железки без единой буквы.
  * В файл берутся только меши: искры это точки на своём шейдере, и вне сцены они ничего не
- * значат.
+ * значат. Текстуру трафарета несёт только GLB: ни OBJ, ни FBX не тянут за собой картинку,
+ * и в них от лайнапа остаются плиты, а буквы приходят вместе с glTF.
  */
 
 const GLB_MIME = 'model/gltf-binary';
+const IDENTITY = new THREE.Matrix4();
+
 const PIXEL_STRIDE = 4;
 const RED_CHANNEL = 0;
 // Альфа-маску three читает по зелёному каналу, туда же смотрим и мы.
@@ -23,16 +31,67 @@ const ALPHA_CHANNEL = 3;
 const FULL_CHANNEL = 255;
 const STENCIL_CUTOFF = 0.5;
 
-export async function exportSceneGlb(sources) {
+/**
+ * Сцена файлами: одним для GLB и FBX, двумя для OBJ, которому нужен MTL рядом.
+ *
+ * `stem` это имя без расширения: OBJ пишет имя своего MTL внутрь себя, поэтому имена файлов
+ * знает выгрузка, а не тот, кто их потом сохраняет.
+ */
+export async function exportScene({ sources, format, stem }) {
+  const write = WRITERS[format];
+  if (!write) throw new Error(`формата «${format}» нет: есть ${Object.keys(WRITERS).join(', ')}`);
   const baked = bakeCopy(sources);
   try {
     if (baked.root.children.length === 0) throw new Error('в выгрузку не попал ни один меш');
-    const binary = await new GLTFExporter().parseAsync(baked.root, { binary: true });
-    return new Blob([binary], { type: GLB_MIME });
+    return await write(baked.root, stem);
   } finally {
     baked.dispose();
   }
 }
+
+async function writeGlb(root, stem) {
+  const binary = await new GLTFExporter().parseAsync(root, { binary: true });
+  return [{ name: `${stem}.glb`, blob: new Blob([binary], { type: GLB_MIME }) }];
+}
+
+/**
+ * Части сцены в мировых координатах.
+ *
+ * GLTFExporter забирает граф как есть и матрицы складывает сам, а свои писатели пишут голые
+ * числа: своей матрицы у меша в OBJ нет вовсе, а в FBX она была бы вторым слоем поверх уже
+ * посчитанных координат. Поэтому им геометрия отдаётся уже перенесённой.
+ *
+ * Копии инстансов приходят из запекания уже сведёнными в мировых координатах, у них матрица
+ * единичная и копировать геометрию второй раз незачем.
+ */
+function worldParts(root) {
+  const spent = [];
+  const parts = root.children.map((mesh, order) => {
+    const moved = !mesh.matrix.equals(IDENTITY);
+    const geometry = moved ? mesh.geometry.clone().applyMatrix4(mesh.matrix) : mesh.geometry;
+    if (moved) spent.push(geometry);
+    return { name: `part-${order}`, geometry, material: mesh.material };
+  });
+  return { parts, dispose: () => spent.forEach((geometry) => geometry.dispose()) };
+}
+
+/** Свой писатель формата: запечённая сцена приводится к мировым частям и обратно. */
+function textWriter(write) {
+  return (root, stem) => {
+    const world = worldParts(root);
+    try {
+      return write(world.parts, stem);
+    } finally {
+      world.dispose();
+    }
+  };
+}
+
+const WRITERS = {
+  glb: writeGlb,
+  obj: textWriter(writeObj),
+  fbx: textWriter(writeFbx),
+};
 
 /**
  * Копия сцены под выгрузку: плоский список мешей в мировых координатах.

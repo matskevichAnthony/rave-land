@@ -3,6 +3,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { createGradePass } from '../render/grade.js';
@@ -19,9 +21,24 @@ import { MoshPass } from './pass-mosh.js';
  * поверх готового видео так не умеет: там движение приходится угадывать блочным поиском.
  */
 
-const BLOOM_SCALE = 0.5;
+// Доля буфера, а не холста: свечение обязано мерить кадр теми же долями при любой плотности.
+// От холста оно мерило себя мимо: на экране с полуторной плотностью пикселей мишень свечения
+// выходила третью буфера, а на снимке с тройной — шестой, и одно и то же цветение на фото
+// расплывалось вдвое шире, чем его подобрали глазами.
+const BLOOM_SCALE = 1 / 3;
 const BLOOM_RADIUS = 0.7;
 const BLOOM_THRESHOLD = 0.72;
+
+// Затенение меряет стык в метрах зала, а не в пикселях кадра: полметра это щель под бочкой
+// и складка щебня, и на таком радиусе тень садится в стык, а не расползается по стене.
+// Считается оно в половину стороны: тень низкочастотная, её всё равно размывает шумодав, а
+// вчетверо меньше пикселей на трёх проходах GTAO это разница между кадром и половиной кадра.
+const AO = { radiusMetres: 0.7, resolutionScale: 0.5 };
+
+// Диафрагма задаёт, как быстро уходит резкость от точки взгляда, потолок держит дальний план
+// узнаваемым: зал и так стоит в тумане, и размытая вчистую колоннада читается не глубиной, а
+// грязным стеклом. Ручка ходит от нуля до единицы, метры размытия считает потолок.
+const DOF = { aperture: 0.015, maxBlur: 0.02 };
 
 const ROT_CELL_PIXELS = 22;
 const TIME_WRAP_SECONDS = 1000;
@@ -46,16 +63,104 @@ const GRADE = {
 // Разрушение дальнего плана выключено: оно съедает розу и колоннаду, то есть ровно ту
 // глубину, ради которой зал и построен. Ручка на месте, включают её осознанно.
 const KNOB_DEFAULTS = {
+  ao: 0.85,
+  dof: 0.2,
   mosh: 0.5,
   ghost: 0.55,
   chroma: 0.22,
   melt: 0.25,
   rot: 0,
   bloom: 0.9,
+  vignette: GRADE.vignette,
   grain: 0.05,
 };
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+/**
+ * Сцена и её глубина: наружу уходит та текстура, в которую проход только что писал.
+ *
+ * Композитор не закрепляет буферы за проходами: каждый обмен переставляет чтение и запись, а
+ * во втором буфере лежит своя копия текстуры глубины, в которую не пишет никто. Пока между
+ * сценой и разрушением не стоял ни один проход с обменом, глубину можно было брать из буфера
+ * чтения по позиции в цепочке. Затенение стоит там первым и обмен делает, поэтому глубину
+ * теперь раздаёт тот, кто её и пишет: иначе датамош тянет кадр по пустой чужой глубине, и
+ * ни один счётчик этого не показывает.
+ */
+class ScenePass extends RenderPass {
+  constructor(scene, camera, depthTexture) {
+    super(scene, camera);
+    this.depthTexture = depthTexture;
+  }
+
+  render(renderer, writeBuffer, readBuffer, deltaTime, maskActive) {
+    this.depthTexture = readBuffer.depthTexture;
+    super.render(renderer, writeBuffer, readBuffer, deltaTime, maskActive);
+  }
+}
+
+/**
+ * Затенение в стыках: без него ни бочка, ни обломок не касаются пола, а стоят в ровном свете.
+ *
+ * Своих нормалей проход не рисует. Штатно он обходит ради них всю геометрию второй раз, а в
+ * кадре пролёта и без того две сотни вызовов отрисовки при бюджете ровно в двести. Нормали
+ * выводятся из глубины сцены, и глубина эта та же самая, по которой работает разрушение:
+ * одна на весь кадр, а не своя у каждого прохода.
+ */
+class AoPass extends GTAOPass {
+  constructor(scene, camera, width, height, depthSource) {
+    super(scene, camera, width * AO.resolutionScale, height * AO.resolutionScale);
+    this.depthSource = depthSource;
+    // Мишень нормалей конструктор уже собрал, и здесь проход узнаёт, что G-буфер ему дают
+    // снаружи. Раньше первого кадра: набор дефайнов шейдера меняется именно тут.
+    this.setGBuffer(depthSource.depthTexture);
+    this.updateGtaoMaterial({ radius: AO.radiusMetres });
+  }
+
+  setSize(width, height) {
+    super.setSize(width * AO.resolutionScale, height * AO.resolutionScale);
+  }
+
+  render(renderer, writeBuffer, readBuffer, deltaTime, maskActive) {
+    const depth = this.depthSource.depthTexture;
+    this.gtaoMaterial.uniforms.tDepth.value = depth;
+    this.pdMaterial.uniforms.tDepth.value = depth;
+    super.render(renderer, writeBuffer, readBuffer, deltaTime, maskActive);
+  }
+}
+
+/**
+ * Расфокус вне точки взгляда: сильнейший признак того, что кадр сняли, а не отрисовали.
+ *
+ * Глубину проход берёт готовую, а не рисует сцену второй раз материалом глубины, как делает
+ * штатный: второй обход зала стоит столько же вызовов отрисовки, сколько сам зал. Шейдер боке
+ * читает обычную текстуру глубины напрямую, если снять с него распаковку, и тогда расфокус
+ * стоит одного полноэкранного прохода.
+ */
+class DofPass extends BokehPass {
+  constructor(scene, camera, depthSource) {
+    super(scene, camera, { aperture: DOF.aperture, maxblur: 0 });
+    this.depthSource = depthSource;
+    this.materialBokeh.defines.DEPTH_PACKING = 0;
+    this.materialBokeh.needsUpdate = true;
+  }
+
+  // Мишень глубины родителя осталась в единицу стороны: в неё больше никто не пишет, и растить
+  // её вместе с кадром значит держать полноразмерный буфер ради ничего.
+  setSize(width, height) {
+    this.uniforms.aspect.value = width / height;
+  }
+
+  render(renderer, writeBuffer, readBuffer) {
+    this.uniforms.tColor.value = readBuffer.texture;
+    this.uniforms.tDepth.value = this.depthSource.depthTexture;
+    this.uniforms.nearClip.value = this.camera.near;
+    this.uniforms.farClip.value = this.camera.far;
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
+    if (!this.renderToScreen) renderer.clear();
+    this._fsQuad.render(renderer);
+  }
+}
 
 /**
  * Финальное разрушение одним полноэкранным проходом.
@@ -183,14 +288,14 @@ const TRIP_SHADER = {
 };
 
 class TripPass extends ShaderPass {
-  constructor(mosh) {
+  constructor(mosh, depthSource) {
     super(TRIP_SHADER);
     this.mosh = mosh;
+    this.depthSource = depthSource;
   }
 
   render(renderer, writeBuffer, readBuffer, deltaTime, maskActive) {
-    // Глубину пишет RenderPass, и пишет он именно в буфер чтения
-    this.uniforms.tDepth.value = readBuffer.depthTexture;
+    this.uniforms.tDepth.value = this.depthSource.depthTexture;
     this.uniforms.tMosh.value = this.mosh.texture;
     super.render(renderer, writeBuffer, readBuffer, deltaTime, maskActive);
   }
@@ -233,8 +338,28 @@ function tuneGrade(grade) {
   );
 }
 
-function createControls({ mosh, trip, bloom, grade }) {
+function createControls({ ao, dof, mosh, trip, bloom, grade }) {
   const knobs = {
+    ao: {
+      label: 'AO: тень в стыках и складках',
+      min: 0,
+      max: 1,
+      step: 0.02,
+      get: () => ao.blendIntensity,
+      set: (value) => {
+        ao.blendIntensity = value;
+      },
+    },
+    dof: {
+      label: 'DOF: расфокус вне точки взгляда',
+      min: 0,
+      max: 1,
+      step: 0.01,
+      get: () => dof.uniforms.maxblur.value / DOF.maxBlur,
+      set: (value) => {
+        dof.uniforms.maxblur.value = value * DOF.maxBlur;
+      },
+    },
     mosh: {
       label: 'MOSH: блоки тянет по вектору сцены',
       min: 0,
@@ -296,6 +421,16 @@ function createControls({ mosh, trip, bloom, grade }) {
         bloom.strength = value;
       },
     },
+    vignette: {
+      label: 'VIGNETTE: затемнение по краю кадра',
+      min: 0,
+      max: 1,
+      step: 0.02,
+      get: () => grade.uniforms.uVignette.value,
+      set: (value) => {
+        grade.uniforms.uVignette.value = value;
+      },
+    },
     grain: {
       label: 'GRAIN: зерно плёнки',
       min: 0,
@@ -319,8 +454,8 @@ function createControls({ mosh, trip, bloom, grade }) {
 export function createEffects({ renderer, scene, camera }) {
   const buffer = renderer.getDrawingBufferSize(new THREE.Vector2());
   // Без текстуры глубины у композитора глубину не прочитать: буфер глубины по умолчанию
-  // это renderbuffer, а из него шейдер не берёт. Второй буфер композитора клонируется вместе
-  // со своей текстурой, поэтому проходы читают глубину того буфера, в который писал RenderPass.
+  // это renderbuffer, а из него шейдер не берёт. Второй буфер композитора клонирует эту
+  // текстуру, а не делит её, поэтому какая из двух глубин свежая, знает только `ScenePass`.
   const sceneTarget = new THREE.WebGLRenderTarget(buffer.x, buffer.y, {
     type: THREE.HalfFloatType,
     depthTexture: new THREE.DepthTexture(buffer.x, buffer.y),
@@ -328,8 +463,11 @@ export function createEffects({ renderer, scene, camera }) {
 
   const composer = new EffectComposer(renderer, sceneTarget);
 
-  const mosh = new MoshPass();
-  const trip = new TripPass(mosh);
+  const scenePass = new ScenePass(scene, camera, sceneTarget.depthTexture);
+  const ao = new AoPass(scene, camera, buffer.x, buffer.y, scenePass);
+  const dof = new DofPass(scene, camera, scenePass);
+  const mosh = new MoshPass(scenePass);
+  const trip = new TripPass(mosh, scenePass);
   const bloom = new UnrealBloomPass(
     new THREE.Vector2(buffer.x * BLOOM_SCALE, buffer.y * BLOOM_SCALE),
     KNOB_DEFAULTS.bloom,
@@ -340,15 +478,20 @@ export function createEffects({ renderer, scene, camera }) {
   tuneGrade(grade);
   const smaa = new SMAAPass();
 
-  // Порядок: сцена отдаёт цвет и глубину, датамош копит себя на свежей глубине, трип-проход
-  // собирает разрушение ещё в линейном HDR, чтобы свечение подхватило сами следы, и только
-  // потом тонмаппинг и цветокоррекция, иначе зерно размылось бы свечением.
+  // Порядок: сцена отдаёт цвет и глубину, затенение садится в стыки и расфокус уводит всё
+  // вне точки взгляда — обе правки оптические и обязаны лечь до разрушения, иначе датамош
+  // тянет уже затенённую картинку и тень читается грязью. Дальше датамош копит себя на
+  // свежей глубине, трип-проход собирает разрушение ещё в линейном HDR, чтобы свечение
+  // подхватило сами следы, и только потом тонмаппинг и цветокоррекция, иначе зерно
+  // размылось бы свечением.
   //
   // Сглаживание стоит после тонмаппинга и до цветокоррекции: SMAA ищет края по готовым
   // экранным цветам, а зерно обязано лечь поверх него, иначе оно само сгладится в кисель.
   // Зал состоит ровно из того, что рвётся лесенкой: прутья розы, рёбра свода, звенья цепей
   // и фаска заголовка.
-  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(scenePass);
+  composer.addPass(ao);
+  composer.addPass(dof);
   composer.addPass(mosh);
   composer.addPass(trip);
   composer.addPass(bloom);
@@ -356,7 +499,7 @@ export function createEffects({ renderer, scene, camera }) {
   composer.addPass(smaa);
   composer.addPass(grade);
 
-  const controls = createControls({ mosh, trip, bloom, grade });
+  const controls = createControls({ ao, dof, mosh, trip, bloom, grade });
 
   const depthProbe = createDepthProbe({ renderer, scene, camera });
 
@@ -373,9 +516,13 @@ export function createEffects({ renderer, scene, camera }) {
   };
 
   const resize = (width, height) => {
+    // Плотность буфера ведёт рендерер: снимок поднимает её на один кадр, и мишени
+    // постобработки обязаны вырасти вместе с ним, иначе крупный кадр соберётся из мелких.
+    composer.setPixelRatio(renderer.getPixelRatio());
     composer.setSize(width, height);
     // Композитор раздал свой размер всем проходам, поэтому уменьшенное свечение возвращаем после
-    bloom.setSize(width * BLOOM_SCALE, height * BLOOM_SCALE);
+    const ratio = renderer.getPixelRatio();
+    bloom.setSize(width * ratio * BLOOM_SCALE, height * ratio * BLOOM_SCALE);
     depthProbe.setSize(width, height);
   };
 
@@ -385,7 +532,7 @@ export function createEffects({ renderer, scene, camera }) {
   resize(screen.x, screen.y);
 
   return {
-    render(dt, elapsed, motion) {
+    render(dt, elapsed, motion, focusMetres) {
       camera.updateMatrixWorld();
       view.copy(camera.matrixWorld).invert();
       viewProjection.multiplyMatrices(camera.projectionMatrix, view);
@@ -400,6 +547,7 @@ export function createEffects({ renderer, scene, camera }) {
       feedMotion(trip, power);
       trip.uniforms.uNear.value = camera.near;
       trip.uniforms.uFar.value = camera.far;
+      dof.uniforms.focus.value = focusMetres;
       const time = Number.isFinite(elapsed) ? elapsed % TIME_WRAP_SECONDS : 0;
       trip.uniforms.uTime.value = time;
       grade.uniforms.uTime.value = time;

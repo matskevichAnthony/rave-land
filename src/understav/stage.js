@@ -7,7 +7,7 @@
 
 import * as THREE from 'three';
 import { BEAT, PALETTE } from './palette.js';
-import { EMBER_RING, KEY_LIGHT } from './nave.js';
+import { CORRIDOR, EMBER_RING, KEY_LIGHT, NAVE } from './nave.js';
 
 const TAU = Math.PI * 2;
 const HALF = 0.5;
@@ -31,17 +31,50 @@ const SHADOW = {
   normalBias: 0.06,
 };
 // Полусфера светит всюду и не отбрасывает ничего: на прежней силе она поднимала каждую тень
-// до лавандового серого, и в кадре не оставалось ни одного чёрного пикселя.
-const HEMI = { intensity: 0.2 };
+// до лавандового серого, и в кадре не оставалось ни одного чёрного пикселя. Низ она красит
+// железом, а не пустотой: с чёрным низом всё, что смотрит вбок и вниз, уходило в ноль, и
+// колоннада читалась силуэтом без объёма.
+const HEMI = { intensity: 0.3, ground: PALETTE.iron };
 const EMBER = {
-  intensity: 24,
-  distance: 22,
+  intensity: 26,
+  // Радиус дотягивается до колоннады и стен зала: на прежних двадцати двух свет бочек
+  // кончался, не дойдя до боковых нефов, и по краям кадра стоял чёрный провал.
+  distance: 30,
   decay: 2,
   height: 1.5,
   breath: 0.4,
   flicker: 0.18,
   flickerSpeed: [3.1, 5.7],
   phaseStep: 2,
+};
+/**
+ * Зарево зала, уходящее в коридор.
+ *
+ * До него коридор не освещал никто: жаровни и факелы там нарисованная эмиссия, а ключ и
+ * бочки стоят в зале и до прохода не дотягиваются. Стены, колонны, цепи и колючка выходили
+ * в кадр чёрными силуэтами, и весь пролёт шёл по чёрной трубе.
+ *
+ * Источник стоит не в зале, а сразу за порогом коридора и светит от зала вдаль, то есть
+ * навстречу летящей камере: так проход получает не заливку, а контровой очерк по всему, что
+ * торчит в него поперёк, а кадр афиши не меняется вовсе — конус смотрит от зала, и в зал не
+ * попадает ни один его пиксель.
+ *
+ * Спад пологий (`decay` меньше единицы) намеренно. Физический квадрат на ста метрах прохода
+ * гасит свет в ноль на первой же трети, и дальше остаётся цвет тумана; глубину дальнего конца
+ * тут и без того держат туман и затемнение реквизита, а от источника нужна дотяжка.
+ *
+ * Тени он не бросает: карта на сто метров прохода стоила бы дороже всего, что она бы там
+ * нарисовала.
+ */
+const PORTAL = {
+  intensity: 190,
+  distance: CORRIDOR.farZ + 22,
+  angle: 0.4,
+  penumbra: 0.9,
+  decay: 0.6,
+  position: [0, 6, NAVE.frontZ + 12],
+  target: [0, 2.4, CORRIDOR.farZ * 0.85],
+  breath: 0.18,
 };
 const TRIP = {
   intensity: 60,
@@ -55,6 +88,20 @@ const TRIP = {
   sweepSpeed: 0.11,
   breath: 0.25,
 };
+
+/**
+ * Ширина холста, при которой его буфер выходит чётным.
+ *
+ * H.264 кодирует пиксели парами, и нечётную сторону буфера не берёт ни кодировщик записи,
+ * ни mp4. Плотность буфера дробная, поэтому чётность считается по нему, а не по холсту:
+ * тысяча CSS-точек при полутора даёт полторы тысячи, а девятьсот девяносто восемь уже
+ * тысячу четыреста девяносто семь. Дешевле отдать кадру пару точек, чем потом лечить дубль.
+ */
+function evenBuffer(size, ratio) {
+  let css = Math.floor(size);
+  while (css > 1 && Math.floor(css * ratio) % 2 !== 0) css -= 1;
+  return css;
+}
 
 function createKeyLight() {
   const light = new THREE.DirectionalLight(PALETTE.moon, KEY.intensity);
@@ -88,6 +135,20 @@ function createEmberLights() {
     );
     return light;
   });
+}
+
+function createPortalLight() {
+  const light = new THREE.SpotLight(
+    PALETTE.emberHalo,
+    PORTAL.intensity,
+    PORTAL.distance,
+    PORTAL.angle,
+    PORTAL.penumbra,
+    PORTAL.decay,
+  );
+  light.position.set(...PORTAL.position);
+  light.target.position.set(...PORTAL.target);
+  return light;
 }
 
 function createTripLight() {
@@ -128,15 +189,27 @@ export function createStage({ mount }) {
   const emberLights = createEmberLights();
   for (const light of emberLights) scene.add(light);
 
-  const hemiLight = new THREE.HemisphereLight(PALETTE.moon, PALETTE.void, HEMI.intensity);
+  const hemiLight = new THREE.HemisphereLight(PALETTE.moon, HEMI.ground, HEMI.intensity);
   scene.add(hemiLight);
+
+  const portalLight = createPortalLight();
+  scene.add(portalLight, portalLight.target);
 
   const tripLight = createTripLight();
   scene.add(tripLight, tripLight.target);
 
-  function resize(width, height) {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO));
-    renderer.setSize(width, height);
+  /**
+   * Размер холста в CSS-метрах и плотность его буфера.
+   *
+   * Экранная плотность прижата потолком ради кадров в секунду, но снимок кадрами не платит:
+   * он один. Поэтому `density` умеет только поднимать её выше экранной, и снимок выходит
+   * крупнее окна, в котором его нашли.
+   */
+  function resize(width, height, density = 0) {
+    const screen = Math.min(window.devicePixelRatio, MAX_PIXEL_RATIO);
+    const ratio = Math.max(screen, density);
+    renderer.setPixelRatio(ratio);
+    renderer.setSize(evenBuffer(width, ratio), evenBuffer(height, ratio));
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   }
@@ -151,6 +224,7 @@ export function createStage({ mount }) {
       emberLights[index].intensity = EMBER.intensity
         * (1 + EMBER.breath * breath + EMBER.flicker * flicker);
     }
+    portalLight.intensity = PORTAL.intensity * (1 - PORTAL.breath * (1 - breath));
     tripLight.intensity = TRIP.intensity * (1 - TRIP.breath * (1 - breath));
     tripLight.target.position.x = TRIP.target[0] + Math.sin(elapsed * TRIP.sweepSpeed) * TRIP.sweep;
   }

@@ -30,6 +30,7 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         akhet: resolve(import.meta.dirname, 'akhet.html'),
         audio: resolve(import.meta.dirname, 'audio-probe.html'),
+        cards: resolve(import.meta.dirname, 'cards.html'),
         generator: resolve(import.meta.dirname, 'generator.html'),
         status: resolve(import.meta.dirname, 'status.html'),
         toolbox: resolve(import.meta.dirname, 'toolbox.html'),

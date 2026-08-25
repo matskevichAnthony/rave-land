@@ -166,6 +166,32 @@ export function createSurfaceGrunge({
   return texture;
 }
 
+const wearMaps = new Map();
+
+/**
+ * Карта износа с диска: снятый камень вместо нарисованного шума.
+ *
+ * Трещина и потёк это связная линия через полкадра, и россыпь пятен на canvas её не собирает
+ * ни при каком их числе. Поэтому крупные поверхности носят плёнку, а рисованный шум остаётся
+ * там, где нужен свой на каждый сид.
+ *
+ * Шероховатость и рельеф это таблица чисел, а не картинка: перевод из sRGB в линейное
+ * пространство съел бы у неё половину диапазона, и камень снова стал бы ровным.
+ *
+ * Файл грузится один раз на страницу, наружу уходит копия: сид пересобирает зал заново, а
+ * камни на диске от этого не меняются.
+ */
+export function loadWearMap(url) {
+  if (!wearMaps.has(url)) {
+    const loaded = new THREE.TextureLoader().load(url);
+    loaded.wrapS = THREE.RepeatWrapping;
+    loaded.wrapT = THREE.RepeatWrapping;
+    loaded.colorSpace = THREE.NoColorSpace;
+    wearMaps.set(url, loaded);
+  }
+  return wearMaps.get(url).clone();
+}
+
 /**
  * Копия карты со своим шагом повтора: шаг меряется метрами поверхности.
  *

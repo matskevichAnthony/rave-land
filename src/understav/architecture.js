@@ -17,11 +17,14 @@ import { createFloorSmoke, createGodRay, createHaze, createSparks } from './embe
 import { createCat } from './cat.js';
 import { createRandom } from './random.js';
 import { buildInstanced } from '../procedural/instancing.js';
+import { DRUM_KINDS, drumGeometry } from '../procedural/drum.js';
+import { createFireVolume } from '../procedural/fire-volume.js';
+import { createBarbedWire } from './wire.js';
 import { planChain } from '../procedural/chain.js';
 import { rgba } from '../procedural/canvas-texture.js';
 import {
   createAtlas,
-  createSurfaceGrunge,
+  loadWearMap,
   paintPlacard,
   paintStains,
   paintStencil,
@@ -163,16 +166,15 @@ const RIM_SEGMENTS = { tube: 4, ring: 44 };
 const HOLE_SEGMENTS = 32;
 
 const BARREL = {
-  extra: [3, 6],
+  extra: [8, 13],
   radius: 0.45,
   height: 1.1,
   jitter: 0.9,
   lean: 0.05,
-  coalRadius: 0.38,
-  coalLift: 0.99,
-  emissive: 2.4,
-  swing: 1.5,
-  beatShare: 0.7,
+  // Углей в бочке нет: их работу целиком делает объёмное пламя. Светящийся диск в горловине
+  // и был той самой мигающей бочкой, за которую сцену ругали, а вдобавок одинокое яркое пятно
+  // в полкадра растаскивает CHROMA: красный канал уходит на два десятка пикселей в сторону,
+  // синий в другую, и от углей остаётся зелёный блин поперёк огня.
 };
 
 const JUNK = {
@@ -223,8 +225,9 @@ const GRUNGE = {
   tile: 3.4,
   props: 2.4,
   bump: 0.08,
-  stone: { spots: 70, streaks: 22, grain: 2400, range: [0.5, 1] },
-  metal: { spots: 54, streaks: 30, grain: 3200, range: [0.32, 1] },
+  crack: 'assets/textures/plaster-crack.png',
+  drip: 'assets/textures/concrete-drip.png',
+  scratch: 'assets/textures/metal-scratch.png',
 };
 
 /**
@@ -298,6 +301,23 @@ const SIGN = {
   stencilRatio: 1.4,
 };
 
+// Пол подхода: восемь клеток на плитку, тон каждой чуть свой, поверх крап камня и грязь.
+// Метры клетки задаются повтором текстуры по плите, а не размером холста.
+const FLOOR_TILE = {
+  textureSize: 512,
+  cells: 8,
+  cellMeters: 0.95,
+  tone: [0.62, 1.05],
+  specks: 26,
+  speck: [0.006, 0.05],
+  speckAlpha: 0.5,
+  grime: 34,
+  grimeRadius: [0.05, 0.3],
+  grimeAlpha: [0.06, 0.3],
+  darkShare: 0.65,
+  anisotropy: 8,
+};
+
 const CHECKER = {
   textureSize: 256,
   cells: 8,
@@ -315,12 +335,12 @@ const CROSS = {
   bar: 0.13,
   arm: 0.62,
   mount: 5.6,
-  floorCount: [3, 6],
+  floorCount: [6, 10],
   floorRadius: [10, 15],
   floorScale: [0.7, 1.4],
   tilt: 0.4,
   facing: 0.6,
-  procession: [5, 9],
+  procession: [8, 13],
   processionX: [2.2, 6.8],
   processionZ: [-20.5, -9],
   processionScale: [0.7, 1.5],
@@ -386,20 +406,43 @@ const CORRIDOR_TORCH = {
 // `seamBlend` это метры, на которых плита коридора гаснет к стыку с залом. Без него на
 // стыке двух разных материалов ложится светлая полоса, и в вертикальном кадре она режет
 // кадр ровно под лайнапом.
-const PATH = { steps: 64, near: 0.055, far: 0.012, falloff: 2.1, warmth: 3, seamBlend: 18 };
+const PATH = { steps: 64, near: 0.13, far: 0.045, falloff: 1.6, warmth: 3, seamBlend: 18 };
 const PATH_COLD = new THREE.Color(PALETTE.moon);
 const PATH_WARM = new THREE.Color(1, 1, 1);
 
 // Реквизит коридора гаснет вдаль вместе с полом, но не до нуля: в чёрном пропадает силуэт,
 // а вместе с ним и глубина, ради которой коридор и построен. Огонь гаснет мягче камня:
 // он и в темноте обязан оставаться точкой, иначе дальний конец превращается в пустоту.
-const CORRIDOR_DIM = 0.32;
-const FLAME_DIM = 0.38;
+const CORRIDOR_DIM = 0.62;
+const FLAME_DIM = 0.55;
 
 // Пламя рисуется мягким пятном на квадрате, а не гранёным камешком: многогранник в упор
 // читается лоуполли-обломком и убивает огонь. Ореол это тот же квадрат крупнее и тусклее,
 // он идёт вторым инстансом в тот же меш и потому ничего не стоит по вызовам.
-const FLAME = { textureSize: 64, haloScale: 2.8, haloShade: 0.16, gain: 2.6 };
+const FLAME = { textureSize: 96, haloScale: 2.8, haloShade: 0.16, gain: 1.5 };
+// Огонь жаровен объёмный, а не щит с картинкой: по коридору камера идёт вплотную мимо них, и
+// в упор щит выдаёт себя тем, что разворачивается следом за взглядом. Факелам и свечам объём
+// не нужен, они мелкие и стоят далеко, а объёмный огонь стоит пикселей, а не треугольников.
+// `sink` это метры, на которые основание пламени утоплено в жаровню: у объёмного огня низ
+// коробки и есть низ пламени, и поставленный по краю он висит над углями отдельным телом.
+const FIRE_VOLUME = { spread: 2.9, sink: 0.22, gain: 0.3, magnitude: 1.45, speed: 0.45 };
+
+// Колючка поперёк коридора: чёрная, читается силуэтом на огне жаровен и на свете из портала.
+// Прогоны идут парами выше и ниже линии полёта, чтобы камера проходила между ними, а не
+// сквозь прут. Отрезок по Z берётся у самого коридора, а не выписан числами заново.
+// Огонь бочек у алтаря: он в кадре афиши, поэтому объём нужен ему в первую очередь. Пламя
+// шире и ниже коридорного: бочка стоит на полу зала, и высокий язык лезет в лайнап.
+// Высота держится в полтора роста самой бочки. Втрое выше неё язык переставал читаться огнём
+// в бочке: луч набирал плотность на всю высоту коробки, цветение растягивало её ещё, и по
+// кругу алтаря вставали жёлтые столбы вдвое выше всего, что рядом. Свет от бочек эта правка
+// не трогает: его дают точечные источники сцены, и он остался прежним.
+const BARREL_FIRE = { width: 1.25, height: 1.7, sink: 0.26, gain: 0.3, magnitude: 1.25, speed: 0.4 };
+
+const CORRIDOR_WIRE = { count: 5, width: 13.5, high: 5.4, low: 1.35, fromZ: 34, toZ: 96 };
+
+// Дым коридора: тот же приземный дым, что в зале, но полосой по всей длине пути. Без него
+// свет жаровен висит в пустоте, и коридор читается чёрной трубой, а не воздухом.
+const CORRIDOR_SMOKE = { layers: 8, width: 12, farZ: 26, nearZ: 96, opacity: 0.1 };
 
 // Пятно света под жаровней. Седьмого источника в бюджете нет, а огонь без отсвета на полу
 // висит наклейкой, поэтому свет здесь нарисован: мягкий круг аддитивом под каждым огнём.
@@ -478,8 +521,6 @@ const BRAZIER = {
   jitter: 0.7,
   radius: 0.5,
   height: 0.9,
-  emberRadius: 0.44,
-  emberLift: 0.94,
   flame: [0.4, 0.86],
   flameLift: 1.25,
   litFull: 52,
@@ -499,20 +540,10 @@ const CANDLE = {
   pool: 1.3,
 };
 
-const BANNER = {
-  count: [4, 7],
-  x: 4.55,
-  top: 6.3,
-  zRange: [38, 76],
-  width: [1.4, 2.2],
-  height: [2.4, 3.6],
-  shade: 0.85,
-};
-
 // Кресты в проходе: те же, что в зале, только реже и мельче. Процессия крестов доводит
 // мотив зала до самого коридора, поэтому дорога читается его частью, а не подъездом к нему.
 const PATH_CROSS = {
-  count: [3, 5],
+  count: [6, 9],
   zRange: [40, 84],
   x: [2.3, 4.2],
   scale: [0.7, 1.2],
@@ -535,7 +566,12 @@ const SPAN_CHAIN = {
 
 const GLASS = { emissive: 1.3, swing: 0.2 };
 const GLASS_TINT = new THREE.Color(PALETTE.moon);
-const FLAME_TINT = new THREE.Color(PALETTE.emberHalo);
+// Множитель огня один на всю сцену и он тёплый почти белый. Красным его держать нельзя: цвет
+// пламени несут сами картинки, и объёмная растяжка, и язык факела оранжевые, а красный
+// множитель обнуляет им зелёный канал, оставляя ровное пятно без формы. Кратность у объёма
+// доля, а не разы: луч копит растяжку двадцатью шагами и набирает втрое больше яркости кадра,
+// а цветение подхватывает всё ярче 0.72, и жаровня с бочкой светились белым шаром на полкадра.
+const FIRE_TINT = new THREE.Color(PALETTE.flame);
 const FLICKER_SPEED = [3.7, 6.3];
 
 function clamp(value, min, max) {
@@ -595,7 +631,7 @@ function createGeometries() {
   };
 }
 
-function createMaterials({ roseGlow, checker, fireGlow }) {
+function createMaterials({ roseGlow, checker, checkerFloor, fireGlow }) {
   const concrete = new THREE.MeshStandardMaterial({
     color: PALETTE.concrete,
     roughness: 0.96,
@@ -623,11 +659,15 @@ function createMaterials({ roseGlow, checker, fireGlow }) {
     // одинаково яркого и у зала, и в темноте. Никакой градиент по диффузу этого не перебивал.
     // Основа взята светлой намеренно: цвет вершин может только гасить, и на тёмном бетоне
     // весь градиент лёг бы в первые проценты яркости, то есть в чёрное.
-    path: new THREE.MeshBasicMaterial({ color: PALETTE.bone, vertexColors: true }),
+    // Плита подхода: шахматка в карте, свет в цвете вершин. Свой цвет материала белый,
+    // иначе он второй раз красит уже покрашенную текстуру.
+    path: new THREE.MeshBasicMaterial({ map: checkerFloor, vertexColors: true }),
     floor: new THREE.MeshStandardMaterial({
       color: PALETTE.iron,
-      roughness: 0.34,
-      metalness: 0.22,
+      // Пол мокрый, но не полированный: на низкой шероховатости он собирал вокруг алтаря
+      // ровное зеркало без единой царапины, и подделка читалась раньше самой сцены.
+      roughness: 0.62,
+      metalness: 0.12,
     }),
     iron: new THREE.MeshStandardMaterial({
       color: PALETTE.iron,
@@ -662,12 +702,6 @@ function createMaterials({ roseGlow, checker, fireGlow }) {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
       fog: false,
-    }),
-    coal: new THREE.MeshStandardMaterial({
-      color: PALETTE.void,
-      emissive: PALETTE.ember,
-      emissiveIntensity: BARREL.emissive,
-      roughness: 1,
     }),
     reflection: new THREE.MeshBasicMaterial({
       map: roseGlow,
@@ -757,7 +791,15 @@ function createFireGlowTexture() {
   return texture;
 }
 
-/** Язык пламени: мягкое пятно с белым ядром, растянутое инстансом в каплю огня. */
+/**
+ * Язык пламени: силуэт огня, а не круглое пятно.
+ *
+ * Радиальная растяжка, растянутая инстансом, даёт светящийся овал: огня в нём ровно столько
+ * же, сколько в фонаре. Форму огню держит контур, поэтому язык рисуется путём: широкое
+ * основание, перегиб и вытянутое остриё, которое уводит вбок. Заливка идёт снизу вверх, от
+ * белой сердцевины к оранжевому краю и в ноль на самом кончике, а вокруг остаётся мягкий
+ * ореол, иначе вырезанный контур читается наклейкой.
+ */
 function createFlameTexture() {
   const size = FLAME.textureSize;
   const canvas = document.createElement('canvas');
@@ -765,13 +807,27 @@ function createFlameTexture() {
   canvas.height = size;
   const ctx = canvas.getContext('2d');
   const center = size * HALF;
-  const flame = ctx.createRadialGradient(center, center, 0, center, center, center);
-  flame.addColorStop(0, rgba(PALETTE.bone, 1));
-  flame.addColorStop(0.44, rgba(PALETTE.bone, 0.82));
-  flame.addColorStop(0.72, rgba(PALETTE.emberHalo, 0.42));
-  flame.addColorStop(1, rgba(PALETTE.ember, 0));
-  ctx.fillStyle = flame;
+
+  const halo = ctx.createRadialGradient(center, size * 0.62, 0, center, size * 0.62, center);
+  halo.addColorStop(0, rgba(PALETTE.emberHalo, 0.34));
+  halo.addColorStop(1, rgba(PALETTE.ember, 0));
+  ctx.fillStyle = halo;
   ctx.fillRect(0, 0, size, size);
+
+  ctx.beginPath();
+  ctx.moveTo(center, size);
+  ctx.bezierCurveTo(size * 0.94, size * 0.8, size * 0.78, size * 0.46, size * 0.56, 0);
+  ctx.bezierCurveTo(size * 0.4, size * 0.4, size * 0.14, size * 0.62, size * 0.12, size * 0.84);
+  ctx.bezierCurveTo(size * 0.16, size * 0.96, size * 0.3, size, center, size);
+  ctx.closePath();
+  const body = ctx.createLinearGradient(0, size, 0, 0);
+  body.addColorStop(0, rgba(PALETTE.ember, 0.35));
+  body.addColorStop(0.18, rgba(PALETTE.bone, 1));
+  body.addColorStop(0.5, rgba(PALETTE.emberHalo, 0.85));
+  body.addColorStop(0.82, rgba(PALETTE.ember, 0.38));
+  body.addColorStop(1, rgba(PALETTE.ember, 0));
+  ctx.fillStyle = body;
+  ctx.fill();
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -816,8 +872,8 @@ function wearAndTear(ctx, rng, size) {
   ctx.globalCompositeOperation = 'source-over';
 }
 
-function createTexture(paint) {
-  const size = CHECKER.textureSize;
+function createTexture(paint, textureSize = CHECKER.textureSize) {
+  const size = textureSize;
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -828,6 +884,73 @@ function createTexture(paint) {
 }
 
 /** Шахматка во всё поле: она ложится на пол, где по ней никто не читает буквы. */
+/**
+ * Шахматный пол подхода: тот же приём, что у полотен, но плитка целая и грязная.
+ *
+ * Клетка не рисуется ровной заливкой: у камня свой крап, у затёртого пола свои пятна, и без
+ * них шахматка в кадре читается служебной сеткой из редактора. Всё кладётся с заворотом за
+ * край, иначе на стыке плитки видно шов.
+ */
+function createCheckerFloorTexture(rng) {
+  return createTexture((ctx, size) => {
+    paintCheckerStone(ctx, rng, size);
+    grindFloor(ctx, rng, size);
+  }, FLOOR_TILE.textureSize);
+}
+
+/** Клетки с разбросом тона и крапом камня: соседние плитки не бывают одинаковыми. */
+function paintCheckerStone(ctx, rng, size) {
+  const cell = size / FLOOR_TILE.cells;
+  const stone = new THREE.Color();
+  for (let row = 0; row < FLOOR_TILE.cells; row += 1) {
+    for (let column = 0; column < FLOOR_TILE.cells; column += 1) {
+      const light = (row + column) % 2 === 0;
+      stone.set(light ? PALETTE.bone : PALETTE.void)
+        .multiplyScalar(rng.range(...FLOOR_TILE.tone));
+      ctx.fillStyle = `#${stone.getHexString()}`;
+      ctx.fillRect(column * cell, row * cell, cell, cell);
+      speckleCell(ctx, rng, column * cell, row * cell, cell, light);
+    }
+  }
+}
+
+/** Крап камня: на светлой плитке тёмный, на тёмной светлый, иначе клетка выглядит краской. */
+function speckleCell(ctx, rng, x, y, cell, light) {
+  ctx.fillStyle = rgba(light ? PALETTE.void : PALETTE.bone, FLOOR_TILE.speckAlpha);
+  for (let index = 0; index < FLOOR_TILE.specks; index += 1) {
+    const radius = rng.range(...FLOOR_TILE.speck) * cell;
+    ctx.beginPath();
+    ctx.ellipse(
+      x + rng() * cell,
+      y + rng() * cell,
+      radius,
+      radius * rng.range(0.5, 1),
+      rng() * TAU,
+      0,
+      TAU,
+    );
+    ctx.fill();
+  }
+}
+
+/** Грязь поверх плитки: пятна с заворотом за край, чтобы стык плитки не читался линией. */
+function grindFloor(ctx, rng, size) {
+  for (let index = 0; index < FLOOR_TILE.grime; index += 1) {
+    const radius = rng.range(...FLOOR_TILE.grimeRadius) * size;
+    const x = rng() * size;
+    const y = rng() * size;
+    const dark = rng() < FLOOR_TILE.darkShare;
+    ctx.fillStyle = rgba(dark ? PALETTE.void : PALETTE.rust, rng.range(...FLOOR_TILE.grimeAlpha));
+    for (const shiftX of [-size, 0, size]) {
+      for (const shiftY of [-size, 0, size]) {
+        ctx.beginPath();
+        ctx.ellipse(x + shiftX, y + shiftY, radius, radius * rng.range(0.4, 1), 0, 0, TAU);
+        ctx.fill();
+      }
+    }
+  }
+}
+
 function createCheckerTexture(rng) {
   return createTexture((ctx, size) => {
     paintChecker(ctx, 0, 0, size, size, CHECKER.cells);
@@ -1466,28 +1589,56 @@ function planBarrels(rng) {
     // Закреплённые бочки не выбрасываются никогда: на них смотрят точечные источники.
     const anchored = index < EMBER_RING.anchors.length;
     if (!anchored && onCatRing(x, z)) continue;
-    placed.push({ x, z, lean: rng.range(-BARREL.lean, BARREL.lean) });
+    placed.push({
+      x,
+      z,
+      lean: rng.range(-BARREL.lean, BARREL.lean),
+      kind: rng.pick(DRUM_KINDS),
+      spin: rng() * TAU,
+    });
   }
   return placed;
 }
 
-function buildBarrels(geometries, materials, barrels) {
-  const drums = buildInstanced(geometries.bandY, materials.rust, barrels.length, (item, index) => {
-    const barrel = barrels[index];
-    item.position.set(barrel.x, BARREL.height * HALF, barrel.z);
-    item.rotation.z = barrel.lean;
-    item.scale.set(BARREL.radius, BARREL.height, BARREL.radius);
+/** Огонь в бочках зала: тот же объёмный костёр, что в коридоре, только шире и ниже. */
+function buildBarrelFires(rng, barrels) {
+  return barrels.map((barrel) => {
+    const size = { width: BARREL_FIRE.width, height: BARREL_FIRE.height };
+    const fire = createFireVolume({
+      size,
+      color: FIRE_TINT.clone().multiplyScalar(BARREL_FIRE.gain),
+      seed: rng.range(0, TAU),
+      noise: { magnitude: BARREL_FIRE.magnitude, speed: BARREL_FIRE.speed },
+    });
+    fire.mesh.position.set(barrel.x, BARREL.height - BARREL_FIRE.sink + size.height / 2, barrel.z);
+    return fire;
   });
-  drums.castShadow = true;
-  drums.receiveShadow = true;
+}
 
-  const coals = buildInstanced(geometries.disc, materials.coal, barrels.length, (item, index) => {
-    const barrel = barrels[index];
-    item.position.set(barrel.x, BARREL.height * BARREL.coalLift, barrel.z);
-    item.scale.setScalar(BARREL.coalRadius);
-  });
+/**
+ * Бочки по видам: свой `InstancedMesh` на вид.
+ *
+ * Вид отличается геометрией, а `InstancedMesh` держит одну на все копии, поэтому три вида
+ * это три вызова отрисовки вместо одного. Это и есть вся цена разнообразия: тринадцать
+ * одинаковых бочек по кругу читаются копипастой раньше, чем зритель успевает их сосчитать.
+ */
+function buildBarrels(rng, geometries, materials, barrels) {
+  const drums = DRUM_KINDS.map((kind) => {
+    const family = barrels.filter((barrel) => barrel.kind === kind);
+    if (family.length === 0) return null;
+    const mesh = buildInstanced(drumGeometry({ kind, rng }), materials.rust, family.length,
+      (item, index) => {
+        const barrel = family[index];
+        item.position.set(barrel.x, 0, barrel.z);
+        item.rotation.set(0, barrel.spin, barrel.lean);
+        item.scale.set(BARREL.radius, BARREL.height, BARREL.radius);
+      });
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    return mesh;
+  }).filter(Boolean);
 
-  return [drums, coals];
+  return drums;
 }
 
 function buildPuddles(rng, geometries, materials) {
@@ -1760,22 +1911,13 @@ function planTorches(first, bays) {
   return torches;
 }
 
-function planFlames(torches, braziers, candles) {
+function planFlames(torches, candles) {
   const flames = torches.map((torch) => ({
     x: torch.x,
     y: CORRIDOR_TORCH.y + CORRIDOR_TORCH.flameLift,
     z: torch.z,
     size: CORRIDOR_TORCH.flame,
   }));
-  for (const spot of braziers) {
-    if (!spot.lit) continue;
-    flames.push({
-      x: spot.x,
-      y: BRAZIER.height * spot.size * BRAZIER.flameLift,
-      z: spot.z,
-      size: BRAZIER.flame.map((value) => value * spot.size),
-    });
-  }
   for (const candle of candles) {
     flames.push({
       x: candle.x,
@@ -1785,23 +1927,6 @@ function planFlames(torches, braziers, candles) {
     });
   }
   return flames;
-}
-
-function planBanners(rng) {
-  const count = rng.int(...BANNER.count);
-  const banners = [];
-  for (let index = 0; index < count; index += 1) {
-    const along = (index + HALF) / count;
-    const height = rng.range(...BANNER.height);
-    banners.push({
-      x: rng.sign() * BANNER.x,
-      y: BANNER.top - height * HALF,
-      z: BANNER.zRange[0] + (BANNER.zRange[1] - BANNER.zRange[0]) * along + rng.range(-1.2, 1.2),
-      width: rng.range(...BANNER.width),
-      height,
-    });
-  }
-  return banners;
 }
 
 /** Провисающая цепь: дуга набирается прямыми кусками, прямая между колоннами это труба. */
@@ -1913,7 +2038,7 @@ function buildCorridorStone(rng, geometries, materials, { first, bays, figures }
   return [arches, piers, columns, blocks, chunks, guards, ironwork];
 }
 
-function buildCorridorFire(geometries, materials, flameMaterial, { torches, braziers, candles }) {
+function buildCorridorFire(rng, geometries, materials, flameMaterial, { torches, braziers, candles }) {
   const brackets = buildInstanced(geometries.box, materials.rust, torches.length,
     (item, index) => {
       item.position.set(torches[index].x, CORRIDOR_TORCH.y, torches[index].z);
@@ -1945,11 +2070,6 @@ function buildCorridorFire(geometries, materials, flameMaterial, { torches, braz
       color.set(stems[index].color).multiplyScalar(propLevel(stems[index].z)));
 
   const lit = braziers.filter((spot) => spot.lit);
-  const embers = buildInstanced(geometries.disc, materials.coal, lit.length, (item, index) => {
-    const spot = lit[index];
-    item.position.set(spot.x, BRAZIER.height * spot.size * BRAZIER.emberLift, spot.z);
-    item.scale.setScalar(BRAZIER.emberRadius * spot.size);
-  });
 
   // Свечи светят наравне с жаровнями: огонь, не кладущий пятна под ноги, выглядит наклейкой.
   const glows = [
@@ -1962,8 +2082,29 @@ function buildCorridorFire(geometries, materials, flameMaterial, { torches, braz
     item.scale.setScalar(glow.radius);
   }, (color, index) => color.setScalar(flameLevel(glows[index].z)));
 
-  // Каждому огню идёт пара инстансов: язык и ореол вокруг него.
-  const flamePlan = planFlames(torches, braziers, candles);
+  const fires = lit.map((spot) => {
+    const size = {
+      width: BRAZIER.flame[0] * spot.size * FIRE_VOLUME.spread,
+      height: BRAZIER.flame[1] * spot.size * FIRE_VOLUME.spread,
+    };
+    const flame = createFireVolume({
+      size,
+      // Дальняя жаровня тусклее ближней ровно как весь реквизит коридора: иначе дальний огонь
+      // в чёрном конце горит ярче того, что стоит у зала.
+      color: FIRE_TINT.clone().multiplyScalar(FIRE_VOLUME.gain * flameLevel(spot.z)),
+      seed: rng.range(0, TAU),
+      noise: { magnitude: FIRE_VOLUME.magnitude, speed: FIRE_VOLUME.speed },
+    });
+    flame.mesh.position.set(
+      spot.x,
+      BRAZIER.height * spot.size - FIRE_VOLUME.sink + size.height / 2,
+      spot.z,
+    );
+    return flame;
+  });
+
+  // Факелам и свечам идёт пара инстансов на огонь: язык и ореол вокруг него.
+  const flamePlan = planFlames(torches, candles);
   const flames = buildInstanced(geometries.quad, flameMaterial, flamePlan.length * 2,
     (item, index) => {
       const flame = flamePlan[index >> 1];
@@ -1974,24 +2115,22 @@ function buildCorridorFire(geometries, materials, flameMaterial, { torches, braz
       flameLevel(flamePlan[index >> 1].z) * (index % 2 === 1 ? FLAME.haloShade : 1),
     ));
 
-  return [brackets, bodies, embers, pools, flames];
+  return { parts: [brackets, bodies, pools, flames], fires };
 }
 
+/**
+ * Оснастка коридора: только цепи поперёк прохода.
+ *
+ * Полотнища в шахмату отсюда убраны. Плоский щит с узором на стене прохода читается не флагом
+ * рейва, а иконой в киоте: он единственный предмет коридора с рисунком, и взгляд цепляется за
+ * него как за надпись, которой там нет. Коридор говорит огнём, колючкой и цепями.
+ */
 function buildCorridorRig(rng, geometries, materials, { first, bays }) {
-  const bannerPlan = planBanners(rng);
-  const banners = buildInstanced(geometries.quad, materials.checker, bannerPlan.length,
-    (item, index) => {
-      const banner = bannerPlan[index];
-      item.position.set(banner.x, banner.y, banner.z);
-      item.scale.set(banner.width, banner.height, 1);
-    }, (color, index) =>
-      color.setScalar(propLevel(bannerPlan[index].z) * BANNER.shade));
-
   const links = planCorridorChains(rng, first, bays);
   const chains = buildChain(geometries, materials, links,
     (color, index) => color.setScalar(propLevel(links[index].point.z)));
 
-  return [banners, chains];
+  return [chains];
 }
 
 /**
@@ -2017,13 +2156,25 @@ function buildCorridor(rng, geometries, materials) {
     blending: THREE.AdditiveBlending,
     fog: false,
   });
+  const fire = buildCorridorFire(rng, geometries, materials, flameMaterial, { torches, braziers, candles });
   const parts = [
     ...buildCorridorStone(rng, geometries, materials, { first, bays, figures }),
-    ...buildCorridorFire(geometries, materials, flameMaterial, { torches, braziers, candles }),
+    ...fire.parts,
     ...buildCorridorRig(rng, geometries, materials, { first, bays }),
   ];
 
-  return { parts, flameMaterial, braziers };
+  return { parts, flameMaterial, braziers, fires: fire.fires };
+}
+
+/** Прогоны колючки поперёк коридора: через один выше и ниже линии полёта камеры. */
+function planCorridorWire(rng) {
+  const span = CORRIDOR_WIRE.toZ - CORRIDOR_WIRE.fromZ;
+  return Array.from({ length: CORRIDOR_WIRE.count }, (unused, index) => ({
+    x: rng.range(-1, 1),
+    y: index % 2 === 0 ? CORRIDOR_WIRE.high : CORRIDOR_WIRE.low,
+    z: CORRIDOR_WIRE.fromZ + (span * (index + 0.5)) / CORRIDOR_WIRE.count + rng.range(-2, 2),
+    width: CORRIDOR_WIRE.width,
+  }));
 }
 
 /**
@@ -2050,6 +2201,15 @@ function fadingFloor(length) {
   return geometry;
 }
 
+/** Повтор шахматки по плите: клетка держит свой размер в метрах на любой длине. */
+function tileFloor(texture, width, length) {
+  const tile = FLOOR_TILE.cells * FLOOR_TILE.cellMeters;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(width / tile, length / tile);
+  texture.anisotropy = FLOOR_TILE.anisotropy;
+}
+
 function buildShellAndFloor(geometries, materials) {
   const back = NAVE.endZ - SHELL.margin;
   const front = CORRIDOR.farZ + SHELL.margin;
@@ -2073,6 +2233,9 @@ function buildShellAndFloor(geometries, materials) {
   path.rotation.x = -Math.PI * HALF;
   path.position.set(0, 0, (front + hallFront) * HALF);
   path.scale.set(NAVE.halfWidth * 2, front - hallFront, 1);
+  // Клетка меряется метрами пола, а не долями плиты: длина коридора и его ширина разные,
+  // и одинаковый повтор растянул бы клетку в прямоугольник.
+  tileFloor(materials.path.map, NAVE.halfWidth * 2, front - hallFront);
 
   return { shell, floor, path };
 }
@@ -2080,40 +2243,50 @@ function buildShellAndFloor(geometries, materials) {
 /**
  * Шероховатость раздаётся материалам поимённо: у каждой поверхности свои метры.
  *
+ * Карта выбирается по тому, как поверхность изнашивается на самом деле: кракелюр садится на
+ * камень, потёки идут сверху вниз по вертикальному, царапина ложится на металл. Вешаются они
+ * шероховатостью и рельефом, но не цветом: цвет зала подобран, и подкрасить его картинкой
+ * значит переписать палитру мимо `palette.js`.
+ *
  * Развёртка `ShapeGeometry` лежит прямо в метрах фигуры, поэтому торцевой стене метры не
  * нужны, ей хватает обратного шага. Оболочка мерится длинной боковой гранью: её и видно из
  * коридора, а торцы коробки прячутся за стеной апсиды и за дальним концом дороги.
  */
-function wearSurfaces(rng, materials) {
-  const stone = createSurfaceGrunge({ random: rng, ...GRUNGE.stone });
-  const metal = createSurfaceGrunge({ random: rng, ...GRUNGE.metal });
+function wearSurfaces(materials) {
+  const crack = loadWearMap(GRUNGE.crack);
+  const drip = loadWearMap(GRUNGE.drip);
+  const scratch = loadWearMap(GRUNGE.scratch);
   const tile = GRUNGE.tile;
   const prop = { width: GRUNGE.props, height: GRUNGE.props, tile };
   const hallDepth = NAVE.frontZ + SHELL.margin * 2 - NAVE.endZ;
   const shellLength = CORRIDOR.farZ - NAVE.endZ + SHELL.margin * 2;
 
-  materials.concrete.roughnessMap = tileToMeters(stone, prop);
+  materials.concrete.roughnessMap = tileToMeters(crack, prop);
   materials.concrete.bumpMap = materials.concrete.roughnessMap;
   materials.concrete.bumpScale = GRUNGE.bump;
 
-  materials.wall.roughnessMap = tileToMeters(stone, { width: 1, height: 1, tile });
+  materials.wall.roughnessMap = tileToMeters(drip, { width: 1, height: 1, tile });
   materials.wall.bumpMap = materials.wall.roughnessMap;
   materials.wall.bumpScale = GRUNGE.bump;
 
-  materials.shell.roughnessMap = tileToMeters(stone, {
+  materials.shell.roughnessMap = tileToMeters(drip, {
     width: shellLength,
     height: NAVE.vaultHeight,
     tile,
   });
 
-  materials.floor.roughnessMap = tileToMeters(metal, {
+  materials.floor.roughnessMap = tileToMeters(scratch, {
     width: NAVE.halfWidth * 2,
     height: hallDepth,
     tile,
   });
 
-  materials.iron.roughnessMap = tileToMeters(metal, prop);
-  materials.rust.roughnessMap = tileToMeters(metal, prop);
+  materials.iron.roughnessMap = tileToMeters(scratch, prop);
+  materials.rust.roughnessMap = tileToMeters(scratch, prop);
+  // Ржавчина единственная отслаивается: на бочках и цепях царапина идёт ещё и рельефом,
+  // иначе стальной блик остаётся ровным на всей полосе.
+  materials.rust.bumpMap = materials.rust.roughnessMap;
+  materials.rust.bumpScale = GRUNGE.bump;
   materials.tinted.roughnessMap = materials.rust.roughnessMap;
 }
 
@@ -2373,13 +2546,20 @@ function buildGrime(rng, surfaces, { barrels, braziers }) {
  * Сид меняет число пилонов и их обломы, рисунок розы, плотность углей, лужи и подвешенный
  * хлам, но не трогает оси зала: алтарь остаётся в начале координат, роза в торце.
  */
-export function createArchitecture({ rng }) {
+/**
+ * Зал, коридор и всё, что в них стоит.
+ *
+ * Сборка асинхронная из-за колючей проволоки: она приходит готовой моделью, а модель тянется
+ * по сети. Всё остальное строится кодом и ждать не заставляет.
+ */
+export async function createArchitecture({ rng }) {
   const group = new THREE.Group();
   const geometries = createGeometries();
   const rose = planRose(rng);
   const materials = createMaterials({
     roseGlow: createRoseGlowTexture(rng, rose.spokes),
     checker: createCheckerTexture(rng),
+    checkerFloor: createCheckerFloorTexture(rng),
     fireGlow: createFireGlowTexture(),
   });
 
@@ -2389,7 +2569,7 @@ export function createArchitecture({ rng }) {
   const surfaces = buildShellAndFloor(geometries, materials);
   group.add(surfaces.shell, surfaces.floor, surfaces.path);
   const corridor = buildCorridor(rng, geometries, materials);
-  group.add(...corridor.parts);
+  group.add(...corridor.parts, ...corridor.fires.map((fire) => fire.mesh));
   group.add(buildRibs(rng, geometries, materials));
   group.add(...buildColonnade(rng, geometries, materials, pylons));
   group.add(buildRubble(rng, geometries, materials));
@@ -2402,11 +2582,16 @@ export function createArchitecture({ rng }) {
   group.add(buildSteps(geometries, materials));
   group.add(buildAltarChains(geometries, materials));
   group.add(buildCheckerScatter(rng, geometries, materials));
-  group.add(...buildBarrels(geometries, materials, barrels));
+  group.add(...buildBarrels(rng, geometries, materials, barrels));
+  const barrelFires = buildBarrelFires(rng, barrels);
+  group.add(...barrelFires.map((fire) => fire.mesh));
   group.add(buildPuddles(rng, geometries, materials));
 
   const junk = buildJunk(rng, geometries, materials);
   group.add(junk);
+
+  const wire = await createBarbedWire({ runs: planCorridorWire(rng), rng });
+  group.add(wire.mesh);
 
   const sparks = createSparks({
     rng,
@@ -2414,8 +2599,9 @@ export function createArchitecture({ rng }) {
   });
   const haze = createHaze({ rng });
   const smoke = createFloorSmoke({ rng });
+  const pathSmoke = createFloorSmoke({ rng, band: CORRIDOR_SMOKE });
   const ray = createGodRay({ rng });
-  group.add(sparks.object, haze.object, smoke.object, ray.object);
+  group.add(sparks.object, haze.object, smoke.object, pathSmoke.object, ray.object);
 
   // Кот сам ведёт позицию своей группы каждый кадр, поэтому кольцо сдвигается контейнером,
   // а не его собственным position: тот перезаписывается на первом же update.
@@ -2435,7 +2621,7 @@ export function createArchitecture({ rng }) {
   });
 
   const dirt = grimeRandom(pylons, barrels);
-  wearSurfaces(dirt, materials);
+  wearSurfaces(materials);
   group.add(...buildGrime(dirt, { ...surfaces, wall: endWall }, {
     barrels,
     braziers: corridor.braziers,
@@ -2445,8 +2631,6 @@ export function createArchitecture({ rng }) {
   function update(elapsed) {
     const breath = HALF + HALF * Math.sin((elapsed / BEAT.seconds) * TAU);
     const flicker = Math.sin(elapsed * FLICKER_SPEED[0]) * Math.sin(elapsed * FLICKER_SPEED[1]);
-    materials.coal.emissiveIntensity = BARREL.emissive
-      + BARREL.swing * (breath * BARREL.beatShare + flicker * (1 - BARREL.beatShare));
     materials.glass.color.copy(GLASS_TINT).multiplyScalar(GLASS.emissive + GLASS.swing * breath);
     materials.halo.opacity = ROSE_PLAN.glowOpacity * (1 + ROSE_PLAN.glowSwing * breath);
     materials.firePool.opacity = FIRE_POOL.opacity * (1 + FIRE_POOL.swing * flicker);
@@ -2454,13 +2638,19 @@ export function createArchitecture({ rng }) {
     cat.update(elapsed);
     for (const walker of corridorCats) walker.update(elapsed);
     // Огонь светит выше единицы намеренно: цветение подхватывает только то, что ярче кадра.
-    corridor.flameMaterial.color.copy(FLAME_TINT)
+    corridor.flameMaterial.color.copy(FIRE_TINT)
       .multiplyScalar(FLAME.gain * (1 + CORRIDOR_TORCH.swing * flicker));
+    for (const fire of corridor.fires) fire.update(elapsed);
+    for (const fire of barrelFires) fire.update(elapsed);
+    wire.update(elapsed);
     sparks.update(elapsed, breath);
     haze.update(elapsed);
     smoke.update(elapsed);
+    pathSmoke.update(elapsed);
     ray.update(breath);
   }
 
-  return { group, update, bounds: BOUNDS };
+  // Афиша меняет длину луча из розы: без неё столб света упирается в пол, а не в воздух
+  // перед коробкой типографики.
+  return { group, update, setPoster: ray.setPoster, bounds: BOUNDS };
 }

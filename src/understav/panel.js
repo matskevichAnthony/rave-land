@@ -20,7 +20,6 @@ const DEFAULT_TAKE_SECONDS = 8;
 const MAX_TAKE_SECONDS = 60;
 const HIDDEN_CLASS = 'deck--hidden';
 const TOGGLE_LABEL = { shown: 'Скрыть', hidden: 'Пульт' };
-const SAVE_SCENE_LABEL = { idle: 'Скачать сцену', busy: 'Собираю' };
 const LOCKED_WHILE_RECORDING = '[data-js-framing], [data-js-new-seed]';
 const OVER_CLASS = 'meter__value--over';
 
@@ -53,7 +52,7 @@ export function createPanel({
   window.addEventListener(spotEvent, (domEvent) => showSpot(domEvent.detail));
 
   const stats = mountStats(pick('stats'));
-  mountKnobs(pick('knobs'), controls);
+  const knobs = mountKnobs(pick('knobs'), controls);
   wireChoice('mode', view.mode, actions.setMode);
   wireChoice('framing', view.framing, actions.setFraming);
 
@@ -64,9 +63,26 @@ export function createPanel({
   const countdown = pick('countdown');
   countdown.checked = view.countdown;
   countdown.addEventListener('change', () => actions.setCountdown(countdown.checked));
+  // Афиша и выгрузка есть не у всякой сцены, а пульт один на все: чего разметка не объявила,
+  // того пульт и не вешает. Иначе соседняя страница валится на первом же чужом хуке.
+  const poster = pick('poster');
+  if (poster) {
+    poster.checked = view.poster;
+    poster.addEventListener('change', () => actions.setPoster(poster.checked));
+  }
+  const print = pick('print');
+  if (print) {
+    print.checked = view.print;
+    print.addEventListener('change', () => actions.setPrint(print.checked));
+  }
   pick('shoot').addEventListener('click', () => actions.shoot(takeSeconds()));
   pick('capture').addEventListener('click', actions.capture);
-  pick('save-scene').addEventListener('click', actions.saveScene);
+  // Фото есть не у всякой сцены: у пульта один код на все, и лишний хук он не требует.
+  pick('photo')?.addEventListener('click', actions.photo);
+  // Формат уходит с самой кнопки: их у выгрузки столько же, сколько форматов в разметке.
+  for (const button of root.querySelectorAll('[data-js-save-scene]')) {
+    button.addEventListener('click', () => actions.saveScene(button.dataset.jsSaveScene));
+  }
   pick('guest').addEventListener('click', actions.guest);
   pick('battle').addEventListener('click', actions.battle);
 
@@ -127,19 +143,28 @@ export function createPanel({
     note(text) {
       pick('note').textContent = text;
     },
+    // Ручки крутит не только рука: печатный вид ставит свои значения, и ползунки обязаны
+    // показать, что стоит на самом деле.
+    showKnobs() {
+      knobs.sync();
+    },
     setRecording(active) {
       const button = pick('shoot');
       button.classList.toggle('is-recording', active);
       button.textContent = active ? 'Пишу' : 'Снять';
       pick('capture').disabled = active;
+      const photo = pick('photo');
+      if (photo) photo.disabled = active;
       // Смена кадрирования и сида посреди дубля меняет размер холста, а дорожка записи
       // этого не переживает, поэтому на время записи кнопки закрыты.
       for (const locked of root.querySelectorAll(LOCKED_WHILE_RECORDING)) locked.disabled = active;
     },
     setExporting(active) {
-      const button = pick('save-scene');
-      button.disabled = active;
-      button.textContent = active ? SAVE_SCENE_LABEL.busy : SAVE_SCENE_LABEL.idle;
+      // Вторая выгрузка поверх первой снимала бы слепок с той же сцены ещё раз, а обе
+      // держат в памяти по копии всего зала, поэтому на время сборки закрыты все форматы.
+      for (const button of root.querySelectorAll('[data-js-save-scene]')) {
+        button.disabled = active;
+      }
     },
     toggle: toggleDeck,
     hide: () => setDeck(true),
@@ -157,37 +182,42 @@ function mountStats(box) {
 }
 
 function mountKnobs(box, controls) {
-  const knobs = Object.entries(controls ?? {});
-  if (!knobs.length) {
+  const entries = Object.entries(controls ?? {});
+  if (!entries.length) {
     box.append(create('p', 'deck__hint', 'У постобработки нет ручек.'));
-    return;
+    return { sync: () => {} };
   }
-  box.append(...knobs.map(([name, control]) => renderKnob(name, control)));
+  const syncs = [];
+  box.append(...entries.map(([name, control]) => renderKnob(name, control, syncs)));
+  return { sync: () => syncs.forEach((update) => update()) };
 }
 
-function renderKnob(name, control) {
+function renderKnob(name, control, syncs) {
   const knob = create('label', 'knob');
   knob.append(create('span', 'knob__name', control.label ?? name));
   const value = control.get();
   if (typeof value === 'boolean') {
-    knob.append(renderSwitch(control, value));
+    knob.append(renderSwitch(control, value, syncs));
     return knob;
   }
   const readout = create('b', 'knob__value', formatValue(value));
-  knob.append(readout, renderSlider(control, value, readout));
+  knob.append(readout, renderSlider(control, value, readout, syncs));
   return knob;
 }
 
-function renderSwitch(control, value) {
+function renderSwitch(control, value, syncs) {
   const input = document.createElement('input');
   input.type = 'checkbox';
   input.className = 'knob__switch';
   input.checked = value;
   input.addEventListener('change', () => control.set(input.checked));
+  syncs.push(() => {
+    input.checked = control.get();
+  });
   return input;
 }
 
-function renderSlider(control, value, readout) {
+function renderSlider(control, value, readout, syncs) {
   const input = document.createElement('input');
   input.type = 'range';
   input.className = 'knob__slider';
@@ -199,6 +229,10 @@ function renderSlider(control, value, readout) {
     const next = Number(input.value);
     control.set(next);
     readout.textContent = formatValue(next);
+  });
+  syncs.push(() => {
+    input.value = control.get();
+    readout.textContent = formatValue(control.get());
   });
   return input;
 }

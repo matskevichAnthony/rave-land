@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { GOTHIC_FACE, GOTHIC_TYPEFACE, loadGothic } from './gothic.js';
+import { GOTHIC_TYPEFACE, gothicFaceFor, loadGothic } from './gothic.js';
 import { BEAT, PALETTE } from './palette.js';
 import { createStencil, measureWidthPerCap, NARROW_FACE } from './text-texture.js';
 
@@ -21,8 +21,11 @@ const BOX_TOP = 11.8;
 const NAVE_HEADROOM = 2;
 
 const TITLE_WIDTH_RATIO = 0.95;
-const LINEUP_WIDTH_RATIO = 0.94;
-const TAGLINE_WIDTH_RATIO = 0.94;
+const LINEUP_WIDTH_RATIO = 0.72;
+// Подзаголовок чуть шире коробки лайнапа: коробку держит длина имён, а подзаголовок вдвое
+// длиннее самого длинного из них и по ней читался бы петитом. Дальше единицы он не идёт,
+// иначе строка перерастает заголовок по ширине и афиша встаёт на подзаголовке.
+const TAGLINE_WIDTH_RATIO = 1;
 const DATE_WIDTH_RATIO = 0.66;
 const VENUE_WIDTH_RATIO = 0.52;
 
@@ -43,6 +46,8 @@ const TITLE_SPACE_ADVANCE = 0.32;
 
 const BURN_FLAT = 0.94;
 const BURN_EDGE = 0.2;
+// Доля крови на стенке буквы: единица это фаска, раскалённая на полную.
+const BURN_WALL = 0.5;
 
 const CAP_SCALE = [0.28, 0.36, 0.46, 0.58, 0.72, 0.9];
 const PLATE_TRACKING = 0.22;
@@ -51,7 +56,7 @@ const PLATE_TRACKING = 0.22;
 const MARK_TRACKING = 0.55;
 // Готика плотнее гротеска и на разгоне разваливается на отдельные знаки, поэтому её строка
 // набирается почти вплотную.
-const GOTHIC_TRACKING = 0.06;
+const GOTHIC_TRACKING = 0.025;
 const PLATE_PAD_X = 0.3;
 const PLATE_PAD_Y = 0.12;
 const PLATE_DEPTH = 0.09;
@@ -67,10 +72,6 @@ const STENCIL_LIFT = 0.006;
 // строгому порогу мелкое имя рассыпается раньше, чем становится нечитаемым по кеглю.
 const STENCIL_ALPHA_TEST = 0.38;
 const RAGGED_SHIFT = 0.6;
-// Лайнап стоит зигзагом, а не колонкой по центру: имена уходят попеременно влево и вправо,
-// и список читается лентой. Размах в метрах, но он режется свободным местом строки: широкое
-// имя занимает коробку почти целиком и почти не двигается, короткое уходит на всю ширину.
-const LINEUP_ZIGZAG = 1.4;
 
 // Сборка афиши на пролёте: строки прилетают по одной, попеременно из-за левого и правого
 // края зала, и садятся на своё место. Разгон меряется местами в очереди, а не секундами:
@@ -82,54 +83,10 @@ const ASSEMBLE_SPAN = 1.7;
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
 const GAP_AFTER_TITLE = 0.34;
 const GAP_AFTER_TAGLINE = 1.2;
-const GAP_IN_LINEUP = 0.13;
+const GAP_IN_LINEUP = 0.24;
 const GAP_AFTER_LINEUP = 0.75;
 const GAP_AFTER_RULE = 0.75;
 const GAP_AFTER_DATE = 0.1;
-
-// Колючая проволока по кромкам имён: зал жуёт афишу, и лайнап в нём не висит, а отгорожен.
-// Прогон один на строку и не на каждой строке: проволока по обеим кромкам всех имён
-// читается орнаментом, а заграждение это то, чего мало и что торчит. Пустое место в списке
-// раскладок это плита вовсе без проволоки.
-const WIRE_LAYOUTS = ['top', 'bottom', 'corner', null];
-const WIRE_SIDES = 4;
-const WIRE_RADIUS = 0.024;
-const WIRE_OVERHANG = 0.26;
-const WIRE_STEP_MIN = 0.34;
-const WIRE_STEP_MAX = 0.62;
-const WIRE_SAG_MIN = 0.03;
-const WIRE_SAG_MAX = 0.14;
-const WIRE_LEAN = 0.07;
-const WIRE_JITTER = 0.035;
-const WIRE_CORNER_DROP_MIN = 0.35;
-const WIRE_CORNER_DROP_MAX = 0.8;
-const WIRE_Z = PLATE_Z + 0.24;
-// Полированный металл в чёрном зале отражает пустоту и уходит в чёрный, поэтому прут почти
-// не металл: светлая кость, матовая, со своим свечением. Свечение держится ниже порога
-// блума, иначе колючка засветится ярче имени, которое сторожит.
-const WIRE_EMISSIVE = 0.9;
-const WIRE_METALNESS = 0.2;
-const WIRE_ROUGHNESS = 0.5;
-
-const BARB_SIDES = 6;
-const BARB_RADIUS = 0.038;
-const BARB_SPIKES_MIN = 3;
-const BARB_SPIKES_MAX = 4;
-const BARB_EVERY_MIN = 1;
-const BARB_EVERY_MAX = 2;
-const BARB_LENGTH_MIN = 0.62;
-const BARB_LENGTH_MAX = 0.95;
-const BARB_LENGTH_JITTER = 0.22;
-// Веер узла отсчитывается от направления наружу: ноль это прочь от плиты, четверть
-// оборота вперёд, к камере, а небольшой минус уводит шип назад, за кромку.
-const BARB_FAN_FROM = -0.35;
-const BARB_FAN_TO = 1.75;
-const BARB_RAKE_MIN = 0.7;
-const BARB_RAKE_MAX = 1.8;
-// Между именами лежит только промежуток строки да поле плиты: шип, задранный прямо
-// наружу, упёрся бы в буквы соседа, поэтому вверх он короткий, а длину набирает тот,
-// что валится вдоль прута и вперёд.
-const BARB_CLEARANCE = GAP_IN_LINEUP + PLATE_PAD_Y - PLATE_RIM;
 
 const COUNTDOWN_WIDTH = 6.4;
 const COUNTDOWN_HEIGHT = 4.8;
@@ -159,6 +116,8 @@ const ARC_BLINK_MAX = 0.11;
 const ARC_DEPTH_MIN = 0.18;
 const ARC_DEPTH_MAX = 0.45;
 const PLATE_EMISSIVE_BASE = 1.6;
+const HEADLINER_GLOW = 0.62;
+const HEADLINER_INK = '#2a0509';
 // Блум берёт по яркости, а не по цвету: у крови её вдвое меньше, чем у кости, и красная
 // плита не доходит до порога свечения. Множитель выравнивает именно это.
 const EMISSIVE_LUMA_REFERENCE = 0.55;
@@ -182,10 +141,8 @@ const localSlab = new THREE.Object3D();
 const slabMatrix = new THREE.Matrix4();
 const draftPoint = new THREE.Vector3();
 const draftScale = new THREE.Vector3();
-const draftTurn = new THREE.Quaternion();
 const IDENTITY_TURN = new THREE.Quaternion();
 const UP = new THREE.Vector3(0, 1, 0);
-const FORWARD = new THREE.Vector3(0, 0, 1);
 
 const REQUIRED_EVENT_FIELDS = ['event', 'dateLabel', 'lineup'];
 
@@ -215,9 +172,11 @@ function facingTint(facing, tints) {
 /** Цвет вершины несёт и металл, и силу прожога: фаска кровь, стенки ржавчина, лицо железо. */
 function paintBurn(geometry) {
   const normal = geometry.getAttribute('normal');
+  // Лицо буквы чёрное железо, а горит только обрамление: раскалённой ржавчиной стенки
+  // уводили всю строку в оранжевый, поэтому и фаска, и стенка идут кровью, а не жаром.
   const tints = {
     flat: new THREE.Color(PALETTE.iron),
-    wall: new THREE.Color(PALETTE.rust),
+    wall: new THREE.Color(PALETTE.blood).multiplyScalar(BURN_WALL),
     edge: new THREE.Color(PALETTE.blood),
   };
   const colors = new Float32Array(normal.count * 3);
@@ -371,9 +330,17 @@ function createTitle({ text, rng, targetWidth }) {
 }
 
 /** Кегль подбирается по шкале: имена разной длины, а коробка одна. */
-function fitCapHeight(text, { tracking, face, maxWidth }) {
+/**
+ * Кегль строки под ширину плиты.
+ *
+ * Обычно кегль садится на ступень общей шкалы: лайнап обязан идти одним кеглем, а плиты
+ * разной длины иначе разъедутся по высоте буквы. Одиночной строке ровняться не с кем, и
+ * ступень у неё отнимает до четверти кегля впустую, поэтому она садится точно по месту.
+ */
+function fitCapHeight(text, { tracking, face, maxWidth }, exact = false) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
   const usable = maxWidth - PLATE_PAD_X * 2;
+  if (exact) return usable / widthPerCap;
   for (let step = CAP_SCALE.length - 1; step >= 0; step -= 1) {
     if (CAP_SCALE[step] * widthPerCap <= usable) return CAP_SCALE[step];
   }
@@ -384,15 +351,6 @@ function createPlateMaterials() {
   return {
     rim: new THREE.MeshStandardMaterial({ color: PALETTE.rust, metalness: 0.8, roughness: 0.9 }),
     face: new THREE.MeshStandardMaterial({ color: PALETTE.iron, metalness: 0.9, roughness: 0.55 }),
-    // Проволока светится сама: бликам в этом зале нечего отражать, и цвет прута держится
-    // только на собственном свечении.
-    wire: new THREE.MeshStandardMaterial({
-      color: PALETTE.bone,
-      emissive: PALETTE.bone,
-      emissiveIntensity: WIRE_EMISSIVE,
-      metalness: WIRE_METALNESS,
-      roughness: WIRE_ROUGHNESS,
-    }),
   };
 }
 
@@ -468,132 +426,13 @@ function createRule({ shared, width }) {
   return { group, height: RULE_THICKNESS };
 }
 
-/** Раскладки прогонов по строкам: соседние не повторяются, иначе ряд снова читается узором. */
-function planWireLayouts(count, rng) {
-  const layouts = [];
-  for (let index = 0; index < count; index += 1) {
-    layouts.push(rng.pick(WIRE_LAYOUTS.filter((layout) => layout !== layouts[index - 1])));
-  }
-  return layouts;
-}
-
-/** Концы прогона в системе плиты: вдоль верхней кромки, вдоль нижней или наискось через угол. */
-function wireRunEnds(layout, { width, height, rng }) {
-  const reach = width / 2 + WIRE_OVERHANG;
-  if (layout === 'corner') {
-    const side = rng.sign();
-    const drop = -height * rng.range(WIRE_CORNER_DROP_MIN, WIRE_CORNER_DROP_MAX);
-    return [
-      new THREE.Vector3(side * reach, drop, WIRE_Z),
-      // Внутрь прут заходит ровно на поле плиты: дальше начинается буква.
-      new THREE.Vector3(side * (width / 2 - PLATE_PAD_X), PLATE_RIM + WIRE_OVERHANG, WIRE_Z),
-    ];
-  }
-  const edgeY = layout === 'top' ? PLATE_RIM : -height - PLATE_RIM;
-  const lean = rng.range(-WIRE_LEAN, WIRE_LEAN);
-  return [
-    new THREE.Vector3(-reach, edgeY - lean, WIRE_Z),
-    new THREE.Vector3(reach, edgeY + lean, WIRE_Z),
-  ];
-}
-
-/** Узлы прута: провис к середине пролёта плюс дрожь, чтобы прут не читался линейкой. */
-function wireKnots(from, to, rng) {
-  const sag = rng.range(WIRE_SAG_MIN, WIRE_SAG_MAX);
-  const steps = Math.max(2, Math.round(from.distanceTo(to) / rng.range(WIRE_STEP_MIN, WIRE_STEP_MAX)));
-  return Array.from({ length: steps + 1 }, (unused, index) => {
-    const along = index / steps;
-    const knot = from.clone().lerp(to, along);
-    knot.y += rng.range(-1, 1) * WIRE_JITTER - sag * Math.sin(along * Math.PI);
-    knot.z += rng.range(-1, 1) * WIRE_JITTER;
-    return knot;
-  });
-}
-
-/** Куда торчать шипам: перпендикуляр прогона в плоскости плиты, направленный прочь от букв. */
-function outwardOfRun(from, to, height) {
-  const side = new THREE.Vector3(from.y - to.y, to.x - from.x, 0).normalize();
-  const away = new THREE.Vector3((from.x + to.x) / 2, (from.y + to.y) / 2 + height / 2, 0);
-  return side.dot(away) < 0 ? side.negate() : side;
-}
-
-/**
- * Узел колючки: два-четыре шипа, скрещённых в одной точке.
- *
- * Одиночный конус на сегмент читается заклёпкой: злость даёт именно перекрестье, поэтому
- * шипы веером расходятся наружу и вперёд, к камере, а вдоль прута валятся в разные стороны,
- * через один. Так узел виден и в силуэте, и в лоб.
- */
-function planBarbKnot({ shared, rng, anchor, at, along, outward, length }) {
-  const spikes = rng.int(BARB_SPIKES_MIN, BARB_SPIKES_MAX);
-  for (let index = 0; index < spikes; index += 1) {
-    const fan = BARB_FAN_FROM + (BARB_FAN_TO - BARB_FAN_FROM) * ((index + rng()) / spikes);
-    const rake = rng.range(BARB_RAKE_MIN, BARB_RAKE_MAX) * (index % 2 === 0 ? 1 : -1);
-    const spike = outward.clone().multiplyScalar(Math.cos(fan))
-      .addScaledVector(FORWARD, Math.sin(fan))
-      .addScaledVector(along, rake)
-      .normalize();
-    const grown = Math.min(
-      length * rng.range(1 - BARB_LENGTH_JITTER, 1 + BARB_LENGTH_JITTER),
-      BARB_CLEARANCE / Math.abs(spike.y),
-    );
-    shared.slabs.barb.push(anchoredAt(anchor, {
-      position: at.clone().addScaledVector(spike, grown / 2),
-      quaternion: draftTurn.clone().setFromUnitVectors(UP, spike),
-      scale: draftScale.set(BARB_RADIUS, grown, BARB_RADIUS),
-    }));
-  }
-}
-
-/**
- * Прогон проволоки с узлами.
- *
- * Прут собирается отрезками между узлами, а не сплайном: у отрезка есть готовая геометрия,
- * которая уже едет инстансом, и колючке есть на чём сидеть. Плотность узлов, провис, наклон
- * и длина шипов берутся на прогон, а не на сцену: две плиты подряд не должны совпасть.
- */
-function planBarbedRun({ shared, rng, anchor, layout, width, height }) {
-  const [from, to] = wireRunEnds(layout, { width, height, rng });
-  const knots = wireKnots(from, to, rng);
-  const outward = outwardOfRun(from, to, height);
-  const every = rng.int(BARB_EVERY_MIN, BARB_EVERY_MAX);
-  const length = rng.range(BARB_LENGTH_MIN, BARB_LENGTH_MAX);
-
-  for (let index = 0; index < knots.length - 1; index += 1) {
-    const start = knots[index];
-    const end = knots[index + 1];
-    const along = end.clone().sub(start);
-    shared.slabs.wire.push(anchoredAt(anchor, {
-      position: start.clone().add(end).multiplyScalar(0.5),
-      quaternion: draftTurn.clone().setFromUnitVectors(UP, along.clone().normalize()),
-      scale: draftScale.set(WIRE_RADIUS, along.length(), WIRE_RADIUS),
-    }));
-
-    if (index % every !== 0) continue;
-    planBarbKnot({
-      shared,
-      rng,
-      anchor,
-      outward,
-      length,
-      at: start.clone().lerp(end, 0.5),
-      along: along.normalize(),
-    });
-  }
-}
-
-/** Сдвиг плиты поперёк коробки: заданная сторона уводит её зигзагом, ноль оставляет рванину. */
-function plateShift(zigzag, slack, rng) {
-  if (!zigzag) return rng.range(-1, 1) * slack * RAGGED_SHIFT;
-  return zigzag * Math.min(slack, LINEUP_ZIGZAG);
-}
-
 function createPlate({
   text, maxWidth, capHeight, emissive, rng, shared,
-  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, wireLayout = null, zigzag = 0,
+  worn = false, face = NARROW_FACE, tracking = PLATE_TRACKING, fillWidth = false,
+  ink = PALETTE.concrete, glow = null,
 }) {
   const widthPerCap = measureWidthPerCap(text, tracking, face);
-  const width = Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
+  const width = fillWidth ? maxWidth : Math.min(maxWidth, capHeight * widthPerCap + PLATE_PAD_X * 2);
   const height = capHeight + PLATE_PAD_Y * 2;
 
   const stencil = createStencil({ width, height, rng, worn });
@@ -602,14 +441,15 @@ function createPlate({
     tracking,
     capFraction: capHeight / height,
     padding: PLATE_PAD_X / width,
+    justify: fillWidth,
   });
 
   const material = new THREE.MeshStandardMaterial({
-    color: PALETTE.concrete,
+    color: ink,
     emissive,
     // Шкала кеглей не должна менять яркость строки: длинное имя садится на мелкий кегль,
     // его штрих тоньше и на экране гаснет, поэтому мелкая плита светит сильнее крупной.
-    emissiveIntensity: PLATE_EMISSIVE_BASE * lumaBoost(emissive)
+    emissiveIntensity: PLATE_EMISSIVE_BASE * (glow ?? lumaBoost(emissive))
       * Math.min(PLATE_EMISSIVE_CAP / capHeight, PLATE_EMISSIVE_BOOST),
     alphaMap: stencil.texture,
     alphaTest: STENCIL_ALPHA_TEST,
@@ -638,9 +478,7 @@ function createPlate({
   stencilFace.castShadow = false;
 
   group.add(stencilFace);
-  group.position.x = plateShift(zigzag, (maxWidth - width) / 2, rng);
-
-  if (wireLayout) planBarbedRun({ shared, rng, anchor: group, layout: wireLayout, width, height });
+  group.position.x = rng.range(-1, 1) * ((maxWidth - width) / 2) * RAGGED_SHIFT;
 
   return {
     group,
@@ -732,45 +570,52 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   const shared = {
     box: new THREE.BoxGeometry(1, 1, 1),
     plane: new THREE.PlaneGeometry(1, 1),
-    wire: new THREE.CylinderGeometry(1, 1, 1, WIRE_SIDES, 1, true),
-    barb: new THREE.ConeGeometry(1, 1, BARB_SIDES),
     materials: createPlateMaterials(),
     slabs: {
-      rim: [], front: [], wire: [], barb: [],
+      rim: [], front: [],
     },
   };
 
   const title = createTitle({ text: event.event, rng, targetWidth: box.width * TITLE_WIDTH_RATIO });
 
-  const taglineFit = { tracking: GOTHIC_TRACKING, face: GOTHIC_FACE, maxWidth: box.width * TAGLINE_WIDTH_RATIO };
+  const taglineFace = gothicFaceFor(event.tagline ?? '');
+  const taglineFit = { tracking: GOTHIC_TRACKING, face: taglineFace, maxWidth: box.width * TAGLINE_WIDTH_RATIO };
+  // Строка одна на афише, ступень шкалы ей ни к чему: подзаголовок в тридцать знаков и без
+  // того вдвое мельче заголовка, а на телефоне он с округления вниз пропадает вовсе.
+  const taglineCap = fitCapHeight(event.tagline ?? '', taglineFit, true);
   // Тэглайн необязателен: сцена собирается и без него, если строки нет в данных события.
   const tagline = event.tagline ? createPlate({
     text: event.tagline,
     maxWidth: taglineFit.maxWidth,
-    capHeight: fitCapHeight(event.tagline, taglineFit),
+    capHeight: taglineCap,
     emissive: PALETTE.bone,
     rng,
     shared,
-    face: GOTHIC_FACE,
+    face: taglineFace,
     tracking: GOTHIC_TRACKING,
   }) : null;
 
   // Лайнап набирается одним кеглем по самому длинному имени: разный кегль читается рангом,
-  // а ранга у этих имён нет, есть только разная длина ников.
+  // а ранга у этих имён нет, есть только разная длина ников. Плиты одной ширины, и короткое
+  // имя не сжимается в середину, а разгоняется на всю: столбик из плит разной ширины скачет
+  // из стороны в сторону, а лайнап это блок. Блок узкий, чуть шире даты: набранный во всю
+  // коробку, он закрывает собой зал, ради которого сцену и строили.
   const lineupFit = { tracking: PLATE_TRACKING, face: NARROW_FACE, maxWidth: box.width * LINEUP_WIDTH_RATIO };
   const lineupCap = Math.min(...event.lineup.map((name) => fitCapHeight(name, lineupFit)));
-  const wireLayouts = planWireLayouts(event.lineup.length, rng);
   const lineup = event.lineup.map((name, index) => createPlate({
     text: name,
     maxWidth: lineupFit.maxWidth,
     capHeight: lineupCap,
     emissive: index === 0 ? PALETTE.blood : PALETTE.bone,
+    // Хедлайнер обязан читаться красным. Подъём яркости под порог свечения на нём вреден:
+    // красное имя выходит за порог блума и в ореоле выцветает до розового, поэтому у него
+    // своя, сдержанная сила и своя тёмная краска, на которой цвет остаётся кровью.
+    ...(index === 0 ? { ink: HEADLINER_INK, glow: HEADLINER_GLOW } : {}),
     rng,
     shared,
     // Потёртости живут только на именах: зал жуёт афишу, но дата и подпись обязаны читаться.
     worn: true,
-    wireLayout: wireLayouts[index],
-    zigzag: index % 2 === 0 ? -1 : 1,
+    fillWidth: true,
   }));
 
   const dateFit = { tracking: MARK_TRACKING, face: NARROW_FACE, maxWidth: box.width * DATE_WIDTH_RATIO };
@@ -822,8 +667,6 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   const iron = [
     buildAnchoredInstances(shared.slabs.rim, shared.box, shared.materials.rim),
     buildAnchoredInstances(shared.slabs.front, shared.box, shared.materials.face),
-    buildAnchoredInstances(shared.slabs.wire, shared.wire, shared.materials.wire),
-    buildAnchoredInstances(shared.slabs.barb, shared.barb, shared.materials.wire),
   ];
   group.add(...iron.map((instance) => instance.mesh));
 

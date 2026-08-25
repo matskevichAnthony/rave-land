@@ -177,6 +177,27 @@
       "license": "CC BY-SA 3.0 FR",
       "url": "https://commons.wikimedia.org/wiki/File:Ramesses_II-MAHG_8934-High_poly-001.stl",
       "note": "Скан прорежен с 363 598 до 4 996 треугольников, высота 6.5 м. Лицензия с наследованием."
+    },
+    "assets/models/barbed-wire.glb": {
+      "title": "Колючая проволока",
+      "source": "understav",
+      "note": "Перенесена из личного сайта my-website (static/3d/wire/wire.glb), где лежит фоном. Автор и лицензия исходной модели там не записаны: до публикации промо происхождение надо подтвердить. Две пряди по 44 и 29 тысяч треугольников, длина пряди 10 единиц файла, шипы примерно в десятую её часть; сцена берёт лёгкую прядь и повторяет её инстансами."
+    },
+    "assets/textures/fire-ramp.png": {
+      "title": "Растяжка объёмного огня",
+      "source": "understav",
+      "author": "mattatz (Masatatsu Nakamura)",
+      "license": "MIT",
+      "url": "https://github.com/mattatz/THREE.Fire",
+      "note": "Ассет Fire.png из THREE.Fire, 64 на 128. Это не картинка пламени, а таблица цвета по радиусу и высоте, её читает шейдер src/procedural/fire-volume.js (порт того же проекта). Лицензия MIT разрешает использование при сохранении копирайта: он указан в шапке модуля."
+    },
+    "assets/fonts/ruslan-display.ttf": {
+      "title": "Славянская вязь афиши",
+      "source": "understav",
+      "author": "Oleg Snarsky, Denis Masharov, Vladimir Rabdu",
+      "license": "OFL 1.1",
+      "url": "https://github.com/google/fonts/tree/main/ofl/ruslandisplay",
+      "note": "Кириллическая пара к Grenze Gotisch: в самой Grenze кириллицы нет, и русская строка тэглайна вышла бы из неё системным гротеском. Текст лицензии лежит рядом файлом OFL-ruslan-display.txt."
     }
   }
 }

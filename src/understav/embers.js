@@ -19,6 +19,7 @@ import { openBandY } from '../procedural/shapes.js';
 import { createSparks as createSparkSystem } from '../procedural/sparks.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
+const draft = new THREE.Object3D();
 
 const SPARKS = {
   count: 900,
@@ -305,15 +306,15 @@ export function createHaze({ rng }) {
 }
 
 /** Клубы стелются от алтаря к порталу: ближе к камере ниже, шире и теплее. */
-function planFloorSmoke(rng) {
-  const span = FLOOR_SMOKE.nearZ - FLOOR_SMOKE.farZ;
-  return Array.from({ length: FLOOR_SMOKE.layers }, (unused, index) => {
-    const nearness = index / (FLOOR_SMOKE.layers - 1);
+function planFloorSmoke(rng, band) {
+  const span = band.nearZ - band.farZ;
+  return Array.from({ length: band.layers }, (unused, index) => {
+    const nearness = index / (band.layers - 1);
     return {
       x: rng.range(-2.5, 2.5),
       y: FLOOR_SMOKE.y * rng.range(0.75, 1.2),
-      z: FLOOR_SMOKE.farZ + (span * (index + 0.5)) / FLOOR_SMOKE.layers + rng.range(-0.8, 0.8),
-      width: FLOOR_SMOKE.width * rng.range(0.85, 1.3),
+      z: band.farZ + (span * (index + 0.5)) / band.layers + rng.range(-0.8, 0.8),
+      width: band.width * rng.range(0.85, 1.3),
       height: FLOOR_SMOKE.height * rng.range(0.8, 1.15),
       tint: smoke(
         FLOOR_SMOKE.warmth,
@@ -323,8 +324,14 @@ function planFloorSmoke(rng) {
   });
 }
 
-/** Приземный дым зала: те же альфа-плоскости, но низкие, тёплые и клубящиеся крупнее. */
-export function createFloorSmoke({ rng }) {
+/**
+ * Приземный дым: те же альфа-плоскости, но низкие, тёплые и клубящиеся крупнее.
+ *
+ * Полосу можно принести свою: `{ layers, width, farZ, nearZ, opacity }` в метрах зала. Зал
+ * и коридор дымят по-разному, но дым у них один, поэтому это параметр, а не второй модуль.
+ */
+export function createFloorSmoke({ rng, band }) {
+  const plan = { ...FLOOR_SMOKE, ...band };
   const material = softenMaterial(new THREE.MeshBasicMaterial({
     map: createBlobTexture({
       random: rng,
@@ -334,13 +341,13 @@ export function createFloorSmoke({ rng }) {
       alpha: HAZE.blobAlpha,
     }),
     transparent: true,
-    opacity: FLOOR_SMOKE.opacity,
+    opacity: plan.opacity,
     depthWrite: false,
     fog: false,
   }), FLOOR_SMOKE.fade);
   const billow = billowMaterial(material, FLOOR_SMOKE.billow);
 
-  const clouds = planFloorSmoke(rng);
+  const clouds = planFloorSmoke(rng, plan);
   const mesh = buildInstanced(
     new THREE.PlaneGeometry(1, 1),
     material,
@@ -363,6 +370,13 @@ export function createFloorSmoke({ rng }) {
   };
 }
 
+/** Столб света на месте: копия инстанса ставится и при сборке, и при смене длины луча. */
+function shapeShaft(cone, shaft) {
+  cone.position.copy(shaft.center);
+  cone.quaternion.copy(shaft.lift);
+  cone.scale.set(shaft.width, shaft.length, shaft.width);
+}
+
 /** Столб света от точки к точке: узкий конец наверху, у щели, широкий на полу. */
 function planShaft(top, floor, width, brightness) {
   return {
@@ -375,24 +389,33 @@ function planShaft(top, floor, width, brightness) {
 }
 
 /**
+ * Ширины конусов розы: сид трогает их один раз, а длину луча потом меняет афиша.
+ *
+ * Считать ширины заново на каждый план нельзя: лишний ход генератора уводит за собой всю
+ * остальную сцену, и зал пересобирается другим под тем же сидом.
+ */
+function roseShaftWidths(rng) {
+  return RAY.cones.map((share) => ROSE.radius * share * rng.range(0.92, 1.08));
+}
+
+/**
  * Луч из розы: три вложенных конуса вдоль направления ключевого света.
  *
- * Луч упирается в воздух перед коробкой типографики, потому что дальше начинается текст,
- * и перекрывать его аддитивной плоскостью нечем.
+ * С афишей луч упирается в воздух перед коробкой типографики, потому что дальше начинается
+ * текст, и перекрывать его аддитивной плоскостью нечем. Без афиши перекрывать нечего, а
+ * обрыв столба посреди пустого зала читается жестяным срезом, поэтому луч доводится до
+ * пола: у камня мягкое гашение растворяет его в пятно света, как у лучей коридора.
  */
-function planRoseRay(rng) {
+function planRoseRay(widths, { toFloor }) {
   const from = new THREE.Vector3(...KEY_LIGHT.from);
   const to = new THREE.Vector3(...KEY_LIGHT.to);
   const direction = to.clone().sub(from).normalize();
   const start = new THREE.Vector3(0, ROSE.y, NAVE.endZ);
-  const travel = (TYPE_BOX.z - TYPE_BOX.depth / 2 - RAY.clearance - NAVE.endZ) / direction.z;
+  const travel = toFloor
+    ? -start.y / direction.y
+    : (TYPE_BOX.z - TYPE_BOX.depth / 2 - RAY.clearance - NAVE.endZ) / direction.z;
   const end = start.clone().addScaledVector(direction, travel);
-  return RAY.cones.map((share, index) => planShaft(
-    start,
-    end,
-    ROSE.radius * share * rng.range(0.92, 1.08),
-    RAY.brightness[index],
-  ));
+  return widths.map((width, index) => planShaft(start, end, width, RAY.brightness[index]));
 }
 
 /**
@@ -418,7 +441,12 @@ function planCorridorRays() {
 
 /** Все столбы света сцены одним инстансом: у них одна форма, один материал и одно дыхание. */
 export function createGodRay({ rng }) {
-  const shafts = [...planRoseRay(rng), ...planCorridorRays()];
+  const widths = roseShaftWidths(rng);
+  const rose = {
+    withPoster: planRoseRay(widths, { toFloor: false }),
+    withoutPoster: planRoseRay(widths, { toFloor: true }),
+  };
+  const shafts = [...rose.withPoster, ...planCorridorRays()];
 
   const material = softenMaterial(new THREE.MeshBasicMaterial({
     color: PALETTE.moon,
@@ -434,18 +462,24 @@ export function createGodRay({ rng }) {
     openBandY({ bottom: RAY.flare, segments: RAY.segments }),
     material,
     shafts.length,
-    (cone, index) => {
-      const shaft = shafts[index];
-      cone.position.copy(shaft.center);
-      cone.quaternion.copy(shaft.lift);
-      cone.scale.set(shaft.width, shaft.length, shaft.width);
-    },
+    (cone, index) => shapeShaft(cone, shafts[index]),
     (tint, index) => tint.setScalar(shafts[index].brightness),
   );
   mesh.frustumCulled = false;
 
   return {
     object: mesh,
+    // Афишу гасят переключателем на ходу, поэтому длину луча ставят матрицы своих трёх
+    // инстансов, а не пересборка сущности: остальные столбы света о ней не знают.
+    setPoster(visible) {
+      const plan = visible ? rose.withPoster : rose.withoutPoster;
+      plan.forEach((shaft, index) => {
+        shapeShaft(draft, shaft);
+        draft.updateMatrix();
+        mesh.setMatrixAt(index, draft.matrix);
+      });
+      mesh.instanceMatrix.needsUpdate = true;
+    },
     update(pulse) {
       material.opacity = RAY.opacity * (1 + RAY.breath * pulse);
     },
