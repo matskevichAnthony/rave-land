@@ -64,6 +64,26 @@
     </section>
 
     <section class="deck__block">
+      <h2 class="deck__label">Автопилот</h2>
+      <div class="deck__row">
+        <button type="button" data-js-auto>Играть самому</button>
+      </div>
+      <label class="deck__slider">
+        <span>Темп перемен</span>
+        <input type="range" min="0" max="100" step="1" data-js-pace
+          aria-label="Как часто автопилот меняет картинку, в процентах" />
+      </label>
+      <p class="deck__hint">
+        Контроллера нет, поэтому автопилот считает импульсы и решает на счёте. На четырёх
+        ударах меняется приём разгрома, на восьми наложение, на шестнадцати разложение и
+        бросок машины, на тридцати двух палитра, на шестидесяти четырёх источник целиком, и
+        там же совпадает всё сразу. Тихое место снимает разгром, громкое добавляет. Без
+        звука он бьёт себе такт сам и играет дальше. Руки при этом не заперты: любой
+        ползунок и любая кнопка работают, следующий ход просто ляжет поверх.
+      </p>
+    </section>
+
+    <section class="deck__block">
       <h2 class="deck__label">Машина</h2>
       <div class="deck__row deck__row--wide" data-js-machines></div>
       <p class="deck__hint" data-js-machine-desc></p>

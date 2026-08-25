@@ -21,6 +21,7 @@
 
 import { makeInks, DEFAULT_HOT, DEFAULT_COLD } from '../cards/ink.js';
 import { DEFAULT_BLEND } from '../procedural/blend.js';
+import { createAutopilot, moveLine } from './autopilot.js';
 import { createDeck } from './deck.js';
 import { createListening } from './listen.js';
 import {
@@ -44,6 +45,7 @@ const stage = document.querySelector('[data-js-stage]');
 const ctx = stage.getContext('2d', { alpha: false });
 const source = createSource();
 const listening = createListening();
+const autopilot = createAutopilot();
 const overlay = createOverlay();
 
 const view = {
@@ -56,6 +58,8 @@ const view = {
   quiet: 0.05,
   loud: 0.45,
   punch: 0.3,
+  auto: false,
+  pace: 0.5,
   machine: {
     source: DEFAULT_SOURCE,
     palette: DEFAULT_PALETTE,
@@ -192,6 +196,42 @@ function paint(pulse) {
   });
 }
 
+/**
+ * Автопилот: импульсы уходят ему, ходы возвращаются и применяются к виду.
+ *
+ * Пульт от этого не отключается: человек может вмешаться в любой момент, и следующий ход
+ * автопилота просто ляжет поверх. Ходы, требующие пересчёта кадра, идут через ту же дверь,
+ * что и руки, поэтому бросок машины у них общий и второго пути к нему нет.
+ */
+function fly(pulse, now) {
+  if (!view.auto) return;
+  const moves = autopilot.tick({
+    hit: pulse.hit,
+    // Снятый слух это не тишина, а неизвестность: автопилот решает сам, чем её заполнить.
+    level: view.ear === 'off' ? null : pulse.level,
+    pace: view.pace,
+    mangles: view.mangles,
+    now,
+  });
+  if (!moves.length) return;
+  for (const move of moves) apply(move);
+  deck.note(moveLine(moves, autopilot.beats));
+  deck.showState(view);
+}
+
+/** Один ход автопилота на вид: словарь вместо лестницы условий, ход это данные. */
+function apply(move) {
+  const moves = {
+    mangle: () => (move.on ? view.mangles.add(move.value) : view.mangles.delete(move.value)),
+    blend: () => Object.assign(view.machine, { blend: move.value }),
+    op: () => { view.machine.op = move.value; machine.setOp(move.value); },
+    palette: () => { view.machine.palette = move.value; roll(); },
+    source: () => { view.machine.source = move.value; roll(); },
+    roll,
+  };
+  moves[move.kind]();
+}
+
 /** Мутация: каждые столько ударов машина бросается заново и картинка меняется на бочку. */
 function mutate(hit) {
   if (!hit || !view.machine.mutate) return;
@@ -210,6 +250,7 @@ function tick(now) {
     punch: view.punch,
     now,
   });
+  fly(pulse, now);
   mutate(pulse.hit);
   paint(pulse);
 
@@ -294,6 +335,15 @@ const deck = createDeck({
     setQuiet: (quiet) => { view.quiet = quiet; },
     setLoud: (loud) => { view.loud = loud; },
     setPunch: (punch) => { view.punch = punch; },
+    toggleAuto: () => {
+      view.auto = !view.auto;
+      autopilot.reset();
+      deck.note(view.auto
+        ? 'Автопилот: считает импульсы и решает сам, руки при этом не заперты'
+        : 'Автопилот снят');
+      deck.showState(view);
+    },
+    setPace: (pace) => { view.pace = pace; },
     setMachineSource: (id) => setMachine({ source: id }, true),
     setPalette: (id) => setMachine({ palette: id }, true),
     setSpread: (spread) => setMachine({ spread }, true),

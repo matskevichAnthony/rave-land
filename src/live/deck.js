@@ -50,6 +50,7 @@ export function createDeck({ root, view, actions }) {
     quiet: mountSlider(pick('quiet'), actions.setQuiet),
     loud: mountSlider(pick('loud'), actions.setLoud),
     punch: mountSlider(pick('punch'), actions.setPunch),
+    pace: mountSlider(pick('pace'), actions.setPace),
     spread: mountSlider(pick('spread'), actions.setSpread, 'change'),
     wreck: mountSlider(pick('wreck'), actions.setWreck, 'change'),
     strength: mountSlider(pick('strength'), actions.setStrength),
@@ -90,6 +91,7 @@ export function createDeck({ root, view, actions }) {
   hotWell.addEventListener('input', applyInks);
   coldWell.addEventListener('input', applyInks);
 
+  pick('auto').addEventListener('click', actions.toggleAuto);
   pick('roll').addEventListener('click', actions.roll);
   pick('video').addEventListener('click', actions.toggleVideo);
   pick('freeze').addEventListener('click', actions.toggleFreeze);
@@ -149,6 +151,8 @@ export function createDeck({ root, view, actions }) {
       percent(sliders.quiet, state.quiet);
       percent(sliders.loud, state.loud);
       percent(sliders.punch, state.punch);
+      percent(sliders.pace, state.pace);
+      pick('auto').classList.toggle(ACTIVE_CLASS, state.auto);
       percent(sliders.spread, set.spread);
       percent(sliders.wreck, set.wreck);
       percent(sliders.strength, set.strength);
