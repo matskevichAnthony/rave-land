@@ -18,10 +18,46 @@ export const SOURCES = [
   { id: 'url', label: 'Ссылка' },
 ];
 
-// Захват просим шире экрана лишь по частоте кадров: разрешение решает сам источник, и
-// требование точного размера в некоторых браузерах роняет выбор вкладки целиком.
-const DISPLAY_WISH = { video: { frameRate: 60 }, audio: true };
-const CAMERA_WISH = { video: { width: 1280, height: 720 }, audio: false };
+// Разрешение у захвата просить обязательно. Без просьбы браузер отдаёт вкладку в её
+// экранных пикселях и ужимает поток, как только решит, что так дешевле, а на проекторе это
+// видно сразу: кадр приходит мыльным ещё до того, как его коснулся инструмент. Просьба
+// пожеланием, а не требованием: точный размер в некоторых браузерах роняет выбор вкладки
+// целиком, а `ideal` в худшем случае просто не исполняется.
+//
+// `resizeMode: 'none'` здесь важнее размера. С пересчётом браузер сам масштабирует поток до
+// удобного ему числа, и это первое размытие, поверх которого холст кладёт второе.
+const DISPLAY_WISH = {
+  video: {
+    frameRate: { ideal: 60 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    resizeMode: 'none',
+  },
+  audio: true,
+};
+
+const CAMERA_WISH = {
+  video: {
+    frameRate: { ideal: 60 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    resizeMode: 'none',
+  },
+  audio: false,
+};
+
+/**
+ * Дожать дорожку после выбора источника.
+ *
+ * Часть браузеров пожелания к самому захвату игнорирует, а те же пожелания, поданные вторым
+ * заходом уже на дорожке, исполняет. Отказ здесь не ошибка и наверх не идёт: он означает
+ * ровно то, что источник больше не даёт, и захват в том качестве, какое есть, полезнее
+ * оборванного захвата с сообщением об ошибке.
+ */
+async function sharpen(stream, wish) {
+  const [track] = stream.getVideoTracks();
+  await track?.applyConstraints(wish.video).catch(() => {});
+}
 
 function createElement() {
   const video = document.createElement('video');
@@ -73,8 +109,16 @@ export function createSource() {
     get ready() {
       return video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
     },
-    display: () => navigator.mediaDevices.getDisplayMedia(DISPLAY_WISH).then((s) => play(s, 'display')),
-    camera: () => navigator.mediaDevices.getUserMedia(CAMERA_WISH).then((s) => play(s, 'camera')),
+    display: async () => {
+      const captured = await navigator.mediaDevices.getDisplayMedia(DISPLAY_WISH);
+      await sharpen(captured, DISPLAY_WISH);
+      return play(captured, 'display');
+    },
+    camera: async () => {
+      const captured = await navigator.mediaDevices.getUserMedia(CAMERA_WISH);
+      await sharpen(captured, CAMERA_WISH);
+      return play(captured, 'camera');
+    },
     file: (blob) => play(URL.createObjectURL(blob), 'file'),
     url: (address) => play(address, 'url'),
     stop: drop,
