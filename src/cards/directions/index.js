@@ -3,9 +3,10 @@
 import datamosh from './datamosh.js';
 import field from './field.js';
 import iron from './iron.js';
+import mutant from './mutant.js';
 import stencil from './stencil.js';
 
-export const DIRECTIONS = [stencil, iron, datamosh, field];
+export const DIRECTIONS = [stencil, iron, datamosh, field, mutant];
 
 export const DEFAULT_DIRECTION = DIRECTIONS[0].id;
 

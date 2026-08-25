@@ -67,7 +67,7 @@ function centred(ctx, frame, text, { y, pixels, tracking, color }) {
 export default {
   id: 'field',
   label: 'Поле',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
     // Режим выбирает не бросок, а номер артиста: серию смотрят целиком, и четыре поля обязаны
     // в ней встретиться. На случайном выборе шесть карточек трижды выпадали одним цветом.
     const mode = modesOf(inks)[(Number(artist.number) - 1) % 4];
@@ -96,19 +96,23 @@ export default {
 
     // На прозрачном текстовом слое чернила режима остаются: кто соберёт слой на своём поле,
     // тот и решит, годится ли ему этот цвет.
-    centred(ctx, frame, artist.name, {
-      y: frame.top + frame.unit * CAPS_TOP_UNITS,
-      pixels: frame.unit * CAPS_PIXELS_UNITS,
-      tracking: CAPS_TRACKING,
-      color: mode.ink,
-    });
-    centred(ctx, frame, `${artist.number} / ${event.dateLabel}`, {
-      y: frame.bottom - frame.unit * CAPS_BOTTOM_UNITS,
-      pixels: frame.unit * CAPS_PIXELS_UNITS,
-      tracking: CAPS_TRACKING,
-      color: mode.accent,
-    });
-    if (artist.credit) {
+    if (show.name) {
+      centred(ctx, frame, artist.name, {
+        y: frame.top + frame.unit * CAPS_TOP_UNITS,
+        pixels: frame.unit * CAPS_PIXELS_UNITS,
+        tracking: CAPS_TRACKING,
+        color: mode.ink,
+      });
+    }
+    if (show.meta) {
+      centred(ctx, frame, `${artist.number} / ${event.dateLabel}`, {
+        y: frame.bottom - frame.unit * CAPS_BOTTOM_UNITS,
+        pixels: frame.unit * CAPS_PIXELS_UNITS,
+        tracking: CAPS_TRACKING,
+        color: mode.accent,
+      });
+    }
+    if (show.credit && artist.credit) {
       centred(ctx, frame, artist.credit, {
         y: frame.bottom - frame.unit * (CAPS_BOTTOM_UNITS - CREDIT_LEAD_UNITS),
         pixels: frame.unit * CREDIT_PIXELS_UNITS,

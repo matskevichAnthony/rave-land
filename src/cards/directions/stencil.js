@@ -84,7 +84,7 @@ function microLine(ctx, text, { x, y, frame, color }) {
 export default {
   id: 'stencil',
   label: 'Трафарет',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
     if (!textOnly) {
       ctx.fillStyle = inks.void;
       ctx.fillRect(0, 0, frame.width, frame.height);
@@ -97,7 +97,7 @@ export default {
       ctx.restore();
     }
 
-    paintNumber(ctx, frame, artist.number, inks, look);
+    if (show.meta) paintNumber(ctx, frame, artist.number, inks, look);
 
     const logoUnits = LOGO_HEIGHT_UNITS * look.logoScale;
     const mark = logoLayer(logo.wordmark, {
@@ -109,8 +109,10 @@ export default {
 
     const headTop = frame.top + frame.unit * MICRO_LEAD_UNITS;
     const headX = look.logoRight ? frame.left : frame.left + mark.width + frame.unit * 2;
-    microLine(ctx, event.dateLabel, { x: headX, y: headTop, frame, color: inks.ember });
-    microLine(ctx, event.venue, { x: headX, y: headTop + frame.unit * MICRO_LEAD_UNITS, frame, color: inks.bone });
+    if (show.meta) {
+      microLine(ctx, event.dateLabel, { x: headX, y: headTop, frame, color: inks.ember });
+      microLine(ctx, event.venue, { x: headX, y: headTop + frame.unit * MICRO_LEAD_UNITS, frame, color: inks.bone });
+    }
 
     const name = justifyLine(ctx, artist.name, {
       width: frame.innerWidth,
@@ -121,34 +123,38 @@ export default {
     const cap = capHeight(ctx, artist.name, { pixels: name.pixels, face: NARROW_FACE });
     const baseline = frame.height * look.nameCenter + cap / 2;
 
-    ctx.save();
-    ctx.translate(frame.width / 2, baseline);
-    ctx.rotate(look.tilt);
-    ctx.translate(-frame.width / 2, -baseline);
-    stencilLine(ctx, artist.name, {
-      x: frame.left,
-      y: baseline,
-      pixels: name.pixels,
-      tracking: name.tracking,
-      face: NARROW_FACE,
-      color: inks.ember,
-    });
-    ctx.restore();
+    if (show.name) {
+      ctx.save();
+      ctx.translate(frame.width / 2, baseline);
+      ctx.rotate(look.tilt);
+      ctx.translate(-frame.width / 2, -baseline);
+      stencilLine(ctx, artist.name, {
+        x: frame.left,
+        y: baseline,
+        pixels: name.pixels,
+        tracking: name.tracking,
+        face: NARROW_FACE,
+        color: inks.ember,
+      });
+      ctx.restore();
+    }
 
     const ruleY = baseline + frame.unit * RULE_GAP_UNITS;
-    if (!textOnly) {
+    if (!textOnly && show.name) {
       ctx.fillStyle = inks.ember;
       ctx.fillRect(frame.left, ruleY, frame.innerWidth, frame.unit * RULE_THICKNESS_UNITS);
     }
 
     const under = ruleY + frame.unit * (RULE_THICKNESS_UNITS + MICRO_LEAD_UNITS);
-    microLine(ctx, artist.credit, { x: frame.left, y: under, frame, color: inks.bone });
-    const setWidth = measureLine(ctx, artist.set, {
-      pixels: frame.unit * MICRO_PIXELS_UNITS,
-      tracking: MICRO_TRACKING,
-      face: NARROW_FACE,
-    });
-    microLine(ctx, artist.set, { x: frame.right - setWidth, y: under, frame, color: inks.ember });
+    if (show.credit) microLine(ctx, artist.credit, { x: frame.left, y: under, frame, color: inks.bone });
+    if (show.meta) {
+      const setWidth = measureLine(ctx, artist.set, {
+        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        tracking: MICRO_TRACKING,
+        face: NARROW_FACE,
+      });
+      microLine(ctx, artist.set, { x: frame.right - setWidth, y: under, frame, color: inks.ember });
+    }
 
     fillTracked(ctx, blockRail(random, RAIL_LENGTH), {
       x: frame.left,
@@ -158,14 +164,16 @@ export default {
       face: NARROW_FACE,
       color: inks.rust,
     });
-    fillTracked(ctx, event.tagline, {
-      x: frame.left,
-      y: frame.bottom,
-      pixels: frame.unit * TAGLINE_PIXELS_UNITS,
-      tracking: TAGLINE_TRACKING,
-      face: gothicFaceFor(event.tagline),
-      color: inks.bone,
-    });
+    if (show.credit) {
+      fillTracked(ctx, event.tagline, {
+        x: frame.left,
+        y: frame.bottom,
+        pixels: frame.unit * TAGLINE_PIXELS_UNITS,
+        tracking: TAGLINE_TRACKING,
+        face: gothicFaceFor(event.tagline),
+        color: inks.bone,
+      });
+    }
 
     if (!textOnly) {
       vignette(ctx, frame, { hex: inks.void, amount: VIGNETTE });

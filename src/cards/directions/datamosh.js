@@ -114,7 +114,7 @@ function microSlab(ctx, frame, text, { x, y, ink, slab, textOnly }) {
 export default {
   id: 'datamosh',
   label: 'Датамош',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
     if (!textOnly) {
       ctx.fillStyle = inks.void;
       ctx.fillRect(0, 0, frame.width, frame.height);
@@ -152,20 +152,22 @@ export default {
       face: NARROW_FACE,
     };
 
-    ctx.save();
-    ctx.translate(frame.width / 2, baseline);
-    ctx.rotate(look.tilt);
-    ctx.translate(-frame.width / 2, -baseline);
-    if (!textOnly) {
+    if (show.name) {
       ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = GHOST_ALPHA;
-      fillTracked(ctx, artist.name, { ...line, x: line.x - frame.unit * GHOST_OFFSET_UNITS, color: inks.blood });
-      fillTracked(ctx, artist.name, { ...line, x: line.x + frame.unit * GHOST_OFFSET_UNITS, color: inks.moon });
+      ctx.translate(frame.width / 2, baseline);
+      ctx.rotate(look.tilt);
+      ctx.translate(-frame.width / 2, -baseline);
+      if (!textOnly) {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = GHOST_ALPHA;
+        fillTracked(ctx, artist.name, { ...line, x: line.x - frame.unit * GHOST_OFFSET_UNITS, color: inks.blood });
+        fillTracked(ctx, artist.name, { ...line, x: line.x + frame.unit * GHOST_OFFSET_UNITS, color: inks.moon });
+        ctx.restore();
+      }
+      fillTracked(ctx, artist.name, { ...line, color: inks.flame });
       ctx.restore();
     }
-    fillTracked(ctx, artist.name, { ...line, color: inks.flame });
-    ctx.restore();
 
     if (!textOnly) {
       // Разъезд каналов ложится до служебных строк, а не после: он рвёт картинку, но время
@@ -184,31 +186,35 @@ export default {
     }
 
     const head = frame.top + frame.unit * MICRO_LEAD_UNITS;
-    microSlab(ctx, frame, artist.number, { x: frame.left, y: head, ink: inks.flame, slab: inks.blood, textOnly });
-    microSlab(ctx, frame, event.dateLabel, {
-      x: frame.left,
-      y: baseline + frame.unit * MICRO_LEAD_UNITS * 2,
-      // На прозрачном текстовом слое чёрная строка теряется, там она идёт жаром.
-      ink: textOnly ? inks.ember : inks.void,
-      slab: inks.ember,
-      textOnly,
-    });
-    fillTracked(ctx, artist.credit, {
-      x: frame.left,
-      y: frame.bottom - frame.unit * MICRO_LEAD_UNITS,
-      pixels: frame.unit * MICRO_PIXELS_UNITS,
-      tracking: MICRO_TRACKING,
-      face: NARROW_FACE,
-      color: inks.bone,
-    });
-    fillTracked(ctx, `${event.venue} · ${artist.set}`, {
-      x: frame.left,
-      y: frame.bottom,
-      pixels: frame.unit * MICRO_PIXELS_UNITS,
-      tracking: MICRO_TRACKING,
-      face: NARROW_FACE,
-      color: inks.moon,
-    });
+    if (show.meta) {
+      microSlab(ctx, frame, artist.number, { x: frame.left, y: head, ink: inks.flame, slab: inks.blood, textOnly });
+      microSlab(ctx, frame, event.dateLabel, {
+        x: frame.left,
+        y: baseline + frame.unit * MICRO_LEAD_UNITS * 2,
+        // На прозрачном текстовом слое чёрная строка теряется, там она идёт жаром.
+        ink: textOnly ? inks.ember : inks.void,
+        slab: inks.ember,
+        textOnly,
+      });
+      fillTracked(ctx, `${event.venue} · ${artist.set}`, {
+        x: frame.left,
+        y: frame.bottom,
+        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        tracking: MICRO_TRACKING,
+        face: NARROW_FACE,
+        color: inks.moon,
+      });
+    }
+    if (show.credit) {
+      fillTracked(ctx, artist.credit, {
+        x: frame.left,
+        y: frame.bottom - frame.unit * MICRO_LEAD_UNITS,
+        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        tracking: MICRO_TRACKING,
+        face: NARROW_FACE,
+        color: inks.bone,
+      });
+    }
 
     if (!textOnly) {
       vignette(ctx, frame, { hex: inks.void, amount: VIGNETTE });

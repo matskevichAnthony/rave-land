@@ -153,14 +153,17 @@ function paintPlate(ctx, frame, name, inks, place) {
     }
   }
 
-  punchStencil(plate.ctx, name, {
-    x: frame.left,
-    y: baseline,
-    pixels: fit.pixels,
-    tracking: fit.tracking,
-    face: NARROW_FACE,
-    bridge: inks.concrete,
-  });
+  // Спрятанное имя оставляет плиту глухой: свет за прорезью пропадает вместе с прорезью.
+  if (name !== null) {
+    punchStencil(plate.ctx, name, {
+      x: frame.left,
+      y: baseline,
+      pixels: fit.pixels,
+      tracking: fit.tracking,
+      face: NARROW_FACE,
+      bridge: inks.concrete,
+    });
+  }
   ctx.drawImage(plate.canvas, 0, 0);
   return top + height;
 }
@@ -168,7 +171,7 @@ function paintPlate(ctx, frame, name, inks, place) {
 export default {
   id: 'iron',
   label: 'Железо',
-  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly }) {
+  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly, show }) {
     if (!textOnly) {
       paintGround(ctx, frame, random, inks);
 
@@ -182,56 +185,64 @@ export default {
     }
 
     const setPixels = frame.unit * SET_PIXELS_UNITS;
-    const setWidth = measureLine(ctx, artist.set, { pixels: setPixels, tracking: SET_TRACKING, face: NARROW_FACE });
-    fillTracked(ctx, artist.set, {
-      x: frame.right - setWidth,
-      y: frame.top + setPixels,
-      pixels: setPixels,
-      tracking: SET_TRACKING,
-      face: NARROW_FACE,
-      color: inks.flame,
-    });
-    fillTracked(ctx, artist.number, {
-      x: frame.left,
-      y: frame.top + setPixels,
-      pixels: setPixels,
-      tracking: SET_TRACKING,
-      face: NARROW_FACE,
-      color: inks.bone,
-    });
+    if (show.meta) {
+      const setWidth = measureLine(ctx, artist.set, { pixels: setPixels, tracking: SET_TRACKING, face: NARROW_FACE });
+      fillTracked(ctx, artist.set, {
+        x: frame.right - setWidth,
+        y: frame.top + setPixels,
+        pixels: setPixels,
+        tracking: SET_TRACKING,
+        face: NARROW_FACE,
+        color: inks.flame,
+      });
+      fillTracked(ctx, artist.number, {
+        x: frame.left,
+        y: frame.top + setPixels,
+        pixels: setPixels,
+        tracking: SET_TRACKING,
+        face: NARROW_FACE,
+        color: inks.bone,
+      });
+    }
 
     const place = namePlacement(ctx, frame, artist.name, look);
     let plateBottom = place.top + place.height;
     if (textOnly) {
       // В текстовом слое плиты нет: имя ложится краской там же, где стояла прорезь.
-      fillTracked(ctx, artist.name, {
-        x: frame.left,
-        y: place.baseline,
-        pixels: place.fit.pixels,
-        tracking: place.fit.tracking,
-        face: NARROW_FACE,
-        color: inks.flame,
-      });
+      if (show.name) {
+        fillTracked(ctx, artist.name, {
+          x: frame.left,
+          y: place.baseline,
+          pixels: place.fit.pixels,
+          tracking: place.fit.tracking,
+          face: NARROW_FACE,
+          color: inks.flame,
+        });
+      }
     } else {
-      plateBottom = paintPlate(ctx, frame, artist.name, inks, place);
+      plateBottom = paintPlate(ctx, frame, show.name ? artist.name : null, inks, place);
     }
 
-    fillTracked(ctx, artist.credit, {
-      x: frame.left,
-      y: plateBottom + frame.unit * MICRO_LEAD_UNITS,
-      pixels: frame.unit * CREDIT_PIXELS_UNITS,
-      tracking: CREDIT_TRACKING,
-      face: gothicFaceFor(artist.credit),
-      color: inks.emberHalo,
-    });
-    fillTracked(ctx, `${event.dateLabel} · ${event.venue}`, {
-      x: frame.left,
-      y: frame.bottom,
-      pixels: frame.unit * MICRO_PIXELS_UNITS,
-      tracking: MICRO_TRACKING,
-      face: NARROW_FACE,
-      color: inks.bone,
-    });
+    if (show.credit) {
+      fillTracked(ctx, artist.credit, {
+        x: frame.left,
+        y: plateBottom + frame.unit * MICRO_LEAD_UNITS,
+        pixels: frame.unit * CREDIT_PIXELS_UNITS,
+        tracking: CREDIT_TRACKING,
+        face: gothicFaceFor(artist.credit),
+        color: inks.emberHalo,
+      });
+    }
+    if (show.meta) {
+      fillTracked(ctx, `${event.dateLabel} · ${event.venue}`, {
+        x: frame.left,
+        y: frame.bottom,
+        pixels: frame.unit * MICRO_PIXELS_UNITS,
+        tracking: MICRO_TRACKING,
+        face: NARROW_FACE,
+        color: inks.bone,
+      });
+    }
 
     if (!textOnly) {
       vignette(ctx, frame, { hex: inks.void, amount: VIGNETTE });

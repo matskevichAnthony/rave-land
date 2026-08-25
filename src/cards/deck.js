@@ -33,10 +33,16 @@ export function createDeck({ root, event, view, actions }) {
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('new-lay').addEventListener('click', actions.newLay);
   pick('new-tex').addEventListener('click', actions.newTex);
+  pick('new-bg').addEventListener('click', actions.newBg);
   pick('copy-seed').addEventListener('click', actions.copySeed);
   pick('save-all').addEventListener('click', actions.saveAll);
   pick('allow-3d').addEventListener('click', actions.toggle3d);
   pick('chaos').addEventListener('click', actions.toggleChaos);
+  pick('madness').addEventListener('click', actions.toggleMadness);
+  pick('plaque').addEventListener('click', actions.togglePlaque);
+  pick('text-name').addEventListener('click', actions.toggleName);
+  pick('text-meta').addEventListener('click', actions.toggleMeta);
+  pick('text-credit').addEventListener('click', actions.toggleCredit);
 
   const hotWell = pick('ink-hot');
   const coldWell = pick('ink-cold');
@@ -66,6 +72,11 @@ export function createDeck({ root, event, view, actions }) {
     showState(state) {
       pick('allow-3d').classList.toggle(ACTIVE_CLASS, state.allow3d);
       pick('chaos').classList.toggle(ACTIVE_CLASS, state.chaos);
+      pick('madness').classList.toggle(ACTIVE_CLASS, state.madness);
+      pick('plaque').classList.toggle(ACTIVE_CLASS, state.plaque);
+      pick('text-name').classList.toggle(ACTIVE_CLASS, state.showName);
+      pick('text-meta').classList.toggle(ACTIVE_CLASS, state.showMeta);
+      pick('text-credit').classList.toggle(ACTIVE_CLASS, state.showCredit);
       hotWell.value = state.hot;
       coldWell.value = state.cold;
     },
