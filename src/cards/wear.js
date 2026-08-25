@@ -119,3 +119,28 @@ export function chromatic(ctx, frame, { offset, strength }) {
   ctx.drawImage(split.canvas, 0, 0);
   ctx.restore();
 }
+
+/**
+ * Кадр, разрезанный поперёк и сдвинутый полосами.
+ *
+ * Это геометрический сдвиг, а не цветовой: полосы уезжают целиком, вместе со всем, что на них
+ * нарисовано. Тем он и отличается от разъезда каналов рядом, который трогает только цвет и
+ * оставляет форму на месте.
+ *
+ * Полосы кроют карточку встык и до самого низа: пропущенная полоса читается не приёмом, а
+ * дырой, потому что под ней проступает поле, которого в этом месте быть не должно.
+ */
+export function slices(ctx, frame, random, { bands, shift }) {
+  const source = createLayer(frame.width, frame.height);
+  source.ctx.drawImage(ctx.canvas, 0, 0);
+  const step = frame.height / bands;
+
+  ctx.clearRect(0, 0, frame.width, frame.height);
+  let top = 0;
+  while (top < frame.height) {
+    const height = Math.min(step * (0.4 + random() * 1.6), frame.height - top);
+    const offset = (random() * 2 - 1) * shift;
+    ctx.drawImage(source.canvas, 0, top, frame.width, height, offset, top, frame.width, height);
+    top += height;
+  }
+}
