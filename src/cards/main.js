@@ -2,12 +2,18 @@
  * Страница генератора афиш UNDERSTAV: данные, знак, шрифты, витрина и пульт.
  *
  * Сид живёт в адресе тем же параметром, что у сцены: удачную серию пересылают ссылкой, а не
- * пересказом настроек. Порядок загрузки жёсткий: шрифты приезжают файлами, и карточка,
- * нарисованная до них, молча встаёт системным гротеском вместо готики.
+ * пересказом настроек. Сидов у вида три: общий кормит направление, компоновочный двигает
+ * текст и знак, фактурный держит сыпь, объём и эффектор. Пока компоновку и фактуру не
+ * перебрасывали отдельно, они висят пустыми и наследуют общий сид: «всё заново» честно
+ * меняет всю карточку целиком.
+ *
+ * Порядок загрузки жёсткий: шрифты приезжают файлами, и карточка, нарисованная до них,
+ * молча встаёт системным гротеском вместо готики.
  */
 
 import { loadGothic } from '../understav/gothic.js';
 import { randomSeed } from '../understav/random.js';
+import { DEFAULT_HOT, DEFAULT_COLD } from './ink.js';
 import { createDeck } from './deck.js';
 import { createGallery } from './gallery.js';
 import { loadEvent } from './event.js';
@@ -38,6 +44,12 @@ async function boot() {
     direction: DEFAULT_DIRECTION,
     format: DEFAULT_FORMAT,
     seed: readSeed(event.seed ?? randomSeed()),
+    laySeed: null,
+    texSeed: null,
+    hot: DEFAULT_HOT,
+    cold: DEFAULT_COLD,
+    allow3d: false,
+    chaos: false,
   };
 
   let deck = null;
@@ -55,7 +67,14 @@ async function boot() {
     actions: {
       setDirection: (direction) => redraw({ direction }),
       setFormat: (format) => redraw({ format }),
-      newSeed: () => redraw({ seed: randomSeed() }),
+      // Общий бросок сбрасывает частные сиды: серия начинается с чистого листа.
+      newSeed: () => redraw({ seed: randomSeed(), laySeed: null, texSeed: null }),
+      newLay: () => redraw({ laySeed: randomSeed() }),
+      newTex: () => redraw({ texSeed: randomSeed() }),
+      setInks: (hot, cold) => redraw({ hot, cold }),
+      resetInks: () => redraw({ hot: DEFAULT_HOT, cold: DEFAULT_COLD }),
+      toggle3d: () => redraw({ allow3d: !view.allow3d }),
+      toggleChaos: () => redraw({ chaos: !view.chaos }),
       copySeed,
       saveAll: () => gallery.saveAll(),
     },
@@ -67,6 +86,7 @@ async function boot() {
     url.searchParams.set(SEED_PARAM, view.seed);
     window.history.replaceState(null, '', url);
     deck.showSeed(view.seed);
+    deck.showState(view);
     gallery.draw(view);
   }
 

@@ -5,6 +5,10 @@
  * серией расходятся по кеглю имени и высоте подписи. Поэтому лист рисует сразу шесть и
  * перерисовывает их целиком: половина листа от старого сида, половина от нового врёт сильнее,
  * чем полное отсутствие предпросмотра.
+ *
+ * Текстовый слой не хранится: он рендерится заново в момент нажатия из последнего вида.
+ * Хранить второй холст на карточку значило бы удвоить память листа ради кнопки, которую
+ * жмут раз на серию.
  */
 
 import { artistCards } from './event.js';
@@ -12,6 +16,7 @@ import { renderCard } from './render.js';
 import { downloadCanvas } from './download.js';
 
 const SAVE_HOOK = 'data-js-save-card';
+const TEXT_HOOK = 'data-js-save-text';
 
 function createSheet(artist) {
   const sheet = document.createElement('figure');
@@ -19,12 +24,20 @@ function createSheet(artist) {
   const caption = document.createElement('figcaption');
   caption.className = 'sheet__caption';
   caption.textContent = `${artist.number} · ${artist.name}`;
+  const row = document.createElement('div');
+  row.className = 'sheet__row';
   const save = document.createElement('button');
   save.type = 'button';
   save.className = 'sheet__save';
   save.textContent = 'Скачать';
   save.setAttribute(SAVE_HOOK, artist.number);
-  sheet.append(caption, save);
+  const text = document.createElement('button');
+  text.type = 'button';
+  text.className = 'sheet__save';
+  text.textContent = 'Текст';
+  text.setAttribute(TEXT_HOOK, artist.number);
+  row.append(save, text);
+  sheet.append(caption, row);
   return sheet;
 }
 
@@ -32,16 +45,28 @@ export function createGallery({ root, event, logo, note }) {
   const artists = artistCards(event);
   const sheets = artists.map(createSheet);
   const canvases = new Map();
+  let lastView = null;
   root.append(...sheets);
 
   root.addEventListener('click', (click) => {
-    const button = click.target.closest(`[${SAVE_HOOK}]`);
-    if (!button) return;
-    const number = button.getAttribute(SAVE_HOOK);
-    downloadCanvas(canvases.get(number).canvas, canvases.get(number).name);
+    const saver = click.target.closest(`[${SAVE_HOOK}]`);
+    if (saver) {
+      const held = canvases.get(saver.getAttribute(SAVE_HOOK));
+      downloadCanvas(held.canvas, held.name);
+      return;
+    }
+    const texter = click.target.closest(`[${TEXT_HOOK}]`);
+    if (!texter) return;
+    const number = texter.getAttribute(TEXT_HOOK);
+    const index = artists.findIndex((artist) => artist.number === number);
+    const layer = renderCard({
+      ...lastView, event, artist: artists[index], logo, index, textOnly: true,
+    });
+    downloadCanvas(layer, `${canvases.get(number).name}-text`);
   });
 
   function draw(view) {
+    lastView = { ...view };
     for (const [index, artist] of artists.entries()) {
       const canvas = renderCard({ ...view, event, artist, logo, index });
       canvas.className = 'sheet__card';

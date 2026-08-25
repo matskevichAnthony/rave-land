@@ -17,9 +17,47 @@
       <h2 class="deck__label">Сид</h2>
       <output class="deck__seed" data-js-seed></output>
       <div class="deck__row">
-        <button type="button" data-js-new-seed>Новый сид</button>
+        <button type="button" data-js-new-seed>Всё заново</button>
         <button type="button" data-js-copy-seed>Скопировать</button>
       </div>
+      <div class="deck__row">
+        <button type="button" data-js-new-lay>Компоновка</button>
+        <button type="button" data-js-new-tex>Фактура</button>
+      </div>
+      <p class="deck__hint">
+        «Всё заново» бросает общий сид. «Компоновка» переставляет только текст и знак,
+        «фактура» перебрасывает только сыпь, объём и разгром: удачное остаётся на месте.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Хаос</h2>
+      <div class="deck__row">
+        <button type="button" data-js-allow-3d>Пустить 3D</button>
+        <button type="button" data-js-chaos>Эффектор</button>
+      </div>
+      <p class="deck__hint">
+        3D кладёт в карточку каркасный предмет, отрисованный объёмом. Эффектор разрушает
+        готовый кадр: пересадки, негативы, разъезд каналов.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Цвет</h2>
+      <div class="deck__row deck__row--inks">
+        <label class="deck__ink">
+          <input type="color" data-js-ink-hot />
+          <span>Жар</span>
+        </label>
+        <label class="deck__ink">
+          <input type="color" data-js-ink-cold />
+          <span>Холод</span>
+        </label>
+        <button type="button" data-js-ink-reset>Сброс</button>
+      </div>
+      <p class="deck__hint">
+        Два глобальных цвета серии: жар держит акценты и свет, холод держит луну и трип.
+      </p>
     </section>
 
     <section class="deck__block">
@@ -42,7 +80,8 @@
         <button type="button" data-js-save-all>Скачать все шесть</button>
       </div>
       <p class="deck__hint">
-        Одна карточка скачивается кнопкой под ней. Браузер спросит разрешение на пачку файлов.
+        Одна карточка скачивается кнопкой под ней, «текст» отдаёт набор отдельным прозрачным
+        PNG для ручной вёрстки. Браузер спросит разрешение на пачку файлов.
       </p>
       <p class="deck__note" data-js-note></p>
     </section>

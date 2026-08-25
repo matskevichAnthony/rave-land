@@ -21,6 +21,12 @@
   text-transform: uppercase;
 }
 
-.sheet__save {
+.sheet__row {
+  display: flex;
+  gap: 8px;
   align-self: stretch;
+}
+
+.sheet__save {
+  flex: 1;
 }

@@ -1,9 +1,13 @@
 /**
- * Пульт генератора афиш: сид, направление, формат и выгрузка.
+ * Пульт генератора афиш: сиды, хаос, цвет, направление, формат и выгрузка.
  *
  * Ряды кнопок строятся перебором списка направлений и словаря форматов, а не выписаны в
  * разметке: добавили направление файлом в `directions`, и кнопка появилась сама. Второго
  * списка названий, который разъедется с первым, в проекте нет.
+ *
+ * Тумблеры хаоса и цветовые колодцы не держат своего состояния: правда живёт в `view`
+ * страницы, пульт только показывает её через `showState`. Так кнопка не разъезжается с
+ * карточками после любого пути перерисовки.
  */
 
 import { create } from '../ui/dom.js';
@@ -27,8 +31,19 @@ export function createDeck({ root, event, view, actions }) {
   );
 
   pick('new-seed').addEventListener('click', actions.newSeed);
+  pick('new-lay').addEventListener('click', actions.newLay);
+  pick('new-tex').addEventListener('click', actions.newTex);
   pick('copy-seed').addEventListener('click', actions.copySeed);
   pick('save-all').addEventListener('click', actions.saveAll);
+  pick('allow-3d').addEventListener('click', actions.toggle3d);
+  pick('chaos').addEventListener('click', actions.toggleChaos);
+
+  const hotWell = pick('ink-hot');
+  const coldWell = pick('ink-cold');
+  const applyInks = () => actions.setInks(hotWell.value, coldWell.value);
+  hotWell.addEventListener('input', applyInks);
+  coldWell.addEventListener('input', applyInks);
+  pick('ink-reset').addEventListener('click', actions.resetInks);
 
   function mountChoice(holder, options, current, apply) {
     const buttons = options.map((option) => {
@@ -47,6 +62,12 @@ export function createDeck({ root, event, view, actions }) {
   return {
     showSeed(seed) {
       pick('seed').textContent = seed;
+    },
+    showState(state) {
+      pick('allow-3d').classList.toggle(ACTIVE_CLASS, state.allow3d);
+      pick('chaos').classList.toggle(ACTIVE_CLASS, state.chaos);
+      hotWell.value = state.hot;
+      coldWell.value = state.cold;
     },
     note(text) {
       pick('note').textContent = text;
