@@ -25,6 +25,7 @@ import { applyChaos, createChaosRecipe } from './chaos.js';
 import { drawBorder } from './border.js';
 import { drawSigils } from './sigils.js';
 import { drawPhoto } from './photo.js';
+import { logoLayer } from './logo.js';
 import { directionById } from './directions/index.js';
 
 // Соль между карточками: без неё шесть афиш одного сида получают один и тот же поток и
@@ -39,6 +40,13 @@ const BACKGROUND_SALT = 303;
 const SIGIL_SALT = 404;
 const BORDER_SALT = 505;
 const PHOTO_SALT = 606;
+const SOLO_LOGO_SALT = 707;
+
+// Знак в соло: вордмарк на почти всю ширину кадра, встаёт по серийной высоте с карточным
+// дыханием. Рисуется до фактуры и разгрома, чтобы врастать в карточку, а не лежать поверх.
+const SOLO_LOGO_WIDTH = 0.94;
+const SOLO_LOGO_Y = [0.14, 0.5];
+const SOLO_LOGO_SWAY_UNITS = 2;
 
 // Плашка: размытие тени в юнитах и её плотность.
 const PLAQUE_BLUR_UNITS = 1.3;
@@ -104,10 +112,17 @@ export function renderCard({
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
   photo = false, photos = null,
   objTone = 'heat', objAlpha = 0.92, objBehind = false,
-  chaosPower = 1, chaosZone = 'all',
+  chaosPower = 1, chaosZone = 'all', logoSolo = false,
   showName = true, showMeta = true, showCredit = true, textOnly = false,
+  scale = 1,
 }) {
-  const size = FORMATS[format];
+  // Масштаб не трогает ни один поток случайности и ни одну долю макета: вся вёрстка
+  // меряется юнитами рамки, поэтому двойной холст даёт ту же карточку, но плотнее.
+  // Экран живёт в единице ради скорости, выгрузка берёт двойку под постобработку.
+  const size = {
+    width: Math.round(FORMATS[format].width * scale),
+    height: Math.round(FORMATS[format].height * scale),
+  };
   const { canvas, ctx } = createLayer(size.width, size.height);
   const frame = createFrame(size);
   const inks = makeInks({ hot, cold });
@@ -138,15 +153,36 @@ export function renderCard({
   const anyText = show.name || show.meta || show.credit;
   const shot = photo ? photos?.get(artist.name) : null;
   // Раздельная сборка: текст уходит на свой слой, когда его надо защитить от 3D
-  // (за текстом), от эффектора (зона не «всё») или от снимка: набор всегда поверх лица.
+  // (за текстом), от эффектора (зона не «всё»), от снимка или от знака в соло:
+  // набор всегда поверх лица и поверх вордмарка.
   const split = !textOnly && anyText
-    && (shot || (allow3d && objBehind) || (chaos && chaosZone !== 'all'));
+    && (shot || logoSolo || (allow3d && objBehind) || (chaos && chaosZone !== 'all'));
 
-  directionById(direction).paint(paintArgs(
-    ctx, textOnly, split ? { name: false, meta: false, credit: false } : show,
-  ));
+  // В соло служебка остаётся в подложке: номер-призрак во всю карточку обязан стоять
+  // ПОД вордмарком, а не давить его сверху. Поверх знака поднимаются только имя и подпись.
+  const baseGates = split
+    ? { name: false, meta: logoSolo && show.meta, credit: false }
+    : show;
+  const topGates = { ...show, meta: show.meta && !logoSolo };
+
+  directionById(direction).paint(paintArgs(ctx, textOnly, baseGates));
 
   if (!textOnly) {
+    // Знак в соло: большой вордмарк ложится сразу после фона, поэтому фактура, снимок
+    // и эффектор проходятся и по нему — он часть карточки, а не наклейка. Краска и
+    // высота серийные, дыхание по вертикали карточное.
+    if (logoSolo) {
+      const series = seriesRandom(layBase, SOLO_LOGO_SALT);
+      const cardRnd = createRandom(cardSeed(own(layBase), index + SOLO_LOGO_SALT));
+      const markWidth = frame.width * SOLO_LOGO_WIDTH;
+      const mark = logoLayer(logo.wordmark, {
+        width: markWidth,
+        color: series() < 0.5 ? inks.ember : inks.bone,
+      });
+      const y = frame.height * series.range(SOLO_LOGO_Y[0], SOLO_LOGO_Y[1])
+        + cardRnd.range(-1, 1) * frame.unit * SOLO_LOGO_SWAY_UNITS;
+      ctx.drawImage(mark, (frame.width - markWidth) / 2, y);
+    }
     // Снимок после фона, но до фактуры: сыпь px-77 и разгром ложатся и на лицо тоже,
     // фото врастает в карточку, а не липнет поверх неё стикером.
     if (shot) {
@@ -191,7 +227,7 @@ export function renderCard({
     );
     if ((split || plaque || glow) && anyText) {
       const text = createLayer(frame.width, frame.height);
-      directionById(direction).paint(paintArgs(text.ctx, true));
+      directionById(direction).paint(paintArgs(text.ctx, true, topGates));
       // Зона «текст»: рецепт бьёт только по слою набора, фон остаётся целым.
       if (chaos && split && chaosZone === 'text') {
         applyChaos(text.ctx, frame, chaosRandom(), inks, recipe, chaosPower);

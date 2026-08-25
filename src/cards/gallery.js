@@ -19,6 +19,11 @@ const SAVE_HOOK = 'data-js-save-card';
 const TEXT_HOOK = 'data-js-save-text';
 const ROLL_HOOK = 'data-js-reroll-card';
 
+// Экран рисует карточку в размер формата, в файл она уходит вдвое плотнее: после
+// постобработки и пережатия инстаграмом от 1080 остаётся мыло, а от 2160 остаётся кадр.
+// Вёрстка от масштаба не двигается: те же сиды, те же доли, плотнее только растр.
+const EXPORT_SCALE = 2;
+
 function createSheet(artist, index) {
   const sheet = document.createElement('figure');
   sheet.className = 'sheet';
@@ -55,11 +60,23 @@ export function createGallery({ root, event, logo, photos, note, reroll }) {
   let lastView = null;
   root.append(...sheets);
 
+  // Файл рендерится заново в момент нажатия и вдвое плотнее экранного холста: экран
+  // платит скоростью за шесть перерисовок на каждый твик, файл платит один раз.
+  function renderForFile(number, textOnly) {
+    const index = artists.findIndex((artist) => artist.number === number);
+    return renderCard({
+      ...lastView,
+      localSeed: lastView.cardSeeds?.[index] ?? null,
+      event, artist: artists[index], logo, photos, index, textOnly,
+      scale: EXPORT_SCALE,
+    });
+  }
+
   root.addEventListener('click', (click) => {
     const saver = click.target.closest(`[${SAVE_HOOK}]`);
     if (saver) {
-      const held = canvases.get(saver.getAttribute(SAVE_HOOK));
-      downloadCanvas(held.canvas, held.name);
+      const number = saver.getAttribute(SAVE_HOOK);
+      downloadCanvas(renderForFile(number, false), canvases.get(number).name);
       return;
     }
     const roller = click.target.closest(`[${ROLL_HOOK}]`);
@@ -70,13 +87,7 @@ export function createGallery({ root, event, logo, photos, note, reroll }) {
     const texter = click.target.closest(`[${TEXT_HOOK}]`);
     if (!texter) return;
     const number = texter.getAttribute(TEXT_HOOK);
-    const index = artists.findIndex((artist) => artist.number === number);
-    const layer = renderCard({
-      ...lastView,
-      localSeed: lastView.cardSeeds?.[index] ?? null,
-      event, artist: artists[index], logo, index, textOnly: true,
-    });
-    downloadCanvas(layer, `${canvases.get(number).name}-text`);
+    downloadCanvas(renderForFile(number, true), `${canvases.get(number).name}-text`);
   });
 
   function draw(view) {
@@ -98,10 +109,9 @@ export function createGallery({ root, event, logo, photos, note, reroll }) {
 
   async function saveAll() {
     for (const artist of artists) {
-      const sheet = canvases.get(artist.number);
-      await downloadCanvas(sheet.canvas, sheet.name);
+      await downloadCanvas(renderForFile(artist.number, false), canvases.get(artist.number).name);
     }
-    note(`Сохранено карточек: ${artists.length}`);
+    note(`Сохранено карточек: ${artists.length}, каждая ${EXPORT_SCALE}x от экрана`);
   }
 
   return { draw, saveAll };

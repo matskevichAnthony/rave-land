@@ -31,6 +31,12 @@ const FRAMINGS = { square: 1, story: 9 / 16, wide: 16 / 9, sheet: 1 / Math.SQRT2
 // Под печать высота другая: триста точек на дюйм по длинной стороне листа A4.
 const PHOTO = { height: 2160, printHeight: 3508, maxDensity: 4 };
 
+// Видео пишется с того же холста, что и кадр, поэтому дубль с экранного размера уходит
+// в файл тысячей пикселей и после постобработки для ленты уже не годится. На время дубля
+// холст уплотняется до этой высоты и держится так весь дубль: кадров в секунду это стоит,
+// но кадр в 4K с запасом на пост дороже ровных шестидесяти в мыле.
+const TAKE_HEIGHT = 2160;
+
 /**
  * Печатный вид: то же самое, но снятое так, чтобы пережило бумагу и мессенджер.
  *
@@ -109,6 +115,9 @@ async function boot() {
   let takeEndsAt = Infinity;
   let wantsStillFrame = false;
   let wantsPhoto = false;
+  // Часы цикла наружу: старт дубля рисует кадр сам и обязан рисовать его в том же
+  // времени, что и цикл, иначе анимация на первом кадре дубля прыгает.
+  let loopElapsed = 0;
   let screenKnobs = null;
   let walk = null;
 
@@ -317,10 +326,17 @@ async function boot() {
   async function startTake(seconds) {
     if (recorder.recording) return;
     panel.setRecording(true);
+    // Холст уплотняется до старта записи: рекордер меряет размер и битрейт по холсту,
+    // и решать их он обязан по съёмочному размеру, а не по экранному. Кадр рисуется
+    // сразу, чтобы поток не открылся пустым или экранным кадром.
+    const { height } = frameSize(FRAMINGS[view.framing]);
+    layout(Math.min(TAKE_HEIGHT / height, PHOTO.maxDensity));
+    renderScene(0, loopElapsed);
     let take = null;
     try {
       take = await recorder.start();
     } catch (error) {
+      layout();
       panel.setRecording(false);
       panel.note(`Запись не пошла: ${error.message}`);
       return;
@@ -335,6 +351,9 @@ async function boot() {
 
   async function finishTake() {
     takeEndsAt = Infinity;
+    // Экранный размер возвращается до сборки файла: дубль уже снят, держать плотный
+    // холст дальше значит зря жечь кадры на странице.
+    layout();
     try {
       const { blob, dropped } = await recorder.stop();
       const name = `${fileStem()}.${videoExtension(blob)}`;
@@ -453,6 +472,7 @@ async function boot() {
   }
 
   function drawFrame(dt, elapsed) {
+    loopElapsed = elapsed;
     renderScene(dt, elapsed);
 
     if (recorder.recording) recorder.frame();

@@ -63,6 +63,7 @@ async function boot() {
     glow: false,
     sigils: false,
     photo: false,
+    logoSolo: false,
     border: 'none',
     showName: true,
     showMeta: true,
@@ -130,6 +131,7 @@ async function boot() {
         }
         redraw({ photo: !view.photo });
       },
+      toggleLogoSolo: () => redraw({ logoSolo: !view.logoSolo }),
       toggleName: () => redraw({ showName: !view.showName }),
       toggleMeta: () => redraw({ showMeta: !view.showMeta }),
       toggleCredit: () => redraw({ showCredit: !view.showCredit }),
