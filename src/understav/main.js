@@ -72,7 +72,10 @@ const SCENE_MODULES = [
   { name: 'createEffects', file: 'effects.js', load: () => import('./effects.js') },
 ];
 
-const view = { mode: 'still', framing: 'full', countdown: false, poster: true, print: false };
+const view = {
+  mode: 'still', framing: 'full', countdown: false, poster: true, print: false,
+  flat: false, fov: null,
+};
 
 boot().catch(showError);
 
@@ -83,6 +86,11 @@ async function boot() {
   const mount = document.querySelector('[data-js-mount]');
 
   const stage = createStage({ mount });
+  // Угол объектива спрашивается у камеры, а не выписывается вторым числом рядом: значение по
+  // умолчанию живёт в `stage.js`, и пульт обязан стартовать с того же, с чем стартовала сцена.
+  view.fov = stage.camera.fov;
+  // Плоский набор висит на камере, а дети камеры рисуются только если камера в графе сцены.
+  stage.scene.add(stage.camera);
   const effects = createEffects({
     renderer: stage.renderer,
     scene: stage.scene,
@@ -142,6 +150,16 @@ async function boot() {
         if (!world) return;
         world.typography.group.visible = visible;
         world.architecture.setPoster(visible);
+      },
+      setFov: (degrees) => {
+        view.fov = degrees;
+        stage.camera.fov = degrees;
+        stage.camera.updateProjectionMatrix();
+        world?.typography.refitFlat(stage.camera);
+      },
+      setFlat: (active) => {
+        view.flat = active;
+        world?.typography.setFlat(active, stage.camera);
       },
       guest: addGuest,
       battle: () => {
@@ -209,6 +227,7 @@ async function boot() {
     stage.renderer.domElement.style.height = '100%';
     stage.camera.aspect = width / height;
     stage.camera.updateProjectionMatrix();
+    world?.typography.refitFlat(stage.camera);
   }
 
   async function rebuild() {
@@ -226,6 +245,7 @@ async function boot() {
     clearWorld();
     stage.scene.add(architecture.group, typography.group, bats.group);
     typography.group.visible = view.poster;
+    typography.setFlat(view.flat, stage.camera);
     architecture.setPoster(view.poster);
     typography.setDaysLeft(view.countdown ? daysLeft : null);
     const rig = createCameraRig({ camera: stage.camera, bounds: architecture.bounds, rng });

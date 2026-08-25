@@ -111,6 +111,24 @@
   cursor: pointer;
 }
 
+.deck__slider {
+  display: grid;
+  gap: 2px;
+  margin-top: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.deck__slider b {
+  color: var(--bone);
+  font-family: ui-monospace, monospace;
+  font-weight: 400;
+}
+
+.deck__slider input {
+  width: 100%;
+}
+
 .deck__field {
   display: flex;
   align-items: center;

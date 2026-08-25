@@ -82,6 +82,15 @@ const ASSEMBLE_SPAN = 1.7;
 // разрешено из неё вылезти; чего не разрешено, так это слипнуться.
 const MIN_SQUEEZE = 0.34;
 
+// Плоский набор: афиша перестаёт быть предметом зала и становится тем, чем она и является в
+// ленте, картинкой поверх кадра. Её вешают на камеру, поэтому ракурс её больше не касается:
+// как бы ни стоял риг, строки видны анфас и целиком. Заодно это дешевле: набор выходит из
+// теней и из проверки глубины, то есть перестаёт стоить второго обхода и споров с геометрией.
+const FLAT_DISTANCE = 8;
+const FLAT_FILL = 0.92;
+// Поверх всего, что рисует сцена: набор снят с проверки глубины и обязан лечь последним.
+const FLAT_ORDER = 900;
+
 // Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
 const GAP_AFTER_TITLE = 0.34;
@@ -398,6 +407,69 @@ function stackRows(rows, box) {
   }
 }
 
+/**
+ * Набор поверх кадра: снят с глубины и с теней, кладётся последним.
+ *
+ * Исходные значения запоминаются на самих объектах, потому что материал у плит свой, а у
+ * железа общий на все инстансы: снимок «как было» с одного места не восстановил бы остальные.
+ */
+function liftFromDepth(group, lifted) {
+  group.traverse((node) => {
+    if (!node.isMesh) return;
+    lifted.push({
+      node,
+      order: node.renderOrder,
+      cast: node.castShadow,
+      receive: node.receiveShadow,
+      materials: [node.material].flat().map((material) => ({
+        material, test: material.depthTest, write: material.depthWrite,
+      })),
+    });
+    node.renderOrder = FLAT_ORDER;
+    node.castShadow = false;
+    node.receiveShadow = false;
+    for (const material of [node.material].flat()) {
+      material.depthTest = false;
+      material.depthWrite = false;
+    }
+  });
+}
+
+function dropBackToDepth(lifted) {
+  for (const item of lifted) {
+    item.node.renderOrder = item.order;
+    item.node.castShadow = item.cast;
+    item.node.receiveShadow = item.receive;
+    for (const entry of item.materials) {
+      entry.material.depthTest = entry.test;
+      entry.material.depthWrite = entry.write;
+    }
+  }
+}
+
+/**
+ * Габариты блока строк в его собственных координатах.
+ *
+ * Меряются один раз, пока набор ещё стоит в зале нетронутым. Мерить его после привязки к
+ * камере нельзя: `setFromObject` считает в мировых координатах, и в них уже сидит поворот
+ * самой камеры, отчего блок уезжает из кадра тем сильнее, чем круче ракурс. Отсчёт не
+ * замусорен и цифрой обратного отсчёта: она висит на розе в двадцати метрах позади афиши.
+ */
+function measureLayout(rows) {
+  const bounds = new THREE.Box3();
+  for (const item of rows) bounds.expandByObject(item.row.group);
+  return { size: bounds.getSize(new THREE.Vector3()), centre: bounds.getCenter(new THREE.Vector3()) };
+}
+
+/** Во сколько раз ужать блок таких габаритов, чтобы он целиком встал в кадр этой камеры. */
+function fitToFrame(layout, camera) {
+  const visibleHeight = 2 * FLAT_DISTANCE * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  return FLAT_FILL * Math.min(
+    (visibleHeight * camera.aspect) / layout.size.x,
+    visibleHeight / layout.size.y,
+  );
+}
+
 /** Мягкая посадка: строка приходит быстро и гасит скорость у самого своего места. */
 function settle(t) {
   return 1 - (1 - t) ** 3;
@@ -553,8 +625,55 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   }));
   let assembled = 1;
 
+  let flatRest = null;
+  const lifted = [];
+  const layout = measureLayout(rows);
+
   return {
     group,
+    /**
+     * Плоский набор: афиша уходит из зала на камеру и встаёт ровно в кадр.
+     *
+     * Возврат обязателен со снимка, а не пересчётом: место набора в зале выбрано раскладкой,
+     * и восстановить его формулой значит завести вторую раскладку рядом с первой.
+     */
+    setFlat(active, camera) {
+      if (active === Boolean(flatRest)) {
+        if (active) this.refitFlat(camera);
+        return;
+      }
+      if (active) {
+        flatRest = {
+          parent: group.parent,
+          position: group.position.clone(),
+          quaternion: group.quaternion.clone(),
+          scale: group.scale.clone(),
+        };
+        liftFromDepth(group, lifted);
+        camera.add(group);
+        this.refitFlat(camera);
+        return;
+      }
+      dropBackToDepth(lifted);
+      lifted.length = 0;
+      flatRest.parent?.add(group);
+      group.position.copy(flatRest.position);
+      group.quaternion.copy(flatRest.quaternion);
+      group.scale.copy(flatRest.scale);
+      flatRest = null;
+    },
+    /** Пересадка под новый кадр: угол объектива и пропорции меняются, посадка обязана следом. */
+    refitFlat(camera) {
+      if (!flatRest) return;
+      const scale = fitToFrame(layout, camera);
+      group.quaternion.identity();
+      group.scale.setScalar(scale);
+      group.position.set(
+        -layout.centre.x * scale,
+        -layout.centre.y * scale,
+        -FLAT_DISTANCE - layout.centre.z * scale,
+      );
+    },
     setDaysLeft(days) {
       countdown.show(days);
     },

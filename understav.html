@@ -76,6 +76,14 @@
         <button type="button" data-js-framing="sheet">Лист</button>
         <button type="button" data-js-framing="full">Во всё окно</button>
       </div>
+      <label class="deck__slider">
+        <span>Угол объектива: <b data-js-fov-value></b>°</span>
+        <input type="range" data-js-fov min="16" max="80" step="1" />
+      </label>
+      <p class="deck__hint">
+        Узкий угол сплющивает неф и ставит афишу плитой в кадр, широкий раздвигает стены и
+        тянет колонны мимо камеры. Меняет кадрирование, а не положение камеры.
+      </p>
     </section>
 
     <section class="deck__block">
@@ -87,6 +95,10 @@
       <label class="deck__toggle">
         <input type="checkbox" data-js-poster checked />
         <span>Показать афишу: заголовок, лайнап, дата</span>
+      </label>
+      <label class="deck__toggle">
+        <input type="checkbox" data-js-flat />
+        <span>Плоский набор: афиша уходит из зала и встаёт ровно в кадр</span>
       </label>
     </section>
 

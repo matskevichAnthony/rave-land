@@ -75,6 +75,26 @@ export function createPanel({
     print.checked = view.print;
     print.addEventListener('change', () => actions.setPrint(print.checked));
   }
+  const flat = pick('flat');
+  if (flat) {
+    flat.checked = view.flat;
+    flat.addEventListener('change', () => actions.setFlat(flat.checked));
+  }
+  // Угол объектива есть не у всякой страницы с пультом, поэтому спрашивается, а не берётся.
+  const fov = pick('fov');
+  if (fov) {
+    fov.value = String(view.fov);
+    showFov(view.fov);
+    fov.addEventListener('input', () => {
+      const degrees = Number(fov.value);
+      showFov(degrees);
+      actions.setFov(degrees);
+    });
+  }
+
+  function showFov(degrees) {
+    pick('fov-value').textContent = String(Math.round(degrees));
+  }
   pick('shoot').addEventListener('click', () => actions.shoot(takeSeconds()));
   pick('capture').addEventListener('click', actions.capture);
   // Фото есть не у всякой сцены: у пульта один код на все, и лишний хук он не требует.
