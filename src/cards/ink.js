@@ -5,6 +5,8 @@
  * каждый модуль завёл бы свои хексы рядом с палитрой. Отсюда одна функция на весь набор.
  */
 
+import { PALETTE } from '../understav/palette.js';
+
 const HEX_RADIX = 16;
 const HEX_PAIR = 2;
 const CHANNELS = 3;
@@ -19,6 +21,38 @@ function channels(hex) {
 
 export function rgba(hex, alpha) {
   return `rgba(${channels(hex).join(', ')}, ${alpha})`;
+}
+
+/** Смесь двух цветов: доля `t` от нуля (первый) до единицы (второй). */
+export function mix(hexA, hexB, t) {
+  const a = channels(hexA);
+  const b = channels(hexB);
+  const blend = a.map((channel, index) => Math.round(channel + (b[index] - channel) * t));
+  return `#${blend.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+export const DEFAULT_HOT = PALETTE.ember;
+export const DEFAULT_COLD = PALETTE.moon;
+
+/**
+ * Краски карточки из двух глобальных цветов пульта.
+ *
+ * Жар держит всю тёплую семью (акцент, свет, ореол, ржавчину, кровь), холод держит
+ * холодную (луну и трип). Нейтральные тона остаются палитрой сцены: они несут бетон и
+ * кость, и их кручение разваливало бы карточку на чужие материалы. Так два ползунка
+ * перекрашивают всю серию, не ломая её устройство.
+ */
+export function makeInks({ hot = DEFAULT_HOT, cold = DEFAULT_COLD } = {}) {
+  return {
+    ...PALETTE,
+    ember: hot,
+    flame: mix(hot, '#ffffff', 0.72),
+    emberHalo: mix(hot, '#ffffff', 0.42),
+    rust: mix(hot, '#000000', 0.6),
+    blood: mix(hot, '#000000', 0.16),
+    moon: cold,
+    trip: mix(cold, '#000000', 0.25),
+  };
 }
 
 /** Вертикальный градиент: остановки идут списком `[доля, цвет, прозрачность]`. */

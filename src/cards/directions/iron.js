@@ -3,11 +3,11 @@
  *
  * Это тот же язык, которым говорит сама сцена: буквы там не слой поверх кадра, а предмет
  * зала: отлитый в металле заголовок и подвешенные плиты лайнапа с трафаретом. Карточка
- * повторяет его на плоскости, поэтому из трёх направлений именно это стыкуется с кадром
- * из зала: подложку можно заменить фотографией сцены, макет не поедет.
+ * повторяет его на плоскости, поэтому из направлений именно это стыкуется с кадром из зала.
+ *
+ * Раскладку решает `look` (верх плиты, кегли, масштаб знака), краски решает `inks`.
  */
 
-import { PALETTE } from '../../understav/palette.js';
 import { halo, rgba, verticalFade } from '../ink.js';
 import { logoLayer } from '../logo.js';
 import { createLayer } from '../layer.js';
@@ -31,7 +31,6 @@ const LOGO_BLOOM_UNITS = 3;
 const LOGO_BLOOM_ALPHA = 0.55;
 const LOGO_SHADOW_UNITS = 0.8;
 
-const PLATE_TOP_RATIO = 0.68;
 const PLATE_HEIGHT_RATIO = 0.16;
 const PLATE_RIM_UNITS = 0.4;
 const RIVET_RADIUS_UNITS = 0.55;
@@ -53,37 +52,37 @@ const CREDIT_TRACKING = 0.06;
 const GRAIN = 0.045;
 const VIGNETTE = 0.72;
 
-function paintGround(ctx, frame, random) {
-  ctx.fillStyle = PALETTE.iron;
+function paintGround(ctx, frame, random, inks) {
+  ctx.fillStyle = inks.iron;
   ctx.fillRect(0, 0, frame.width, frame.height);
-  soot(ctx, frame, random, { hex: PALETTE.void, ...SOOT });
-  soot(ctx, frame, random, { hex: PALETTE.rust, ...SOOT });
-  scratches(ctx, frame, random, { hex: PALETTE.bone, ...SCRATCHES });
+  soot(ctx, frame, random, { hex: inks.void, ...SOOT });
+  soot(ctx, frame, random, { hex: inks.rust, ...SOOT });
+  scratches(ctx, frame, random, { hex: inks.bone, ...SCRATCHES });
   ctx.fillStyle = halo(ctx, {
     x: frame.width / 2,
     y: frame.height * FIRE_CENTER_RATIO,
     radius: frame.width * FIRE_RADIUS_RATIO,
-    hex: PALETTE.rust,
+    hex: inks.rust,
     alpha: FIRE_ALPHA,
   });
   ctx.fillRect(0, 0, frame.width, frame.height);
 }
 
 /** Знак горит насквозь: жар лежит отдельным слоем и обрезается формой букв. */
-function burnLogo(ctx, frame, logo) {
-  const height = frame.height * LOGO_HEIGHT_RATIO;
+function burnLogo(ctx, frame, logo, inks, look) {
+  const height = frame.height * LOGO_HEIGHT_RATIO * look.logoScale;
   const mark = logoLayer(logo.wordmark, {
     width: (height * logo.wordmark.width) / logo.wordmark.height,
     color: '#ffffff',
   });
-  const x = (frame.width - mark.width) / 2;
+  const x = (frame.width - mark.width) / 2 + frame.width * look.drift;
   const y = frame.height * LOGO_CENTER_RATIO - mark.height / 2;
 
   const heat = createLayer(mark.width, mark.height);
   heat.ctx.fillStyle = verticalFade(heat.ctx, 0, mark.height, [
-    [0, PALETTE.flame, 1],
-    [0.45, PALETTE.ember, 1],
-    [1, PALETTE.rust, 1],
+    [0, inks.flame, 1],
+    [0.45, inks.ember, 1],
+    [1, inks.rust, 1],
   ]);
   heat.ctx.fillRect(0, 0, mark.width, mark.height);
   heat.ctx.globalCompositeOperation = 'destination-in';
@@ -99,7 +98,7 @@ function burnLogo(ctx, frame, logo) {
   ctx.save();
   ctx.globalAlpha = 1;
   ctx.drawImage(
-    logoLayer(logo.wordmark, { width: mark.width, color: PALETTE.void }),
+    logoLayer(logo.wordmark, { width: mark.width, color: inks.void }),
     x + frame.unit * LOGO_SHADOW_UNITS,
     y + frame.unit * LOGO_SHADOW_UNITS,
   );
@@ -107,32 +106,44 @@ function burnLogo(ctx, frame, logo) {
   ctx.restore();
 }
 
-function paintPlate(ctx, frame, name) {
-  const top = frame.height * PLATE_TOP_RATIO;
+function namePlacement(ctx, frame, name, look) {
+  const top = frame.height * look.plateTop;
   const height = frame.height * PLATE_HEIGHT_RATIO;
+  const fit = justifyLine(ctx, name, {
+    width: frame.innerWidth,
+    maxPixels: height * NAME_HEIGHT_RATIO * look.nameScale,
+    tracking: NAME_TRACKING,
+    face: NARROW_FACE,
+  });
+  const cap = capHeight(ctx, name, { pixels: fit.pixels, face: NARROW_FACE });
+  return { top, height, fit, baseline: top + height / 2 + cap / 2 };
+}
+
+function paintPlate(ctx, frame, name, inks, place) {
+  const { top, height, fit, baseline } = place;
   const rim = frame.unit * PLATE_RIM_UNITS;
 
   // Свет за плитой смещён к низу: прорезь имени стоит в нижней половине, и на прежней
   // раскладке в буквы попадала ржавчина, а не пламя.
   ctx.fillStyle = verticalFade(ctx, top, top + height, [
-    [0, PALETTE.ember, 1],
-    [0.7, PALETTE.flame, 1],
-    [1, PALETTE.ember, 1],
+    [0, inks.ember, 1],
+    [0.7, inks.flame, 1],
+    [1, inks.ember, 1],
   ]);
   ctx.fillRect(0, top, frame.width, height);
 
   const plate = createLayer(frame.width, frame.height);
   plate.ctx.fillStyle = verticalFade(plate.ctx, top, top + height, [
-    [0, PALETTE.concrete, 1],
-    [1, PALETTE.iron, 1],
+    [0, inks.concrete, 1],
+    [1, inks.iron, 1],
   ]);
   plate.ctx.fillRect(0, top, frame.width, height);
-  plate.ctx.fillStyle = rgba(PALETTE.bone, 0.18);
+  plate.ctx.fillStyle = rgba(inks.bone, 0.18);
   plate.ctx.fillRect(0, top, frame.width, rim);
-  plate.ctx.fillStyle = rgba(PALETTE.void, 0.6);
+  plate.ctx.fillStyle = rgba(inks.void, 0.6);
   plate.ctx.fillRect(0, top + height - rim, frame.width, rim);
 
-  plate.ctx.fillStyle = rgba(PALETTE.bone, 0.22);
+  plate.ctx.fillStyle = rgba(inks.bone, 0.22);
   for (let rivet = 0; rivet < RIVETS; rivet += 1) {
     const x = frame.left + (frame.innerWidth * rivet) / (RIVETS - 1);
     for (const y of [top + frame.unit * RIVET_INSET_UNITS, top + height - frame.unit * RIVET_INSET_UNITS]) {
@@ -142,20 +153,13 @@ function paintPlate(ctx, frame, name) {
     }
   }
 
-  const fit = justifyLine(plate.ctx, name, {
-    width: frame.innerWidth,
-    maxPixels: height * NAME_HEIGHT_RATIO,
-    tracking: NAME_TRACKING,
-    face: NARROW_FACE,
-  });
-  const cap = capHeight(plate.ctx, name, { pixels: fit.pixels, face: NARROW_FACE });
   punchStencil(plate.ctx, name, {
     x: frame.left,
-    y: top + height / 2 + cap / 2,
+    y: baseline,
     pixels: fit.pixels,
     tracking: fit.tracking,
     face: NARROW_FACE,
-    bridge: PALETTE.concrete,
+    bridge: inks.concrete,
   });
   ctx.drawImage(plate.canvas, 0, 0);
   return top + height;
@@ -164,16 +168,18 @@ function paintPlate(ctx, frame, name) {
 export default {
   id: 'iron',
   label: 'Железо',
-  paint({ ctx, frame, random, event, artist, logo }) {
-    paintGround(ctx, frame, random);
+  paint({ ctx, frame, random, event, artist, logo, inks, look, textOnly }) {
+    if (!textOnly) {
+      paintGround(ctx, frame, random, inks);
 
-    const crosses = logoLayer(logo.crosses, { width: frame.width, color: PALETTE.ember });
-    ctx.save();
-    ctx.globalAlpha = CROSS_ALPHA;
-    ctx.drawImage(crosses, 0, (frame.height - crosses.height) / 2);
-    ctx.restore();
+      const crosses = logoLayer(logo.crosses, { width: frame.width, color: inks.ember });
+      ctx.save();
+      ctx.globalAlpha = CROSS_ALPHA;
+      ctx.drawImage(crosses, 0, (frame.height - crosses.height) / 2);
+      ctx.restore();
 
-    burnLogo(ctx, frame, logo);
+      burnLogo(ctx, frame, logo, inks, look);
+    }
 
     const setPixels = frame.unit * SET_PIXELS_UNITS;
     const setWidth = measureLine(ctx, artist.set, { pixels: setPixels, tracking: SET_TRACKING, face: NARROW_FACE });
@@ -183,7 +189,7 @@ export default {
       pixels: setPixels,
       tracking: SET_TRACKING,
       face: NARROW_FACE,
-      color: PALETTE.flame,
+      color: inks.flame,
     });
     fillTracked(ctx, artist.number, {
       x: frame.left,
@@ -191,17 +197,32 @@ export default {
       pixels: setPixels,
       tracking: SET_TRACKING,
       face: NARROW_FACE,
-      color: PALETTE.bone,
+      color: inks.bone,
     });
 
-    const plateBottom = paintPlate(ctx, frame, artist.name);
+    const place = namePlacement(ctx, frame, artist.name, look);
+    let plateBottom = place.top + place.height;
+    if (textOnly) {
+      // В текстовом слое плиты нет: имя ложится краской там же, где стояла прорезь.
+      fillTracked(ctx, artist.name, {
+        x: frame.left,
+        y: place.baseline,
+        pixels: place.fit.pixels,
+        tracking: place.fit.tracking,
+        face: NARROW_FACE,
+        color: inks.flame,
+      });
+    } else {
+      plateBottom = paintPlate(ctx, frame, artist.name, inks, place);
+    }
+
     fillTracked(ctx, artist.credit, {
       x: frame.left,
       y: plateBottom + frame.unit * MICRO_LEAD_UNITS,
       pixels: frame.unit * CREDIT_PIXELS_UNITS,
       tracking: CREDIT_TRACKING,
       face: gothicFaceFor(artist.credit),
-      color: PALETTE.emberHalo,
+      color: inks.emberHalo,
     });
     fillTracked(ctx, `${event.dateLabel} · ${event.venue}`, {
       x: frame.left,
@@ -209,10 +230,12 @@ export default {
       pixels: frame.unit * MICRO_PIXELS_UNITS,
       tracking: MICRO_TRACKING,
       face: NARROW_FACE,
-      color: PALETTE.bone,
+      color: inks.bone,
     });
 
-    vignette(ctx, frame, { hex: PALETTE.void, amount: VIGNETTE });
-    grain(ctx, frame, random, GRAIN);
+    if (!textOnly) {
+      vignette(ctx, frame, { hex: inks.void, amount: VIGNETTE });
+      grain(ctx, frame, random, GRAIN);
+    }
   },
 };
