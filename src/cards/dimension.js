@@ -58,6 +58,18 @@ const GLITCH_NOISE = 0.22;
 
 const POINT_SIZE = [0.015, 0.05];
 
+/**
+ * Тон объёма: своя палитра 3D, отвязанная от красок серии по выбору пульта.
+ * Жар и холод берут глобальные цвета, металл и моно глушат предмет в серость и кость:
+ * так объём не может самовольно вытечь в цвет, который портит всю серию.
+ */
+function tonePalette(tone, inks) {
+  if (tone === 'cold') return { lit: inks.moon, alt: inks.trip, dust: inks.bone };
+  if (tone === 'metal') return { lit: inks.concrete, alt: inks.iron, dust: inks.bone };
+  if (tone === 'mono') return { lit: inks.bone, alt: inks.concrete, dust: inks.bone };
+  return { lit: inks.ember, alt: inks.blood, dust: inks.bone };
+}
+
 const SIZE_RATIO = [0.38, 0.72];
 const CENTRE_X = [0.2, 0.8];
 const CENTRE_Y = [0.24, 0.62];
@@ -151,13 +163,13 @@ function stackGeometries(random) {
   });
 }
 
-/** Глитч-текстура: пиксельные ряды палитры с помехами, рисуются на плоском холсте. */
-function glitchTexture(random, inks) {
+/** Глитч-текстура: пиксельные ряды тона с помехами, рисуются на плоском холсте. */
+function glitchTexture(random, inks, tone) {
   const canvas = document.createElement('canvas');
   canvas.width = GLITCH_SIZE;
   canvas.height = GLITCH_SIZE;
   const ctx = canvas.getContext('2d');
-  const palette = [inks.void, inks.ember, inks.moon, inks.bone, inks.blood];
+  const palette = [inks.void, tone.lit, tone.alt, tone.dust];
   const rows = random.int(GLITCH_ROWS[0], GLITCH_ROWS[1]);
   const rowHeight = GLITCH_SIZE / rows;
   for (let row = 0; row < rows; row += 1) {
@@ -188,7 +200,7 @@ function glitchTexture(random, inks) {
  * серии, тень уходит в чернильную тьму. Спектральный MeshNormalMaterial здесь запрещён:
  * его радуга не знает про глобальные цвета пульта и вываливает предмет из серии.
  */
-function facetSkin(geometry, random, inks) {
+function facetSkin(geometry, random, inks, tone) {
   const flat = geometry.index ? geometry.toNonIndexed() : geometry;
   // Развёрнутая копия замещает исходник: тот больше никому не виден, чистится сразу.
   if (flat !== geometry) geometry.dispose();
@@ -196,7 +208,7 @@ function facetSkin(geometry, random, inks) {
   const normal = flat.getAttribute('normal');
   const colors = new Float32Array(position.count * 3);
   const light = new THREE.Vector3(random.range(-1, 1), random.range(0.2, 1), random.range(0.4, 1)).normalize();
-  const lit = new THREE.Color(random.pick([inks.ember, inks.moon]));
+  const lit = new THREE.Color(tone.lit);
   const dark = new THREE.Color(inks.void);
   const face = new THREE.Vector3();
   const shade = new THREE.Color();
@@ -212,19 +224,19 @@ function facetSkin(geometry, random, inks) {
   return new THREE.Mesh(flat, new THREE.MeshBasicMaterial({ vertexColors: true }));
 }
 
-/** Кожа предмета: во что одета геометрия решает сид, а не вид геометрии. */
-function dress(geometry, skin, random, inks) {
+/** Кожа предмета: во что одета геометрия решает сид, а цвет держит тон пульта. */
+function dress(geometry, skin, random, inks, tone) {
   if (skin === 'points') {
     return new THREE.Points(geometry, new THREE.PointsMaterial({
-      color: new THREE.Color(random.pick([inks.ember, inks.moon, inks.bone])),
+      color: new THREE.Color(random.pick([tone.lit, tone.alt, tone.dust])),
       size: random.range(POINT_SIZE[0], POINT_SIZE[1]),
     }));
   }
   if (skin === 'facet') {
-    return facetSkin(geometry, random, inks);
+    return facetSkin(geometry, random, inks, tone);
   }
   if (skin === 'glitch') {
-    return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: glitchTexture(random, inks) }));
+    return new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ map: glitchTexture(random, inks, tone) }));
   }
   const group = new THREE.Group();
   const fill = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({
@@ -234,13 +246,13 @@ function dress(geometry, skin, random, inks) {
   }));
   const edges = new THREE.LineSegments(
     new THREE.EdgesGeometry(geometry, 1),
-    new THREE.LineBasicMaterial({ color: new THREE.Color(inks.ember) }),
+    new THREE.LineBasicMaterial({ color: new THREE.Color(tone.lit) }),
   );
   group.add(fill, edges);
   return group;
 }
 
-function buildObject(random, inks) {
+function buildObject(random, inks, tone) {
   const kind = random.pick(KINDS);
   const skin = random.pick(SKINS);
   const group = new THREE.Group();
@@ -258,7 +270,7 @@ function buildObject(random, inks) {
   })();
 
   for (const geometry of geometries) {
-    group.add(dress(geometry, skin, random, inks));
+    group.add(dress(geometry, skin, random, inks, tone));
   }
 
   group.rotation.set(
@@ -279,13 +291,14 @@ function disposeObject(group) {
   });
 }
 
-export function drawDimension(ctx, frame, random, inks) {
+export function drawDimension(ctx, frame, random, inks, { tone = 'heat', alpha = LAYER_ALPHA } = {}) {
   const renderer = getRenderer();
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.1, 10);
   camera.position.z = CAMERA_Z;
 
-  const object = buildObject(random, inks);
+  const palette = tonePalette(tone, inks);
+  const object = buildObject(random, inks, palette);
   scene.add(object);
   renderer.render(scene, camera);
 
@@ -294,12 +307,12 @@ export function drawDimension(ctx, frame, random, inks) {
   const y = frame.height * random.range(CENTRE_Y[0], CENTRE_Y[1]) - size / 2;
 
   ctx.save();
-  ctx.globalAlpha = LAYER_ALPHA;
+  ctx.globalAlpha = alpha;
   ctx.drawImage(renderer.domElement, x, y, size, size);
   // Эхо: тот же кадр со сносом ложится сложением, предмет двоится каналом, а не копией.
   if (random() < ECHO_ODDS) {
     ctx.globalCompositeOperation = 'lighter';
-    ctx.globalAlpha = ECHO_ALPHA;
+    ctx.globalAlpha = ECHO_ALPHA * alpha;
     const drift = frame.unit * random.range(ECHO_OFFSET_UNITS[0], ECHO_OFFSET_UNITS[1]);
     ctx.drawImage(renderer.domElement, x + drift * random.sign(), y + drift * random.sign(), size, size);
   }

@@ -98,8 +98,10 @@ function stampGlow(ctx, frame, textLayer, inks) {
 
 export function renderCard({
   event, artist, logo, direction, format, index,
-  seed, laySeed, texSeed, bgSeed, objSeed, hot, cold,
+  seed, laySeed, texSeed, bgSeed, objSeed, localSeed = null, hot, cold,
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
+  objTone = 'heat', objAlpha = 0.92, objBehind = false,
+  chaosPower = 1, chaosZone = 'all',
   showName = true, showMeta = true, showCredit = true, textOnly = false,
 }) {
   const size = FORMATS[format];
@@ -109,43 +111,60 @@ export function renderCard({
   const layBase = laySeed ?? seed;
   const texBase = texSeed ?? seed;
   const objBase = objSeed ?? texBase;
-  const look = createLook(createRandom(layBase), createRandom(cardSeed(layBase, index)));
+  // Локальный сид перекрывает карточные потоки, серийные не трогает: карточка
+  // перерождается одна, но остаётся в макете, рецепте и рамке своей серии.
+  const own = (base) => localSeed ?? base;
+  const look = createLook(createRandom(layBase), createRandom(cardSeed(own(layBase), index)));
   const show = { name: showName, meta: showMeta, credit: showCredit };
 
-  const paintArgs = (target, asText) => ({
+  const paintArgs = (target, asText, gates = show) => ({
     ctx: target,
     frame,
-    random: createRandom(cardSeed(seed, index)),
-    bgRandom: createRandom(cardSeed(bgSeed ?? seed, index + BACKGROUND_SALT)),
+    random: createRandom(cardSeed(own(seed), index)),
+    bgRandom: createRandom(cardSeed(own(bgSeed ?? seed), index + BACKGROUND_SALT)),
     event,
     artist,
     logo,
     inks,
     look,
     madness,
-    show,
+    show: gates,
     textOnly: asText,
   });
 
-  directionById(direction).paint(paintArgs(ctx, textOnly));
+  const anyText = show.name || show.meta || show.credit;
+  // Раздельная сборка: текст уходит на свой слой, когда его надо защитить от 3D
+  // (за текстом) или от эффектора (зона не «всё»). Иначе конвейер прежний, цельный.
+  const split = !textOnly && anyText
+    && ((allow3d && objBehind) || (chaos && chaosZone !== 'all'));
+
+  directionById(direction).paint(paintArgs(
+    ctx, textOnly, split ? { name: false, meta: false, credit: false } : show,
+  ));
 
   if (!textOnly) {
-    applyTexture(ctx, frame, createRandom(cardSeed(texBase, index)), inks);
+    applyTexture(ctx, frame, createRandom(cardSeed(own(texBase), index)), inks);
     if (allow3d) {
-      drawDimension(ctx, frame, createRandom(cardSeed(objBase, index + DIMENSION_SALT)), inks);
+      drawDimension(
+        ctx, frame,
+        createRandom(cardSeed(own(objBase), index + DIMENSION_SALT)),
+        inks,
+        { tone: objTone, alpha: objAlpha },
+      );
     }
     if (sigils) {
       drawSigils(
         ctx,
         frame,
         seriesRandom(layBase, SIGIL_SALT),
-        createRandom(cardSeed(layBase, index + SIGIL_SALT)),
+        createRandom(cardSeed(own(layBase), index + SIGIL_SALT)),
         inks,
       );
     }
-    if (chaos) {
-      const recipe = createChaosRecipe(seriesRandom(texBase, CHAOS_SALT));
-      applyChaos(ctx, frame, createRandom(cardSeed(texBase, index + CHAOS_SALT)), inks, recipe);
+    const recipe = chaos ? createChaosRecipe(seriesRandom(texBase, CHAOS_SALT)) : null;
+    const chaosRandom = () => createRandom(cardSeed(own(texBase), index + CHAOS_SALT));
+    if (chaos && (!split || chaosZone === 'bg')) {
+      applyChaos(ctx, frame, chaosRandom(), inks, recipe, chaosPower);
     }
     // Рамка после разгрома: оправа держит хаос внутри, как стекло витрины.
     drawBorder(
@@ -153,15 +172,22 @@ export function renderCard({
       frame,
       border,
       seriesRandom(layBase, BORDER_SALT),
-      createRandom(cardSeed(layBase, index + BORDER_SALT)),
+      createRandom(cardSeed(own(layBase), index + BORDER_SALT)),
       inks,
     );
-    const anyText = show.name || show.meta || show.credit;
-    if ((plaque || glow) && anyText) {
+    if ((split || plaque || glow) && anyText) {
       const text = createLayer(frame.width, frame.height);
       directionById(direction).paint(paintArgs(text.ctx, true));
+      // Зона «текст»: рецепт бьёт только по слою набора, фон остаётся целым.
+      if (chaos && split && chaosZone === 'text') {
+        applyChaos(text.ctx, frame, chaosRandom(), inks, recipe, chaosPower);
+      }
       if (glow) stampGlow(ctx, frame, text.canvas, inks);
-      if (plaque) stampPlaque(ctx, frame, text.canvas, inks);
+      if (plaque) {
+        stampPlaque(ctx, frame, text.canvas, inks);
+      } else if (split) {
+        ctx.drawImage(text.canvas, 0, 0);
+      }
     }
   }
   return canvas;

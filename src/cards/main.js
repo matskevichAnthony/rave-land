@@ -51,7 +51,12 @@ async function boot() {
     hot: DEFAULT_HOT,
     cold: DEFAULT_COLD,
     allow3d: false,
+    objTone: 'heat',
+    objAlpha: 0.92,
+    objBehind: false,
     chaos: false,
+    chaosPower: 1,
+    chaosZone: 'all',
     madness: false,
     plaque: false,
     glow: false,
@@ -60,6 +65,8 @@ async function boot() {
     showName: true,
     showMeta: true,
     showCredit: true,
+    // Локальные сиды карточек: номер в серии переродился, остальные стоят как стояли.
+    cardSeeds: {},
   };
 
   let deck = null;
@@ -68,6 +75,7 @@ async function boot() {
     event,
     logo,
     note: (text) => deck.note(text),
+    reroll: (index) => redraw({ cardSeeds: { ...view.cardSeeds, [index]: randomSeed() } }),
   });
 
   deck = createDeck({
@@ -78,7 +86,11 @@ async function boot() {
       setDirection: (direction) => redraw({ direction }),
       setFormat: (format) => redraw({ format }),
       // Общий бросок сбрасывает частные сиды: серия начинается с чистого листа.
-      newSeed: () => redraw({ seed: randomSeed(), laySeed: null, texSeed: null, bgSeed: null, objSeed: null }),
+      newSeed: () => redraw({
+        seed: randomSeed(), laySeed: null, texSeed: null, bgSeed: null, objSeed: null, cardSeeds: {},
+      }),
+      // Перерождение одной карточки: локальный сид только ей, серия не шевелится.
+      rerollCard: (index) => redraw({ cardSeeds: { ...view.cardSeeds, [index]: randomSeed() } }),
       newLay: () => redraw({ laySeed: randomSeed() }),
       newTex: () => redraw({ texSeed: randomSeed() }),
       newBg: () => redraw({ bgSeed: randomSeed() }),
@@ -97,7 +109,12 @@ async function boot() {
       resetInks: () => redraw({ hot: DEFAULT_HOT, cold: DEFAULT_COLD }),
       setBorder: (border) => redraw({ border }),
       toggle3d: () => redraw({ allow3d: !view.allow3d }),
+      setObjTone: (objTone) => redraw({ objTone }),
+      setObjAlpha: (objAlpha) => redraw({ objAlpha }),
+      toggleObjBehind: () => redraw({ objBehind: !view.objBehind }),
       toggleChaos: () => redraw({ chaos: !view.chaos }),
+      setChaosPower: (chaosPower) => redraw({ chaosPower }),
+      setChaosZone: (chaosZone) => redraw({ chaosZone }),
       toggleMadness: () => redraw({ madness: !view.madness }),
       togglePlaque: () => redraw({ plaque: !view.plaque }),
       toggleGlow: () => redraw({ glow: !view.glow }),

@@ -33,6 +33,23 @@ input.deck__seed:focus {
   border-color: var(--ember);
 }
 
+/* Ползунки пульта: подпись сверху, дорожка на всю ширину блока, ручка в цвет жара. */
+.deck__slider {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-block: 8px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.deck__slider input {
+  inline-size: 100%;
+  accent-color: var(--ember);
+}
+
 /* Колодцы глобального цвета: input[type=color] в ряду пульта, подпись рядом. */
 .deck__row--inks {
   align-items: center;

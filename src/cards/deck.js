@@ -17,6 +17,22 @@ import { FORMATS } from './format.js';
 
 const ACTIVE_CLASS = 'is-active';
 
+// Тона объёма и зоны эффектора: словари пульта, id уходит в view как есть.
+const OBJ_TONES = [
+  { id: 'heat', label: 'Жар' },
+  { id: 'cold', label: 'Холод' },
+  { id: 'metal', label: 'Металл' },
+  { id: 'mono', label: 'Моно' },
+];
+const CHAOS_ZONES = [
+  { id: 'all', label: 'Весь кадр' },
+  { id: 'bg', label: 'Только фон' },
+  { id: 'text', label: 'Только текст' },
+];
+
+// Ползунки ходят в процентах, view держит доли.
+const PERCENT = 100;
+
 export function createDeck({ root, event, view, actions }) {
   const pick = (hook) => root.querySelector(`[data-js-${hook}]`);
 
@@ -31,6 +47,8 @@ export function createDeck({ root, event, view, actions }) {
     actions.setFormat,
   );
   mountChoice(pick('borders'), BORDERS, view.border, actions.setBorder);
+  mountChoice(pick('obj-tones'), OBJ_TONES, view.objTone, actions.setObjTone);
+  mountChoice(pick('chaos-zones'), CHAOS_ZONES, view.chaosZone, actions.setChaosZone);
 
   pick('new-seed').addEventListener('click', actions.newSeed);
   pick('new-lay').addEventListener('click', actions.newLay);
@@ -40,7 +58,15 @@ export function createDeck({ root, event, view, actions }) {
   pick('copy-seed').addEventListener('click', actions.copySeed);
   pick('save-all').addEventListener('click', actions.saveAll);
   pick('allow-3d').addEventListener('click', actions.toggle3d);
+  pick('obj-behind').addEventListener('click', actions.toggleObjBehind);
   pick('chaos').addEventListener('click', actions.toggleChaos);
+
+  // Ползунки перерисовывают серию на отпускание, а не на каждый шаг: шесть карточек
+  // на шаг движения мыши повесили бы страницу.
+  const powerSlider = pick('chaos-power');
+  powerSlider.addEventListener('change', () => actions.setChaosPower(Number(powerSlider.value) / PERCENT));
+  const alphaSlider = pick('obj-alpha');
+  alphaSlider.addEventListener('change', () => actions.setObjAlpha(Number(alphaSlider.value) / PERCENT));
   pick('madness').addEventListener('click', actions.toggleMadness);
   pick('plaque').addEventListener('click', actions.togglePlaque);
   pick('glow').addEventListener('click', actions.toggleGlow);
@@ -83,6 +109,9 @@ export function createDeck({ root, event, view, actions }) {
     },
     showState(state) {
       pick('allow-3d').classList.toggle(ACTIVE_CLASS, state.allow3d);
+      pick('obj-behind').classList.toggle(ACTIVE_CLASS, state.objBehind);
+      powerSlider.value = String(Math.round(state.chaosPower * PERCENT));
+      alphaSlider.value = String(Math.round(state.objAlpha * PERCENT));
       pick('chaos').classList.toggle(ACTIVE_CLASS, state.chaos);
       pick('madness').classList.toggle(ACTIVE_CLASS, state.madness);
       pick('plaque').classList.toggle(ACTIVE_CLASS, state.plaque);

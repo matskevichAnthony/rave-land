@@ -17,8 +17,9 @@ import { downloadCanvas } from './download.js';
 
 const SAVE_HOOK = 'data-js-save-card';
 const TEXT_HOOK = 'data-js-save-text';
+const ROLL_HOOK = 'data-js-reroll-card';
 
-function createSheet(artist) {
+function createSheet(artist, index) {
   const sheet = document.createElement('figure');
   sheet.className = 'sheet';
   const caption = document.createElement('figcaption');
@@ -36,12 +37,18 @@ function createSheet(artist) {
   text.className = 'sheet__save';
   text.textContent = 'Текст';
   text.setAttribute(TEXT_HOOK, artist.number);
-  row.append(save, text);
+  const roll = document.createElement('button');
+  roll.type = 'button';
+  roll.className = 'sheet__save';
+  roll.textContent = 'Заново';
+  roll.title = 'Переродить только эту карточку: остальная серия не шевелится';
+  roll.setAttribute(ROLL_HOOK, String(index));
+  row.append(save, text, roll);
   sheet.append(caption, row);
   return sheet;
 }
 
-export function createGallery({ root, event, logo, note }) {
+export function createGallery({ root, event, logo, note, reroll }) {
   const artists = artistCards(event);
   const sheets = artists.map(createSheet);
   const canvases = new Map();
@@ -55,12 +62,19 @@ export function createGallery({ root, event, logo, note }) {
       downloadCanvas(held.canvas, held.name);
       return;
     }
+    const roller = click.target.closest(`[${ROLL_HOOK}]`);
+    if (roller) {
+      reroll(Number(roller.getAttribute(ROLL_HOOK)));
+      return;
+    }
     const texter = click.target.closest(`[${TEXT_HOOK}]`);
     if (!texter) return;
     const number = texter.getAttribute(TEXT_HOOK);
     const index = artists.findIndex((artist) => artist.number === number);
     const layer = renderCard({
-      ...lastView, event, artist: artists[index], logo, index, textOnly: true,
+      ...lastView,
+      localSeed: lastView.cardSeeds?.[index] ?? null,
+      event, artist: artists[index], logo, index, textOnly: true,
     });
     downloadCanvas(layer, `${canvases.get(number).name}-text`);
   });
@@ -68,7 +82,9 @@ export function createGallery({ root, event, logo, note }) {
   function draw(view) {
     lastView = { ...view };
     for (const [index, artist] of artists.entries()) {
-      const canvas = renderCard({ ...view, event, artist, logo, index });
+      const canvas = renderCard({
+        ...view, localSeed: view.cardSeeds?.[index] ?? null, event, artist, logo, index,
+      });
       canvas.className = 'sheet__card';
       canvases.set(artist.number, {
         canvas,

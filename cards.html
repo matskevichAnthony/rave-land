@@ -37,20 +37,45 @@
     <section class="deck__block">
       <h2 class="deck__label">Хаос</h2>
       <div class="deck__row">
-        <button type="button" data-js-allow-3d>Пустить 3D</button>
         <button type="button" data-js-chaos>Эффектор</button>
         <button type="button" data-js-madness>Сумасшествие</button>
       </div>
+      <label class="deck__slider">
+        <span>Сила разгрома</span>
+        <input type="range" min="10" max="150" step="5" data-js-chaos-power
+          aria-label="Сила эффектора в процентах" />
+      </label>
+      <div class="deck__row" data-js-chaos-zones></div>
       <div class="deck__row">
         <button type="button" data-js-glow>Свечение</button>
         <button type="button" data-js-sigils>Сигилы</button>
       </div>
       <p class="deck__hint">
-        3D выращивает генеративный предмет со случайной кожей; кнопка «объём» выше
-        перевыращивает его. Эффектор громит кадр по серийному рецепту: приёмы и сила одни
-        на все шесть карточек, места ударов свои. Сумасшествие спускает мутанта с цепи.
-        Свечение кладёт под набор ореол жара, сигилы штампуют готические знаки андерстава
-        одним узором на серию.
+        Эффектор громит кадр по серийному рецепту: приёмы одни на все шесть карточек, места
+        ударов свои. Ползунок крутит глубину повреждений, не меняя сам рецепт. Зона решает,
+        кого бить: весь кадр, только фон под нетронутым текстом или только сам набор.
+        Сумасшествие спускает мутанта с цепи, свечение кладёт под набор ореол жара, сигилы
+        штампуют готические знаки одним узором на серию.
+      </p>
+    </section>
+
+    <section class="deck__block">
+      <h2 class="deck__label">Объём</h2>
+      <div class="deck__row">
+        <button type="button" data-js-allow-3d>Пустить 3D</button>
+        <button type="button" data-js-obj-behind>За текстом</button>
+      </div>
+      <div class="deck__row" data-js-obj-tones></div>
+      <label class="deck__slider">
+        <span>Сила объёма</span>
+        <input type="range" min="15" max="100" step="5" data-js-obj-alpha
+          aria-label="Непрозрачность 3D-предмета в процентах" />
+      </label>
+      <p class="deck__hint">
+        Тон держит предмет в узде: жар и холод красят его глобальными цветами пульта, металл
+        и моно глушат в серость и кость, никаких самовольных оттенков. Ползунок топит предмет
+        в фон или выводит в лоб. «За текстом» кладёт объём под набор: имя и строки всегда
+        читаются поверх. Кнопка «объём» в сидах перевыращивает предметы.
       </p>
     </section>
 

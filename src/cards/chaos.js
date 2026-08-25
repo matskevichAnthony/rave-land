@@ -224,8 +224,13 @@ export function createChaosRecipe(series) {
   return picked.slice(0, RECIPE_MAX);
 }
 
-export function applyChaos(ctx, frame, random, inks, recipe) {
+/**
+ * Разгром по рецепту. Ползунок силы с пульта входит множителем в каждый приём:
+ * рецепт и места ударов не меняются, меняется только глубина повреждений, поэтому
+ * серию можно прикрутить или раскрутить, не потеряв удачную композицию разгрома.
+ */
+export function applyChaos(ctx, frame, random, inks, recipe, power = 1) {
   for (const effect of recipe) {
-    effect.run(ctx, frame, random, inks, effect.strength);
+    effect.run(ctx, frame, random, inks, effect.strength * power);
   }
 }
