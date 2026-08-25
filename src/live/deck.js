@@ -1,5 +1,6 @@
 /**
- * Пульт живого выхода: источник, слух, машина, разложение, картинка, разгром, цвет, вывод.
+ * Пульт живого выхода: источник, слух, автопилот, объём, машина, разложение, картинка,
+ * разгром, цвет, вывод.
  *
  * Ряды кнопок строятся перебором словарей: добавили источник в движок PX или приём в
  * `mangle.js`, и кнопка появилась сама. Состояния пульт не держит: правда живёт в `view`
@@ -20,6 +21,8 @@ import { MACHINE_OPS, MACHINE_PALETTES, MACHINE_SOURCES } from './machine.js';
 import { MANGLES } from './mangle.js';
 import { OVERLAY_PLACES } from './overlay.js';
 import { SOURCES } from './source.js';
+import { SHAPES } from './space/bodies.js';
+import { WARPS } from './space/warp.js';
 
 const ACTIVE_CLASS = 'is-active';
 const PERCENT = 100;
@@ -45,6 +48,8 @@ export function createDeck({ root, view, actions }) {
   const placeButtons = mountChoice(pick('overlay-places'), OVERLAY_PLACES, actions.setOverlayPlace);
   const overlayBlendButtons = mountChoice(pick('overlay-blends'), BLENDS, actions.setOverlayBlend);
   const mangleButtons = mountChoice(pick('mangles'), MANGLES, actions.toggleMangle);
+  const warpButtons = mountChoice(pick('warps'), WARPS, actions.setWarp, (warp) => warp.desc);
+  const shapeButtons = mountChoice(pick('shapes'), SHAPES, actions.setShape);
 
   const sliders = {
     quiet: mountSlider(pick('quiet'), actions.setQuiet),
@@ -58,6 +63,12 @@ export function createDeck({ root, view, actions }) {
     alpha: mountSlider(pick('alpha'), actions.setAlpha),
     overlayScale: mountSlider(pick('overlay-scale'), actions.setOverlayScale),
     overlayAlpha: mountSlider(pick('overlay-alpha'), actions.setOverlayAlpha),
+    warpAmount: mountSlider(pick('warp-amount'), actions.setWarpAmount),
+    morph: mountSlider(pick('morph'), actions.setMorph),
+    glass: mountSlider(pick('glass'), actions.setGlass),
+    rain: mountSlider(pick('rain'), actions.setRain),
+    trip: mountSlider(pick('trip'), actions.setTrip),
+    crowd: mountSlider(pick('crowd'), actions.setCrowd),
     power: mountSlider(pick('power'), actions.setPower),
     density: mountSlider(pick('density'), actions.setDensity),
   };
@@ -92,6 +103,9 @@ export function createDeck({ root, view, actions }) {
   coldWell.addEventListener('input', applyInks);
 
   pick('auto').addEventListener('click', actions.toggleAuto);
+  pick('space-toggle').addEventListener('click', actions.toggleSpace);
+  pick('body').addEventListener('click', actions.throwBody);
+  pick('bodies-clear').addEventListener('click', actions.clearBodies);
   pick('roll').addEventListener('click', actions.roll);
   pick('video').addEventListener('click', actions.toggleVideo);
   pick('freeze').addEventListener('click', actions.toggleFreeze);
@@ -99,9 +113,11 @@ export function createDeck({ root, view, actions }) {
 
   const meterBar = pick('meter-bar');
   const meterRaw = pick('meter-raw');
+  const meterRise = pick('meter-rise');
   const meterQuiet = pick('meter-quiet');
   const meterLoud = pick('meter-loud');
   const meterPunch = pick('meter-punch');
+  const warpDesc = pick('warp-desc');
   const machineDesc = pick('machine-desc');
   const opDesc = pick('op-desc');
   const mutateDesc = pick('mutate-desc');
@@ -153,6 +169,18 @@ export function createDeck({ root, view, actions }) {
       percent(sliders.punch, state.punch);
       percent(sliders.pace, state.pace);
       pick('auto').classList.toggle(ACTIVE_CLASS, state.auto);
+
+      light(warpButtons, (id) => id === state.space.warp);
+      light(shapeButtons, (id) => id === state.space.shape);
+      pick('space-toggle').classList.toggle(ACTIVE_CLASS, state.space.on);
+      percent(sliders.warpAmount, state.space.amount);
+      percent(sliders.morph, state.space.morph);
+      percent(sliders.glass, state.space.glass);
+      percent(sliders.rain, state.space.rain);
+      percent(sliders.trip, state.space.trip);
+      percent(sliders.crowd, state.space.crowd);
+      warpDesc.textContent = WARPS.find(({ id }) => id === state.space.warp).desc;
+
       percent(sliders.spread, set.spread);
       percent(sliders.wreck, set.wreck);
       percent(sliders.strength, set.strength);
@@ -180,21 +208,30 @@ export function createDeck({ root, view, actions }) {
     /**
      * Полоски уровня и счётчик кадров: единственное, что пульт рисует каждый кадр.
      *
-     * Полосок две, и вторая тут не для красоты. Верхняя показывает то, что уходит в
-     * картинку, нижняя сырой звук как он есть, с метками трёх ползунков поверх. Ставить
-     * шкалу руками, не видя сырого звука, значит крутить ползунок вслепую и гадать, почему
-     * картинка молчит.
+     * Полосок три, и каждая тут не для красоты. Верхняя показывает то, что уходит в
+     * картинку, средняя сырой звук как он есть с метками тишины и громко, нижняя прирост с
+     * меткой импульса. Разные меры на одну полоску не кладутся: ползунок ставится по тому,
+     * что нарисовано прямо под ним, а не по соседней шкале, живущей в других числах.
+     *
+     * Метка импульса едет сама, потому что планка импульса больше не число из ползунка:
+     * слух считает её по залу, а ползунок только двигает её выше или ниже. Рисовать на её
+     * месте положение ползунка значило бы показывать руке не ту черту, которую перешагивает
+     * полоска.
      */
-    showPulse({ level, raw, hit, scale, fps }) {
+    showPulse({ level, raw, rise, hit, punchAt, scale, fps, bpm, heard, bodies }) {
       meterBar.style.width = `${Math.round(level * PERCENT)}%`;
       meterBar.classList.toggle('is-hit', hit);
       meterRaw.style.width = `${Math.round(raw * PERCENT)}%`;
+      meterRise.style.width = `${Math.round(rise * PERCENT)}%`;
       // Метки едут вместе с ползунком, а не с перерисовкой пульта: их и тянут рукой,
-      // глядя на сырую полоску, поэтому отставание на кадр здесь недопустимо.
+      // глядя на полоску, поэтому отставание на кадр здесь недопустимо.
       meterQuiet.style.left = `${scale.quiet * PERCENT}%`;
       meterLoud.style.left = `${scale.loud * PERCENT}%`;
-      meterPunch.style.left = `${scale.punch * PERCENT}%`;
-      rate.textContent = `${fps} кадр/с`;
+      meterPunch.style.left = `${punchAt * PERCENT}%`;
+      // Такт показывается всегда, вместе с тем, услышан он или инструмент держит его сам:
+      // без этой пометки ровный счёт в тишине читается как пойманный зал.
+      rate.textContent = `${fps} кадр/с · ${bpm} ${heard ? 'уд/мин' : 'сам'}`
+        + (bodies ? ` · ${bodies} тел` : '');
     },
     note(text) {
       note.textContent = text;
