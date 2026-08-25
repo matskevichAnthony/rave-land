@@ -97,7 +97,7 @@ function stampGlow(ctx, frame, textLayer, inks) {
   ctx.restore();
 }
 
-export function renderCard({
+export async function renderCard({
   event, artist, logo, direction, format, index,
   seed, laySeed, texSeed, bgSeed, objSeed, localSeed = null, hot, cold,
   allow3d, chaos, madness, plaque, glow, border = 'none', sigils,
@@ -134,6 +134,9 @@ export function renderCard({
     look,
     type,
     madness,
+    // Эффектор мутанта: тот же тумблер и тот же ползунок, но бьёт он не по готовой карточке,
+    // а по фону до текста, цепочкой деструкторов движка.
+    wreck: { on: chaos, power: chaosPower },
     show: gates,
     textOnly: asText,
   });
@@ -144,7 +147,7 @@ export function renderCard({
   const split = !textOnly && anyText
     && ((allow3d && objBehind) || (chaos && chaosZone !== 'all'));
 
-  directionById(direction).paint(paintArgs(
+  await directionById(direction).paint(paintArgs(
     ctx, textOnly, split ? { name: false, meta: false, credit: false } : show,
   ));
 
@@ -183,7 +186,7 @@ export function renderCard({
     );
     if ((split || plaque || glow) && anyText) {
       const set = createLayer(frame.width, frame.height);
-      directionById(direction).paint(paintArgs(set.ctx, true));
+      await directionById(direction).paint(paintArgs(set.ctx, true));
       // Зона «текст»: рецепт бьёт только по слою набора, фон остаётся целым.
       if (chaos && split && chaosZone === 'text') {
         applyChaos(set.ctx, frame, chaosRandom(), inks, recipe, chaosPower);

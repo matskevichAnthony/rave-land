@@ -6,6 +6,11 @@
  * одно общее свойство и оно тут главное: рисунок кадра не задан руками, а выведен из правила,
  * поэтому увидеть результат можно только просчитав его.
  *
+ * Колода двойная. Первая половина написана здесь, вторая приходит из движка PX·77 через
+ * мост `px-family.js`: тринадцать его источников, включая тот, где машина сама пишет себе
+ * формулу и рисует её. Раздача не различает, чьё семейство: карточке достаётся место в
+ * колоде, а не имя автора.
+ *
  * Добавили файл и строку в список, и семейство участвует в раздаче. Никаких вторых списков
  * в направлении нет.
  */
@@ -20,10 +25,13 @@ import rings from './rings.js';
 import shatter from './shatter.js';
 import strata from './strata.js';
 import truchet from './truchet.js';
+import { PX_FAMILIES } from './px-family.js';
 
-export const GROWTHS = [
+const OWN = [
   contour, flow, blocks, rings, automaton, truchet, moire, shatter, strata, diffusion,
 ];
+
+export const GROWTHS = [...OWN, ...PX_FAMILIES];
 
 /**
  * Перестановка семейств на серию.

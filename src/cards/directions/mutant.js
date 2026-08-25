@@ -24,6 +24,7 @@
  */
 
 import { growthOrder } from '../growth/index.js';
+import { pxChain, pxDegrade, pxParams } from '../../px/paint.js';
 import { createLayer } from '../layer.js';
 import { logoLayer } from '../logo.js';
 import {
@@ -31,7 +32,14 @@ import {
 } from '../lettering.js';
 import { grain, vignette } from '../wear.js';
 
-// Сумасшествие: сколько семейств ложится друг на друга и какие способы наложения разрешены.
+// Сумасшествие делает две вещи разом: кладёт друг на друга несколько семейств и распускает
+// ручки движка PX от ручного центра до полного разноса. Второе важнее первого: на разбросе
+// в единицу источник перестаёт быть похожим сам на себя.
+const MAD_SPREAD = 0.85;
+const CALM_SPREAD = 0.12;
+// Эффектор пускает фон через цепочку деструкторов движка: чем сильнее ползунок, тем длиннее
+// цепочка и тем глубже каждое звено.
+const WRECK_LINKS = [1, 3];
 const MAD_LAYERS = [1, 3];
 const MAD_OPS = [
   'lighter', 'difference', 'screen', 'exclusion', 'overlay', 'hard-light', 'multiply',
@@ -56,17 +64,18 @@ function paletteOf(inks) {
 }
 
 /** Семейство растёт на своём холсте и вжимается в кадр выбранным способом наложения. */
-function applyGrowth(ctx, frame, random, palette, growth, op) {
+function applyGrowth(ctx, frame, random, palette, growth, op, spread) {
   const layer = createLayer(frame.width, frame.height);
-  growth.grow(layer.ctx, frame, random, palette);
+  growth.grow(layer.ctx, frame, random, palette, { spread });
   ctx.save();
   ctx.globalCompositeOperation = op;
   ctx.drawImage(layer.canvas, 0, 0);
   ctx.restore();
 }
 
-function paintBackground(ctx, frame, { bgRandom, bgSeries, number, inks, madness }) {
+async function paintBackground(ctx, frame, { bgRandom, bgSeries, number, inks, madness, wreck }) {
   const palette = paletteOf(inks);
+  const spread = madness ? MAD_SPREAD : CALM_SPREAD;
   ctx.fillStyle = bgRandom.pick([inks.void, inks.iron, inks.trip]);
   ctx.fillRect(0, 0, frame.width, frame.height);
 
@@ -74,25 +83,39 @@ function paintBackground(ctx, frame, { bgRandom, bgSeries, number, inks, madness
   const mine = (step) => order[(number - 1 + step) % order.length];
 
   if (!madness) {
-    applyGrowth(ctx, frame, bgRandom, palette, mine(0), 'source-over');
-    return;
+    applyGrowth(ctx, frame, bgRandom, palette, mine(0), 'source-over', spread);
+  } else {
+    const layers = bgRandom.int(MAD_LAYERS[0], MAD_LAYERS[1]);
+    for (let layer = 0; layer < layers; layer += 1) {
+      applyGrowth(
+        ctx, frame, bgRandom, palette,
+        mine(layer * MAD_STRIDE),
+        layer === 0 ? 'source-over' : bgRandom.pick(MAD_OPS),
+        spread,
+      );
+    }
+    if (bgRandom() < MAD_INVERT_ODDS) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'difference';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, frame.width, frame.height);
+      ctx.restore();
+    }
   }
 
-  const layers = bgRandom.int(MAD_LAYERS[0], MAD_LAYERS[1]);
-  for (let layer = 0; layer < layers; layer += 1) {
-    applyGrowth(
-      ctx, frame, bgRandom, palette,
-      mine(layer * MAD_STRIDE),
-      layer === 0 ? 'source-over' : bgRandom.pick(MAD_OPS),
-    );
-  }
-  if (bgRandom() < MAD_INVERT_ODDS) {
-    ctx.save();
-    ctx.globalCompositeOperation = 'difference';
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, frame.width, frame.height);
-    ctx.restore();
-  }
+  if (!wreck.on) return;
+  // Рецепт цепочки серийный, глубина карточная: серия громится одним почерком, но каждая
+  // афиша своей рукой.
+  const links = Math.max(
+    WRECK_LINKS[0],
+    Math.round(WRECK_LINKS[0] + (WRECK_LINKS[1] - WRECK_LINKS[0]) * Math.min(1, wreck.power)),
+  );
+  await pxDegrade(ctx, {
+    width: frame.width,
+    height: frame.height,
+    params: pxParams(bgRandom().toString(16).slice(2, 10), spread),
+    chain: pxChain(bgSeries, { power: Math.min(1, wreck.power), links }),
+  });
 }
 
 function centred(ctx, frame, text, { y, pixels, tracking, color }) {
@@ -104,17 +127,18 @@ function centred(ctx, frame, text, { y, pixels, tracking, color }) {
 export default {
   id: 'mutant',
   label: 'Мутант',
-  paint({
+  async paint({
     ctx, frame, random, event, artist, logo, inks, look, type, textOnly, show,
-    bgRandom, bgSeries, madness,
+    bgRandom, bgSeries, madness, wreck = { on: false, power: 1 },
   }) {
     if (!textOnly) {
-      paintBackground(ctx, frame, {
+      await paintBackground(ctx, frame, {
         bgRandom: bgRandom ?? random,
         bgSeries: bgSeries ?? random,
         number: Number(artist.number),
         inks,
         madness,
+        wreck,
       });
 
       const mark = logoLayer(logo.wordmark, {

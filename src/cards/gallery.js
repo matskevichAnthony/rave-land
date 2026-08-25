@@ -71,18 +71,30 @@ export function createGallery({ root, event, logo, note, reroll }) {
     if (!texter) return;
     const number = texter.getAttribute(TEXT_HOOK);
     const index = artists.findIndex((artist) => artist.number === number);
-    const layer = renderCard({
+    saveTextLayer(number, index).catch((error) => note(`Слой текста: ${error.message}`));
+  });
+
+  async function saveTextLayer(number, index) {
+    const layer = await renderCard({
       ...lastView,
       localSeed: lastView.cardSeeds?.[index] ?? null,
       event, artist: artists[index], logo, index, textOnly: true,
     });
     downloadCanvas(layer, `${canvases.get(number).name}-text`);
-  });
+  }
 
-  function draw(view) {
+  /**
+   * Отрисовка листа.
+   *
+   * Стала асинхронной вместе с деструкторами движка PX: они гоняют кадр через jpeg и
+   * звуковой движок браузера, и синхронно этого не сделать. Карточки идут по очереди, а не
+   * пачкой: шесть тяжёлых кадров разом отбирают у страницы отзывчивость, а по одной лист
+   * наполняется на глазах.
+   */
+  async function draw(view) {
     lastView = { ...view };
     for (const [index, artist] of artists.entries()) {
-      const canvas = renderCard({
+      const canvas = await renderCard({
         ...view, localSeed: view.cardSeeds?.[index] ?? null, event, artist, logo, index,
       });
       canvas.className = 'sheet__card';

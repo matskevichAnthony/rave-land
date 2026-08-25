@@ -141,7 +141,9 @@ async function boot() {
     window.history.replaceState(null, '', url);
     deck.showSeed(view.seed);
     deck.showState(view);
-    gallery.draw(view);
+    // Лист рисуется асинхронно: деструкторы движка PX гоняют кадр через jpeg. Промах не
+    // должен уходить в консоль молча, иначе пустой лист выглядит как зависшая страница.
+    gallery.draw(view).catch((error) => deck.note(`Отрисовка: ${error.message}`));
   }
 
   async function copySeed() {
