@@ -4,6 +4,7 @@ import { createPanel } from '../understav/panel.js';
 import { createCanvasRecorder, videoExtension } from '../understav/record.js';
 import { createRandom, randomSeed } from '../understav/random.js';
 import { isTouchDevice } from '../player/touch-pad.js';
+import { reloadOnStaleBuild } from '../ui/stale-build.js';
 import { FRAME_BUDGET } from './palette.js';
 
 /**
@@ -52,6 +53,7 @@ const SCENE_MODULES = [
 
 const view = { mode: 'still', framing: 'full', countdown: false };
 
+reloadOnStaleBuild();
 boot().catch(showError);
 
 async function boot() {

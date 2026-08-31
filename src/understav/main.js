@@ -4,6 +4,7 @@ import { createPanel } from './panel.js';
 import { createCanvasRecorder, videoExtension } from './record.js';
 import { createRandom, randomSeed } from './random.js';
 import { isTouchDevice } from '../player/touch-pad.js';
+import { reloadOnStaleBuild } from '../ui/stale-build.js';
 import { FRAME_BUDGET } from './palette.js';
 import { NAVE } from './nave.js';
 
@@ -91,6 +92,7 @@ const view = {
   flat: false, fov: null, quality: 'screen',
 };
 
+reloadOnStaleBuild();
 boot().catch(showError);
 
 async function boot() {
