@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { SimplifyModifier } from 'three/addons/modifiers/SimplifyModifier.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { PALETTE } from './palette.js';
 
 /**
@@ -8,8 +10,8 @@ import { PALETTE } from './palette.js';
  * Своя колючка из примитивов читается орнаментом: одинаковый шаг, одинаковый шип и ни одной
  * случайной кривизны, которой живёт настоящий моток. В файле прядь длиной десять единиц, и
  * целиком она в кадр не годится: шип в ней сотая часть длины, то есть на ширину афиши он
- * выходит с волосок. Поэтому сцена берёт короткий кусок пряди и растягивает его на прогон.
- * Крупность колючки задаётся длиной куска: чем он короче, тем крупнее шип в кадре.
+ * выходит с волосок. Поэтому сцена берёт короткий кусок пряди и повторяет его лентой вдоль
+ * прогона. Крупность колючки задаётся длиной куска в метрах, частота шипов — ею же.
  */
 
 const MODEL_URL = 'assets/models/barbed-wire.glb';
@@ -22,9 +24,9 @@ const SLICE_PROBES = 64;
 // Допуск на кривизну в долях длины куска: выше этого прядь уже не идёт, а вьётся петлёй.
 const SLICE_WOBBLE = 0.09;
 // Прядь в файле не натянута, она мотается: волна в ней впятеро крупнее шипа, и кусок,
-// растянутый на ширину афиши, шёл бы метрами поперёк строк. Прижимать всё подряд по высоте
-// нельзя, вместе с волной сядут и шипы, поэтому вычитается только осевая линия куска: волна
-// уходит, шип остаётся. Ноль оставит прядь как есть, единица вытянет её в струну.
+// растянутый на ширину афиши, шёл бы метрами поперёк строк. Прижимать всё подряд нельзя,
+// вместе с волной сядут и шипы, поэтому вычитается только осевая линия куска: волна уходит,
+// шип остаётся. Ноль оставит прядь как есть, единица вытянет её в струну.
 const WAVE_PULL = 0.88;
 // Осевая считается по клеткам вдоль куска: клетка длиннее шипа, иначе средняя поедет за ним.
 const WAVE_CELLS = 20;
@@ -38,6 +40,28 @@ const WIRE_METALNESS = 0.35;
 const WIRE_ROUGHNESS = 0.62;
 // Прогон слегка проворачивается вокруг своей оси: два одинаково лежащих прута читаются линейкой.
 const WIRE_ROLL = 0.35;
+
+// Прядь в файле нарисована для крупного плана: четыре тысячи треугольников на пять шипов, и
+// лентой на пять прогонов это больше сотни тысяч на фоновую железку. Поэтому кусок
+// прорежается: в коридоре он виден силуэтом с двадцати метров, и половина рёбер в нём не
+// читается. Доля оставленных вершин; единица оставит кусок как есть.
+const SLICE_KEEP = 0.5;
+
+// Длина куска в метрах: она же шаг шипов. Один кусок на весь прогон растягивает шип до метра
+// и оставляет между шипами голый прут, то есть орнамент вместо колючки.
+const TILE_METRES = 3;
+// Сечение поднято против натурального: прядь в натуральную величину с двадцати метров
+// коридора остаётся царапиной на стекле, и от колючки в кадре не остаётся ничего.
+const TILE_GAUGE = 2.4;
+
+/**
+ * Ход ленты: прядь едет вдоль прогона, сам прогон стоит.
+ *
+ * Концы прогона держат стены коридора, и двигать их нельзя. Едут куски: ушедший за дальний
+ * край встаёт в начало, а прогон кратен куску, поэтому подмена приходится на стык двух
+ * одинаковых кусков и в кадре не видна. Метров в секунду.
+ */
+const TRAVEL_SPEED = 0.5;
 
 /**
  * Ток по проволоке: рисунок едет вдоль прогона, сам прогон стоит.
@@ -133,13 +157,13 @@ function wholeTriangleInside(position, corner, from, to) {
   return true;
 }
 
-/** Осевая линия куска: средняя высота по клеткам, приглаженная соседями. */
-function centreLine(positions, from) {
+/** Осевая линия куска по одной поперечной оси: среднее по клеткам, приглаженное соседями. */
+function centreLine(positions, from, axis) {
   const sum = new Array(WAVE_CELLS).fill(0);
   const seen = new Array(WAVE_CELLS).fill(0);
   for (let at = 0; at < positions.length; at += 3) {
     const cell = cellOf(positions[at], from);
-    sum[cell] += positions[at + 1];
+    sum[cell] += positions[at + axis];
     seen[cell] += 1;
   }
   const middle = sum.map((total, cell) => (seen[cell] > 0 ? total / seen[cell] : null));
@@ -170,11 +194,19 @@ function centreAt(middle, x, from) {
   return near + (next - near) * Math.min(Math.max(along - low, 0), 1);
 }
 
-/** Волна вычитается, шипы остаются: у вершины отнимается только высота осевой под ней. */
+/**
+ * Волна вычитается, шипы остаются: у вершины отнимается только осевая под ней.
+ *
+ * Обе поперечные оси, а не одна высота: прядь мотается и вбок, и кусок, выпрямленный только
+ * по высоте, уходит поперёк коридора петлёй в собственную длину. Повторённый лентой, он
+ * читается не проволокой, а гирляндой одинаковых петель.
+ */
 function pullStraight(positions, from) {
-  const middle = centreLine(positions, from);
-  for (let at = 0; at < positions.length; at += 3) {
-    positions[at + 1] -= centreAt(middle, positions[at], from) * WAVE_PULL;
+  for (const axis of [1, 2]) {
+    const middle = centreLine(positions, from, axis);
+    for (let at = 0; at < positions.length; at += 3) {
+      positions[at + axis] -= centreAt(middle, positions[at], from) * WAVE_PULL;
+    }
   }
 }
 
@@ -209,7 +241,26 @@ function sliceStrand(flat) {
     -(box.min.z + box.max.z) / 2,
   );
   geometry.scale(1 / SLICE_LENGTH, 1 / SLICE_LENGTH, 1 / SLICE_LENGTH);
-  return geometry;
+  return thinOut(geometry);
+}
+
+/**
+ * Прореженный кусок: рёбер вдвое меньше, силуэт тот же.
+ *
+ * Нормали после схлопывания рёбер пересчитываются: прежние остались от вершин, которых уже
+ * нет, и прут с ними идёт пятнами. Считать их заново дешевле, чем тащить исходную сетку.
+ */
+function thinOut(geometry) {
+  // Кусок вырезан по треугольникам, и одна вершина в нём лежит по копии на каждый угол.
+  // Считать долю от такой сетки нельзя: прореживатель меряет вершины уже сшитыми, и доля от
+  // несшитых просит убрать больше вершин, чем в ней есть, то есть весь кусок целиком.
+  const sewn = mergeVertices(geometry);
+  const vertices = sewn.getAttribute('position').count;
+  const thin = new SimplifyModifier().modify(sewn, Math.round(vertices * (1 - SLICE_KEEP)));
+  geometry.dispose();
+  sewn.dispose();
+  thin.computeVertexNormals();
+  return thin;
 }
 
 async function loadSlice() {
@@ -274,39 +325,74 @@ function flowingMaterial(flow) {
 }
 
 /**
+ * Куски одного прогона: сколько их влезло по длине, плюс один на стык.
+ *
+ * Длина куска подгоняется так, чтобы прогон делился нацело: лента едет по кругу, и остаток
+ * в полкуска дал бы на подмене прыжок. Лишний кусок нужен затем, что круг где-то приходится
+ * разрезать: кусок, дошедший до края, встаёт в начало целиком, и без запаса на его месте на
+ * несколько секунд оставалась бы дыра. С запасом дыра приходится на сам запас, то есть за
+ * стену: лента длиннее прогона на кусок, и на кусок же она за край свисает.
+ *
+ * Поворот у всего прогона один: куски это одна прядь, а не набор обрезков.
+ */
+function planTiles(run, index, rng) {
+  const span = run.width;
+  const step = span / Math.max(1, Math.round(span / TILE_METRES));
+  const belt = span + step;
+  const spin = new THREE.Euler(rng.range(-1, 1) * WIRE_ROLL, index % 2 === 1 ? Math.PI : 0, 0);
+  const turn = new THREE.Quaternion().setFromEuler(spin);
+  const size = new THREE.Vector3(step, step * TILE_GAUGE, step * TILE_GAUGE);
+  const from = (run.x ?? 0) - span / 2 - step / 2;
+  // Соседние прогоны едут врозь: одинаковое направление у всех пяти читается конвейером.
+  const heading = index % 2 === 1 ? -1 : 1;
+  return Array.from({ length: Math.round(belt / step) }, (unused, tile) => ({
+    turn,
+    size,
+    y: run.y,
+    z: run.z,
+    from,
+    belt,
+    at: (tile + 0.5) * step,
+    heading,
+  }));
+}
+
+/**
  * Прогоны проволоки одним инстансом.
  *
- * Прогон это `{ x, y, z, width }` в метрах зала: место и ширина. Кусок пряди растягивается
- * на всю ширину, а через один переворачивается, чтобы два прогона в одном кадре не читались
- * копией друг друга. Наружу идут меш и `update(elapsed)`: свечение бежит по времени сцены,
- * а своего времени у модуля нет.
+ * Прогон это `{ x, y, z, width }` в метрах зала: место и ширина. На него ложится лента из
+ * кусков пряди, а через один прогон переворачивается, чтобы два прогона в одном кадре не
+ * читались копией друг друга. Наружу идут меш и `update(elapsed)`: и свечение, и ход ленты
+ * живут по времени сцены, своего времени у модуля нет.
  */
 export async function createBarbedWire({ runs, rng }) {
   const geometry = await strandSlice();
   const flow = { value: 0 };
   const material = flowingMaterial(flow);
-  const mesh = new THREE.InstancedMesh(geometry, material, runs.length);
+  const tiles = runs.flatMap((run, index) => planTiles(run, index, rng));
+  const mesh = new THREE.InstancedMesh(geometry, material, tiles.length);
   // Тень прута в чёрном зале не видно, а карту теней она стоит второго прохода геометрии.
   mesh.castShadow = false;
 
   const place = new THREE.Matrix4();
-  const turn = new THREE.Quaternion();
-  const spin = new THREE.Euler();
   const at = new THREE.Vector3();
-  const size = new THREE.Vector3();
-  runs.forEach((run, index) => {
-    spin.set(rng.range(-1, 1) * WIRE_ROLL, index % 2 === 1 ? Math.PI : 0, 0);
-    turn.setFromEuler(spin);
-    at.set(run.x ?? 0, run.y, run.z);
-    size.setScalar(run.width);
-    mesh.setMatrixAt(index, place.compose(at, turn, size));
-  });
-  mesh.instanceMatrix.needsUpdate = true;
+
+  function travel(elapsed) {
+    tiles.forEach((tile, index) => {
+      const drift = tile.at + elapsed * TRAVEL_SPEED * tile.heading;
+      at.set(tile.from + ((drift % tile.belt) + tile.belt) % tile.belt, tile.y, tile.z);
+      mesh.setMatrixAt(index, place.compose(at, tile.turn, tile.size));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  }
+
+  travel(0);
 
   return {
     mesh,
     update(elapsed) {
       flow.value = elapsed;
+      travel(elapsed);
     },
   };
 }
