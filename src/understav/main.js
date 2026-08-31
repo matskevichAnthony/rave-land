@@ -199,7 +199,9 @@ async function boot() {
   panel.showDays(daysLeft);
   usePrint(view.print);
 
-  window.addEventListener('resize', layout);
+  // Обработчику события первым доводом приходит само событие, а `layout` ждёт плотность:
+  // передать его напрямую значит попросить холст размером с объект Event.
+  window.addEventListener('resize', () => layout());
   window.addEventListener('keydown', (domEvent) => {
     if (domEvent.code !== PANEL_KEY) return;
     if (domEvent.target.matches?.('input, select, textarea')) return;
