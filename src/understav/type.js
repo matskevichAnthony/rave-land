@@ -27,7 +27,7 @@ const NAVE_HEADROOM = 2;
 // остальными строками берётся только у него: на половине коробки блок вырастал на четыре
 // метра выше неё, и адрес внизу уходил в пол. На 0.36 знак остаётся впятеро выше любой
 // строки лайнапа, а промежутки перестают сжиматься в слипшийся столбик.
-const TITLE_HEIGHT_RATIO = 0.36;
+const TITLE_HEIGHT_RATIO = 0.3;
 const TITLE_WIDTH_RATIO = 0.95;
 // Название словом стоит вдвое уже знака и читается подписью под ним. Шире оно начинает
 // спорить со знаком за главное место в кадре, а знак у события один и спорить ему не с чем.
@@ -87,9 +87,15 @@ const MIN_SQUEEZE = 0.34;
 // как бы ни стоял риг, строки видны анфас и целиком. Заодно это дешевле: набор выходит из
 // теней и из проверки глубины, то есть перестаёт стоить второго обхода и споров с геометрией.
 const FLAT_DISTANCE = 8;
-const FLAT_FILL = 0.92;
+const FLAT_FILL = 0.99;
 // Поверх всего, что рисует сцена: набор снят с проверки глубины и обязан лечь последним.
 const FLAT_ORDER = 900;
+
+// Завеса между залом и плоским набором. Зал за афишей продолжает жить, и в этом весь смысл
+// режима, но живой зал спорит с мелким кеглем: строка лайнапа читается поверх горящей бочки
+// хуже, чем поверх ровного тёмного поля. Завеса гасит спор, не выключая зал.
+const FLAT_SCRIM_DEPTH = 0.6;
+const FLAT_SCRIM_MARGIN = 1.1;
 
 // Афиша это три блока: шапка, лайнап, подвал. Внутри блока строки стоят вплотную, между
 // блоками промежуток на порядок больше, иначе тэглайн читается ещё одним артистом.
@@ -461,13 +467,33 @@ function measureLayout(rows) {
   return { size: bounds.getSize(new THREE.Vector3()), centre: bounds.getCenter(new THREE.Vector3()) };
 }
 
+/** Высота кадра этой камеры на заданном удалении, в метрах мира. */
+function frameHeightAt(camera, distance) {
+  return 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+}
+
 /** Во сколько раз ужать блок таких габаритов, чтобы он целиком встал в кадр этой камеры. */
 function fitToFrame(layout, camera) {
-  const visibleHeight = 2 * FLAT_DISTANCE * Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  const visibleHeight = frameHeightAt(camera, FLAT_DISTANCE);
   return FLAT_FILL * Math.min(
     (visibleHeight * camera.aspect) / layout.size.x,
     visibleHeight / layout.size.y,
   );
+}
+
+/** Завеса во весь кадр: плоское тёмное поле между залом и набором. */
+function createScrim() {
+  const material = new THREE.MeshBasicMaterial({
+    color: PALETTE.void,
+    transparent: true,
+    opacity: 0,
+    depthTest: false,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+  mesh.renderOrder = FLAT_ORDER - 1;
+  mesh.visible = false;
+  return mesh;
 }
 
 /** Мягкая посадка: строка приходит быстро и гасит скорость у самого своего места. */
@@ -628,6 +654,8 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
   let flatRest = null;
   const lifted = [];
   const layout = measureLayout(rows);
+  const scrim = createScrim();
+  let scrimAmount = 0;
 
   return {
     group,
@@ -650,12 +678,15 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
           scale: group.scale.clone(),
         };
         liftFromDepth(group, lifted);
-        camera.add(group);
+        camera.add(group, scrim);
+        scrim.visible = scrimAmount > 0;
         this.refitFlat(camera);
         return;
       }
       dropBackToDepth(lifted);
       lifted.length = 0;
+      camera.remove(scrim);
+      scrim.visible = false;
       flatRest.parent?.add(group);
       group.position.copy(flatRest.position);
       group.quaternion.copy(flatRest.quaternion);
@@ -673,6 +704,16 @@ export async function createTypography({ event, rng, bounds, box = resolveBox(bo
         -layout.centre.y * scale,
         -FLAT_DISTANCE - layout.centre.z * scale,
       );
+      const depth = FLAT_DISTANCE + FLAT_SCRIM_DEPTH;
+      const height = frameHeightAt(camera, depth) * FLAT_SCRIM_MARGIN;
+      scrim.scale.set(height * camera.aspect, height, 1);
+      scrim.position.set(0, 0, -depth);
+    },
+    /** Сколько зала гасить за плоским набором: ноль это живой зал, единица это чёрное поле. */
+    setScrim(amount) {
+      scrimAmount = amount;
+      scrim.material.opacity = amount;
+      scrim.visible = Boolean(flatRest) && amount > 0;
     },
     setDaysLeft(days) {
       countdown.show(days);
