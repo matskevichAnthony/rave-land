@@ -31,13 +31,19 @@ const WAVE_PULL = 0.88;
 // Осевая считается по клеткам вдоль куска: клетка длиннее шипа, иначе средняя поедет за ним.
 const WAVE_CELLS = 20;
 
-// Прут тёмно-серый, почти чёрный: он читается силуэтом на огне и на свете из портала, а не
-// собственным цветом, но в чистую черноту уходить ему нельзя, иначе от него остаётся дырка.
-// Блик слабый и широкий. Видно колючку не за счёт светлого металла, а за счёт бегущего по ней
-// красного: свой ровный свет сделал бы её линейкой поперёк кадра, а бегущий даёт ей движение.
-const WIRE_COLOR = new THREE.Color(PALETTE.iron).lerp(new THREE.Color(PALETTE.concrete), 0.55);
-const WIRE_METALNESS = 0.35;
-const WIRE_ROUGHNESS = 0.62;
+// Прут тёмно-серый: он читается на огне и на свете из портала, а не собственным цветом, но в
+// чистую черноту уходить ему нельзя, иначе от него остаётся дырка. Блик узкий и яркий: без
+// него круглый прут в тёмном коридоре плоский, потому что объём железке даёт не толщина, а
+// светлая полоса вдоль неё. Бегущее красное поверх этого держит движение.
+const WIRE_COLOR = new THREE.Color(PALETTE.iron).lerp(new THREE.Color(PALETTE.concrete), 0.7);
+const WIRE_METALNESS = 0.6;
+const WIRE_ROUGHNESS = 0.38;
+
+// Прут раздувается по нормали на постоянную величину в долях длины куска. Толщина ему нужна
+// своя, а не общим масштабом: масштаб вместе с прутом тянет и шипы, а они и так с полметра.
+// Прибавка ко всему сечению одинаковая, поэтому тонкий прут толстеет вдвое, а шип прибавляет
+// десятую часть.
+const WIRE_SWELL = 0.022;
 // Прогон слегка проворачивается вокруг своей оси: два одинаково лежащих прута читаются линейкой.
 const WIRE_ROLL = 0.35;
 
@@ -61,7 +67,7 @@ const TILE_GAUGE = 2.4;
  * край встаёт в начало, а прогон кратен куску, поэтому подмена приходится на стык двух
  * одинаковых кусков и в кадре не видна. Метров в секунду.
  */
-const TRAVEL_SPEED = 0.5;
+const TRAVEL_SPEED = 1.2;
 
 /**
  * Ток по проволоке: рисунок едет вдоль прогона, сам прогон стоит.
@@ -72,10 +78,10 @@ const TRAVEL_SPEED = 0.5;
  * геометрии: иначе на прогоне вдвое шире полосы вышли бы вдвое длиннее, и пять прогонов
  * поехали бы вразнобой. `cell` это длина полосы в метрах, `speed` полос в секунду.
  */
-const FLOW = { cell: 1.7, speed: 0.45, sharpness: 4 };
+const FLOW = { cell: 1.7, speed: 0.45, sharpness: 7 };
 // Между полосами прут не гаснет в ноль: слабая подсветка держит силуэт в дальнем конце.
 const FLOW_COOL = new THREE.Color(PALETTE.bone).multiplyScalar(0.08);
-const FLOW_HOT = new THREE.Color(PALETTE.blood).multiplyScalar(0.6);
+const FLOW_HOT = new THREE.Color(PALETTE.blood).multiplyScalar(0.32);
 
 let slicePromise = null;
 
@@ -308,7 +314,9 @@ function flowingMaterial(flow) {
       .replace('#include <common>', '#include <common>\nvarying float vAlong;')
       .replace(
         '#include <begin_vertex>',
-        '#include <begin_vertex>\n  vAlong = (instanceMatrix * vec4(transformed, 1.0)).x;',
+        `#include <begin_vertex>
+  transformed += normal * ${WIRE_SWELL.toFixed(4)};
+  vAlong = (instanceMatrix * vec4(transformed, 1.0)).x;`,
       );
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float flowTime;\nvarying float vAlong;')
