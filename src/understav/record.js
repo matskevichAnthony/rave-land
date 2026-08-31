@@ -53,6 +53,20 @@ const FLUSH_MS = 250;
 // что там есть к ручной подаче кадров
 const CLOCKED_FPS = 30;
 
+/**
+ * Выше этого кадра дубль ведёт `MediaRecorder`, а не свой кодировщик.
+ *
+ * Свой кодировщик пишет качественнее: постоянный квантизатор вместо битрейта. Но просит он
+ * его покадрово, а покадровый квантизатор в браузере умеет только программный кодировщик, и
+ * на 4K кадр жмётся секундами. За дубль очередь не разгребается, и всё, что не успело,
+ * дожимается уже после него: на пятисекундном дубле файл приходит через полминуты.
+ *
+ * `MediaRecorder` пишет поток кусками по ходу записи, платформенным кодировщиком, и после
+ * дубля собирать нечего: файл готов вместе с последним кадром. Ниже порога остаётся свой
+ * кодировщик: там он успевает за съёмкой, и качество лучше отдать ему.
+ */
+const STREAMED_PIXELS = 2_500_000;
+
 const bitrateFor = (canvas) => Math.min(
   Math.round(canvas.width * canvas.height * REFERENCE_FPS * BITS_PER_PIXEL),
   MAX_BITRATE,
@@ -106,8 +120,10 @@ export function createCanvasRecorder(canvas) {
 
 async function openTake(canvas, fps) {
   const bitrate = bitrateFor(canvas);
-  const { canEncodeMp4, startMp4Take } = await import('../render/canvas-mp4.js');
-  if (await canEncodeMp4(canvas, bitrate)) return startMp4Take(canvas, { bitrate });
+  if (canvas.width * canvas.height <= STREAMED_PIXELS) {
+    const { canEncodeMp4, startMp4Take } = await import('../render/canvas-mp4.js');
+    if (await canEncodeMp4(canvas, bitrate)) return startMp4Take(canvas, { bitrate });
+  }
   return startStreamedTake(canvas, fps, bitrate);
 }
 
