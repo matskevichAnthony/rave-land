@@ -83,6 +83,7 @@ export async function startMp4Take(canvas, { bitrate }) {
       height: canvas.height,
       mimeType: MIME,
       videoBitsPerSecond: bitrate,
+      engine: 'свой кодировщик',
     },
 
     frame() {

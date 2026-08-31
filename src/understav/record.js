@@ -160,6 +160,7 @@ function startStreamedTake(canvas, fps, bitrate) {
       height: canvas.height,
       mimeType,
       videoBitsPerSecond: bitrate,
+      engine: pushFrame ? 'MediaRecorder, кадры вручную' : `MediaRecorder, ${CLOCKED_FPS} к/с по часам`,
     },
 
     frame() {

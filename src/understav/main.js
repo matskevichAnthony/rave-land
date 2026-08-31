@@ -356,6 +356,15 @@ async function boot() {
       return;
     }
     takeEndsAt = performance.now() + seconds * 1000;
+    // Строка в консоли не отладка, а отчёт: в заметке пульта видно не всё, а разбираться с
+    // мутным или медленным дублем приходится по тому, чем и как он писался.
+    console.info('дубль', {
+      кадр: `${take.width}×${take.height}`,
+      чем: take.engine,
+      формат: take.mimeType,
+      битрейт: megabits(take.videoBitsPerSecond),
+      секунд: seconds,
+    });
     // Размер, формат и битрейт видно до дубля, а не после: мутный файл переснимают, а не чинят.
     const format = take.mimeType.includes('mp4') ? 'mp4' : 'webm';
     const wanted = TAKE_HEIGHTS[view.quality];
@@ -380,9 +389,17 @@ async function boot() {
       // Кодировщик роняет кадр, когда не успевает, и молчать об этом нельзя: дубль от
       // этого не рвётся, но идёт рывками, а причина не видна ни в файле, ни в кадре.
       const lost = dropped ? `, кадров упало: ${dropped}` : '';
-      const spent = `сборка ${((performance.now() - closing) / 1000).toFixed(1)} с`;
+      const assembly = (performance.now() - closing) / 1000;
+      const spent = `сборка ${assembly.toFixed(1)} с`;
+      console.info('готово', {
+        файл: name,
+        размер: megabytes(blob.size),
+        'сборка, с': +assembly.toFixed(2),
+        'кадров упало': dropped,
+      });
       panel.note(`Готово: ${name}, ${megabytes(blob.size)}, ${spent}${lost}`);
     } catch (error) {
+      console.error('дубль сорвался', error);
       panel.note(`Запись сорвалась: ${error.message}`);
     } finally {
       // Холст дубля экрану велик: на нём кадры в секунду стоят вчетверо дороже.
