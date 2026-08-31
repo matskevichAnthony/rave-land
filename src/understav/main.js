@@ -43,7 +43,6 @@ const PRINT_KNOBS = {
   ghost: 0,
   chroma: 0,
   melt: 0,
-  rot: 0,
   grain: 0,
   bloom: 0.35,
   vignette: 0.12,

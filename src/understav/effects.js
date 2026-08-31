@@ -40,7 +40,6 @@ const AO = { radiusMetres: 0.7, resolutionScale: 0.5 };
 // грязным стеклом. Ручка ходит от нуля до единицы, метры размытия считает потолок.
 const DOF = { aperture: 0.015, maxBlur: 0.02 };
 
-const ROT_CELL_PIXELS = 22;
 const TIME_WRAP_SECONDS = 1000;
 
 const REFERENCE_DT = 1 / 60;
@@ -60,16 +59,15 @@ const GRADE = {
 };
 
 // Один сильный эффект бьёт четыре средних, поэтому по умолчанию ведут MOSH и GHOST.
-// Разрушение дальнего плана выключено: оно съедает розу и колоннаду, то есть ровно ту
-// глубину, ради которой зал и построен. Ручка на месте, включают её осознанно.
+// Разрушения дальнего плана в кадре нет вовсе: оно съедало розу и колоннаду, то есть ровно ту
+// глубину, ради которой зал и построен, и ручкой на нуле эта цена не окупалась.
 const KNOB_DEFAULTS = {
   ao: 0.85,
-  dof: 0.2,
+  dof: 0.08,
   mosh: 0.5,
   ghost: 0.55,
   chroma: 0.22,
   melt: 0.25,
-  rot: 0,
   bloom: 0.9,
   vignette: GRADE.vignette,
   grain: 0.05,
@@ -175,9 +173,7 @@ class DofPass extends BokehPass {
 /**
  * Финальное разрушение одним полноэкранным проходом.
  *
- * Порядок внутри кадра: ROT сдвигает и выедает дальний план блочным шумом (порог в метрах, и стоит
- * он за коробкой типографики, иначе разрушение съедает заголовок), затем по движению подмешивается
- * половинный буфер датамоша,
+ * Порядок внутри кадра: по движению подмешивается половинный буфер датамоша,
  * CHROMA разводит красный и синий на длину вектора скорости, MELT тянет яркое вдоль него же.
  * Честный пиксель-сорт в кадре не посчитать, поэтому MELT это направленное протягивание ярких
  * участков: снаружи это те же светлые полосы вдоль оси сортировки.
@@ -192,15 +188,10 @@ const TRIP_SHADER = {
     uInverseViewProjection: { value: new THREE.Matrix4() },
     uPreviousViewProjection: { value: new THREE.Matrix4() },
     uTripColor: { value: new THREE.Color(PALETTE.trip) },
-    uRotCell: { value: new THREE.Vector2(0.02, 0.02) },
     uMosh: { value: 0 },
     uChroma: { value: 0 },
     uMelt: { value: 0 },
-    uRot: { value: 0 },
     uPower: { value: 1 },
-    uTime: { value: 0 },
-    uNear: { value: 0.1 },
-    uFar: { value: 100 },
   },
   vertexShader: FULLSCREEN_VERTEX,
   fragmentShader: `
@@ -210,15 +201,10 @@ const TRIP_SHADER = {
     uniform mat4 uInverseViewProjection;
     uniform mat4 uPreviousViewProjection;
     uniform vec3 uTripColor;
-    uniform vec2 uRotCell;
     uniform float uMosh;
     uniform float uChroma;
     uniform float uMelt;
-    uniform float uRot;
     uniform float uPower;
-    uniform float uTime;
-    uniform float uNear;
-    uniform float uFar;
     varying vec2 vUv;
 
     ${MOTION_GLSL}
@@ -233,13 +219,6 @@ const TRIP_SHADER = {
     const float MELT_REACH = 9.0;
     const float MELT_MAX = 0.12;
     const float MELT_THRESHOLD = 0.5;
-    const float ROT_REACH = 0.035;
-    const float ROT_RATE = 5.0;
-    const float ROT_BITE = 0.06;
-    const float ROT_BITE_MIX = 0.72;
-    const float ROT_GLOW = 0.2;
-    const float ROT_NEAR_METRES = 20.0;
-    const float ROT_FAR_METRES = 55.0;
 
     vec3 substrate(vec2 uv, float moshMix) {
       return mix(texture2D(tDiffuse, uv).rgb, texture2D(tMosh, uv).rgb, moshMix);
@@ -255,30 +234,19 @@ const TRIP_SHADER = {
         VELOCITY_LIMIT
       ) * uPower;
       float motion = clamp(length(velocity) / MOTION_REFERENCE, 0.0, 1.0);
-      float distant = smoothstep(
-        ROT_NEAR_METRES,
-        ROT_FAR_METRES,
-        viewDistance(depth, uNear, uFar)
-      );
-
-      vec2 cell = floor(vUv / uRotCell);
-      float tick = floor(uTime * ROT_RATE);
-      float rot = uRot * distant;
-      vec2 uv = clamp(vUv + hash22(cell + tick) * rot * ROT_REACH, vec2(0.0), vec2(1.0));
-
       float moshMix = uMosh * motion;
       vec2 split = clamp(velocity * uChroma * CHROMA_REACH, -CHROMA_MAX, CHROMA_MAX);
       vec3 color = vec3(
-        substrate(clamp(uv + split * CHROMA_LEAD, vec2(0.0), vec2(1.0)), moshMix).r,
-        substrate(uv, moshMix).g,
-        substrate(clamp(uv - split * CHROMA_LAG, vec2(0.0), vec2(1.0)), moshMix).b
+        substrate(clamp(vUv + split * CHROMA_LEAD, vec2(0.0), vec2(1.0)), moshMix).r,
+        substrate(vUv, moshMix).g,
+        substrate(clamp(vUv - split * CHROMA_LAG, vec2(0.0), vec2(1.0)), moshMix).b
       );
 
       vec2 stride = clamp(velocity * MELT_REACH, -MELT_MAX, MELT_MAX) / float(MELT_TAPS);
       vec3 melted = color;
       float brightest = luma(color);
       for (int i = 1; i <= MELT_TAPS; i++) {
-        vec3 tap = texture2D(tMosh, clamp(uv - stride * float(i), vec2(0.0), vec2(1.0))).rgb;
+        vec3 tap = texture2D(tMosh, clamp(vUv - stride * float(i), vec2(0.0), vec2(1.0))).rgb;
         float light = luma(tap);
         if (light > brightest && light > MELT_THRESHOLD) {
           brightest = light;
@@ -286,11 +254,6 @@ const TRIP_SHADER = {
         }
       }
       color = mix(color, melted, uMelt * motion);
-
-      // Выеденный блок не заливается ядовитым насухо: сплошной квадрат читается как сбой
-      // интерфейса, а подмешанный оставляет под собой картинку и остаётся разрушением.
-      float bite = step(1.0 - rot * ROT_BITE, hash21(cell + tick + 3.3)) * ROT_BITE_MIX;
-      color = mix(color, uTripColor * (ROT_GLOW + luma(color)), bite);
 
       gl_FragColor = vec4(color, 1.0);
     }
@@ -311,7 +274,6 @@ class TripPass extends ShaderPass {
   }
 
   setSize(width, height) {
-    this.uniforms.uRotCell.value.set(ROT_CELL_PIXELS / width, ROT_CELL_PIXELS / height);
   }
 }
 
@@ -409,16 +371,6 @@ function createControls({ ao, dof, mosh, trip, bloom, grade }) {
       get: () => trip.uniforms.uMelt.value,
       set: (value) => {
         trip.uniforms.uMelt.value = value;
-      },
-    },
-    rot: {
-      label: 'ROT: разрушение дальнего плана',
-      min: 0,
-      max: 1,
-      step: 0.01,
-      get: () => trip.uniforms.uRot.value,
-      set: (value) => {
-        trip.uniforms.uRot.value = value;
       },
     },
     bloom: {
@@ -557,11 +509,8 @@ export function createEffects({ renderer, scene, camera }) {
       const power = motionPower(dt, motion);
       feedMotion(mosh, power);
       feedMotion(trip, power);
-      trip.uniforms.uNear.value = camera.near;
-      trip.uniforms.uFar.value = camera.far;
       dof.uniforms.focus.value = focusMetres;
       const time = Number.isFinite(elapsed) ? elapsed % TIME_WRAP_SECONDS : 0;
-      trip.uniforms.uTime.value = time;
       grade.uniforms.uTime.value = time;
 
       // Глубина непрозрачной сцены снимается до её отрисовки: воздуху нужно знать, где камень,
