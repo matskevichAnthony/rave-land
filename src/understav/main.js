@@ -369,6 +369,10 @@ async function boot() {
 
   async function finishTake() {
     takeEndsAt = Infinity;
+    // Дубль кончился, а файла ещё нет: кодировщик дожимает хвост очереди, и на 4K это
+    // секунды. Молчащая страница в этот момент выглядит зависшей.
+    panel.note('Дубль снят, собираю файл');
+    const closing = performance.now();
     try {
       const { blob, dropped } = await recorder.stop();
       const name = `${fileStem()}.${videoExtension(blob)}`;
@@ -376,7 +380,8 @@ async function boot() {
       // Кодировщик роняет кадр, когда не успевает, и молчать об этом нельзя: дубль от
       // этого не рвётся, но идёт рывками, а причина не видна ни в файле, ни в кадре.
       const lost = dropped ? `, кадров упало: ${dropped}` : '';
-      panel.note(`Готово: ${name}, ${megabytes(blob.size)}${lost}`);
+      const spent = `сборка ${((performance.now() - closing) / 1000).toFixed(1)} с`;
+      panel.note(`Готово: ${name}, ${megabytes(blob.size)}, ${spent}${lost}`);
     } catch (error) {
       panel.note(`Запись сорвалась: ${error.message}`);
     } finally {

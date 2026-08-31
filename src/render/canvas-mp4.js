@@ -28,9 +28,25 @@ const CODEC = 'avc';
 const QUANTIZER = 20;
 const KEY_FRAME_SECONDS = 2;
 
-// Кодировщик отстаёт на тяжёлых кадрах, и каждый кадр в очереди это целый холст в памяти.
-// Лучше уронить кадр (соседний просто станет длиннее), чем дубль целиком.
-const MAX_PENDING_FRAMES = 8;
+/**
+ * Сколько кадров держать в полёте: очередь меряется пикселями, а не кадрами.
+ *
+ * Кодировщик отстаёт на тяжёлых кадрах, и каждый кадр в очереди это целый холст в памяти:
+ * на 4K это тридцать три мегабайта на копию, и восемь копий дают четверть гигабайта сверх
+ * мишеней постобработки, которые на 4K и сами уже под гигабайт. Хуже того, всё, что осталось
+ * в очереди к концу дубля, дожимается уже после него: файл в этот момент ещё не готов, а
+ * запись на экране кончилась, и ожидание выглядит зависанием.
+ *
+ * Поэтому потолок считается от площади кадра: на 1080p в очереди по-прежнему восемь кадров,
+ * на 4K два. Лучше уронить кадр (соседний просто станет длиннее), чем дубль целиком.
+ */
+const PENDING_PIXELS = 16_000_000;
+const PENDING_FRAMES = { least: 2, most: 8 };
+
+const pendingLimitFor = (canvas) => Math.min(
+  PENDING_FRAMES.most,
+  Math.max(PENDING_FRAMES.least, Math.round(PENDING_PIXELS / (canvas.width * canvas.height))),
+);
 
 const qualityFor = (bitrate) => new Quality({ quantizer: QUANTIZER, bitrate });
 
@@ -56,6 +72,7 @@ export async function startMp4Take(canvas, { bitrate }) {
   await output.start();
 
   const startedAt = performance.now();
+  const pendingLimit = pendingLimitFor(canvas);
   let pending = 0;
   let dropped = 0;
   let failure = null;
@@ -69,7 +86,7 @@ export async function startMp4Take(canvas, { bitrate }) {
     },
 
     frame() {
-      if (failure || pending >= MAX_PENDING_FRAMES) {
+      if (failure || pending >= pendingLimit) {
         dropped += 1;
         return;
       }
