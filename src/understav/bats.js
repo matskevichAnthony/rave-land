@@ -1,17 +1,17 @@
 /**
- * Стая летучих мышей под сводом нефа.
+ * Летучие мыши: стая кругами под сводом нефа и поток навылет по коридору.
  *
- * Вся стая это один вызов отрисовки: тело и крылья лежат одной заготовкой, положение
- * каждой мыши считается на процессоре в её матрицу, а взмах живёт в вершинном шейдере,
- * поэтому геометрия в кадре не пересобирается.
+ * И те, и другие идут одним вызовом отрисовки: тело и крылья лежат одной заготовкой,
+ * положение каждой мыши считается на процессоре в её матрицу, а взмах живёт в вершинном
+ * шейдере, поэтому геометрия в кадре не пересобирается.
  *
- * Летают они выше коробки типографики и не заходят за торцевую стену: буквы им не по
- * пути, а за розой начинается улица.
+ * Под сводом летают выше коробки типографики и не заходят за торцевую стену: буквы им не
+ * по пути, а за розой начинается улица.
  */
 
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
-import { NAVE, TYPE_BOX } from './nave.js';
+import { CORRIDOR, NAVE, TYPE_BOX } from './nave.js';
 
 const SPAN = [0.7, 1.3];
 
@@ -45,6 +45,40 @@ const TIERS = [
     bobRate: [0.6, 1.2],
   },
 ];
+
+/**
+ * Поток по коридору: мыши идут от дальнего конца к порталу и, не дойдя до афиши, сворачивают
+ * к стене и уходят из кадра.
+ *
+ * Круга здесь нет и обратной дороги тоже: ушедшая мышь просто заходит заново с дальнего
+ * конца. Разворот в кадре пришлось бы вести по дуге через весь коридор, а стоит он ровно
+ * ничего: в кадре это читается потоком, а не каруселью.
+ *
+ * Отворот начинается на `turnZ` и к `goneZ` уводит мышь на `aside` вбок и на `climb` вверх.
+ * Появляется и пропадает она размером: на концах пути мышь ужимается в точку, поэтому ни
+ * возникновения из воздуха, ни обрыва в кадре не видно.
+ */
+const STREAM = {
+  count: [6, 9],
+  fromZ: CORRIDOR.farZ - 4,
+  turnZ: 50,
+  goneZ: 32,
+  x: [-4.2, 4.2],
+  y: [2.6, 8.5],
+  speed: [7, 12],
+  // Уводит больше вверх, чем вбок: вверху свод и темнота, а вбок в четырёх метрах стена, и
+  // мышь, уходящая сквозь неё, читается ошибкой, а не мышью.
+  aside: [1.6, 3.6],
+  climb: [3, 6.5],
+  sway: [0.4, 1.3],
+  swayRate: [0.5, 1.1],
+};
+// Метры на разгорание и на уход: меньше — мышь мигает, больше — она ползёт точкой полпути.
+const STREAM_FADE = 9;
+// На сколько метров вперёд смотрит мышь, чтобы понять, куда повернуть нос: короче — нос
+// дрожит на покачивании, длиннее — мышь входит в отворот заранее.
+const STREAM_AHEAD = 0.6;
+const STREAM_BANK = 1.1;
 
 // Взмах намеренно идёт мимо бита: стая, машущая в такт, читается гирляндой, а не живностью.
 const FLAP = { rate: [7, 12], lift: 0.55, fold: 0.22 };
@@ -156,6 +190,34 @@ function planBat(rng, tier, turn) {
   return bat;
 }
 
+function planStream(rng) {
+  return Array.from({ length: rng.int(...STREAM.count) }, () => ({
+    x: rng.range(...STREAM.x),
+    y: rng.range(...STREAM.y),
+    speed: rng.range(...STREAM.speed),
+    // Заход у каждой свой, иначе поток идёт строем и разом гаснет.
+    start: rng.range(0, STREAM.fromZ - STREAM.goneZ),
+    aside: rng.sign() * rng.range(...STREAM.aside),
+    climb: rng.range(...STREAM.climb),
+    sway: rng.range(...STREAM.sway),
+    swayRate: rng.range(...STREAM.swayRate),
+    swayPhase: rng.range(0, Math.PI * 2),
+    span: rng.range(...SPAN),
+  }));
+}
+
+/** Где мышь потока в этот миг пути: прямой ход по коридору плюс отворот к концу. */
+function streamPoint(bat, travel, elapsed, out) {
+  const z = STREAM.fromZ - travel;
+  const turn = Math.min(Math.max((STREAM.turnZ - z) / (STREAM.turnZ - STREAM.goneZ), 0), 1);
+  const veer = turn * turn;
+  return out.set(
+    bat.x + Math.sin(elapsed * bat.swayRate + bat.swayPhase) * bat.sway + bat.aside * veer,
+    bat.y + bat.climb * veer,
+    z,
+  );
+}
+
 function planFlock(rng) {
   const flock = [];
   for (const tier of TIERS) {
@@ -169,7 +231,11 @@ function planFlock(rng) {
 
 export function createBats({ rng }) {
   const flock = planFlock(rng);
-  const count = flock.length;
+  const stream = planStream(rng);
+  const count = flock.length + stream.length;
+  const path = STREAM.fromZ - STREAM.goneZ;
+  const here = new THREE.Vector3();
+  const ahead = new THREE.Vector3();
 
   const time = { value: 0 };
   const geometry = createBatGeometry();
@@ -211,9 +277,39 @@ export function createBats({ rng }) {
     mesh.setMatrixAt(index, scratch.matrix);
   }
 
+  /**
+   * Мышь потока: нос смотрит туда, куда она через полметра попадёт.
+   *
+   * Направление берётся двумя пробами пути, а не формулой поворота: покачивание, отворот и
+   * набор высоты складываются в одну кривую, и повторять её производную второй раз значит
+   * держать две правды об одном движении.
+   */
+  function fly(bat, index, elapsed) {
+    const travel = (((elapsed * bat.speed + bat.start) % path) + path) % path;
+    streamPoint(bat, travel, elapsed, here);
+    streamPoint(bat, Math.min(travel + STREAM_AHEAD, path), elapsed, ahead);
+    const stepX = ahead.x - here.x;
+    const stepY = ahead.y - here.y;
+    const stepZ = ahead.z - here.z;
+    const reach = Math.max(Math.hypot(stepX, stepZ), 1e-4);
+    scratch.position.copy(here);
+    scratch.rotation.set(
+      Math.atan2(stepY, reach) * PITCH_GAIN,
+      Math.atan2(stepX, stepZ),
+      (-stepX / reach) * STREAM_BANK,
+    );
+    const edge = Math.min(travel, path - travel) / STREAM_FADE;
+    scratch.scale.setScalar(bat.span * Math.min(edge, 1));
+    scratch.updateMatrix();
+    mesh.setMatrixAt(index, scratch.matrix);
+  }
+
   function update(elapsed) {
     time.value = elapsed;
     for (let index = 0; index < flock.length; index += 1) place(flock[index], index, elapsed);
+    for (let index = 0; index < stream.length; index += 1) {
+      fly(stream[index], flock.length + index, elapsed);
+    }
     mesh.instanceMatrix.needsUpdate = true;
   }
 
