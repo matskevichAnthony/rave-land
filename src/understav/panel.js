@@ -20,7 +20,7 @@ const DEFAULT_TAKE_SECONDS = 8;
 const MAX_TAKE_SECONDS = 60;
 const HIDDEN_CLASS = 'deck--hidden';
 const TOGGLE_LABEL = { shown: 'Скрыть', hidden: 'Пульт' };
-const LOCKED_WHILE_RECORDING = '[data-js-framing], [data-js-new-seed]';
+const LOCKED_WHILE_RECORDING = '[data-js-framing], [data-js-new-seed], [data-js-quality]';
 const OVER_CLASS = 'meter__value--over';
 
 const formatValue = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2));
@@ -55,6 +55,9 @@ export function createPanel({
   const knobs = mountKnobs(pick('knobs'), controls);
   wireChoice('mode', view.mode, actions.setMode);
   wireChoice('framing', view.framing, actions.setFraming);
+  // Разрешение дубля есть не у всякой сцены: пульт один на все, и о чём вид не сказал,
+  // того он не вешает.
+  if (view.quality) wireChoice('quality', view.quality, actions.setQuality);
 
   opener.addEventListener('click', toggleDeck);
   pick('new-seed').addEventListener('click', actions.newSeed);

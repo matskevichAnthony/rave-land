@@ -26,10 +26,18 @@ const MEGABIT = 1000 * 1000;
 const FRAMINGS = { square: 1, story: 9 / 16, wide: 16 / 9, sheet: 1 / Math.SQRT2, full: null };
 
 // Кадр это то, что видно на экране, фото это тот же кадр, снятый крупно: холст на один раз
-// уплотняется до этой высоты. Потолок стоит ради памяти: мишени постобработки живут в
-// полукадрах с плавающей точкой, и вчетверо плотнее холста их поднимать уже нечем.
-// Под печать высота другая: триста точек на дюйм по длинной стороне листа A4.
-const PHOTO = { height: 2160, printHeight: 3508, maxDensity: 4 };
+// уплотняется до этой высоты. Под печать высота другая: триста точек на дюйм по длинной
+// стороне листа A4.
+const PHOTO = { height: 2160, printHeight: 3508 };
+
+// Дубль пишется с холста, поэтому разрешение файла это плотность холста, поднятая на время
+// записи: окно остаётся тем же, а в файл уходит кадр во столько раз крупнее. Ноль это «как
+// на экране», остальное — высота кадра в точках.
+const TAKE_HEIGHTS = { screen: 0, fhd: 1080, uhd: 2160 };
+
+// Потолок плотности стоит ради памяти: мишени постобработки живут в полукадрах с плавающей
+// точкой, и вчетверо плотнее холста их поднимать уже нечем.
+const MAX_DENSITY = 4;
 
 /**
  * Печатный вид: то же самое, но снятое так, чтобы пережило бумагу и мессенджер.
@@ -80,7 +88,7 @@ const SCENE_MODULES = [
 // движения остаётся под тем же переключателем в одном щелчке.
 const view = {
   mode: 'still', framing: 'full', countdown: false, poster: true, print: true,
-  flat: false, fov: null,
+  flat: false, fov: null, quality: 'screen',
 };
 
 boot().catch(showError);
@@ -113,6 +121,7 @@ async function boot() {
   let world = null;
   let building = 0;
   let takeEndsAt = Infinity;
+  let canvasDensity = 0;
   let wantsStillFrame = false;
   let wantsPhoto = false;
   let screenKnobs = null;
@@ -144,6 +153,11 @@ async function boot() {
       setFraming: (framing) => {
         view.framing = framing;
         layout();
+      },
+      setQuality: (quality) => {
+        view.quality = quality;
+        const wanted = TAKE_HEIGHTS[quality];
+        panel.note(wanted ? `Дубль: ${wanted} точек по высоте` : 'Дубль: как на экране');
       },
       setCountdown: (visible) => {
         view.countdown = visible;
@@ -212,7 +226,13 @@ async function boot() {
   await rebuild();
   runLoop();
 
-  function layout(density = 0) {
+  /**
+   * Размер кадра на экране и плотность его холста.
+   *
+   * Плотность живёт дольше одного вызова: дубль держит её весь отрезок, а окно за это время
+   * могут потянуть, и пересборка по событию обязана вернуть плотность дубля, а не экранную.
+   */
+  function layout(density = canvasDensity) {
     const { width, height } = frameSize(FRAMINGS[view.framing]);
     mount.style.width = `${width}px`;
     mount.style.height = `${height}px`;
@@ -310,13 +330,25 @@ async function boot() {
     }
   }
 
+  /** Плотность холста под дубль: экранная, если она уже даёт нужную высоту, иначе поднятая. */
+  function takeDensity() {
+    const wanted = TAKE_HEIGHTS[view.quality];
+    if (!wanted) return 0;
+    return Math.min(wanted / frameSize(FRAMINGS[view.framing]).height, MAX_DENSITY);
+  }
+
   async function startTake(seconds) {
     if (recorder.recording) return;
     panel.setRecording(true);
+    // Холст растёт до дубля: размер файла рекордер берёт у холста один раз, на старте.
+    canvasDensity = takeDensity();
+    layout();
     let take = null;
     try {
       take = await recorder.start();
     } catch (error) {
+      canvasDensity = 0;
+      layout();
       panel.setRecording(false);
       panel.note(`Запись не пошла: ${error.message}`);
       return;
@@ -324,8 +356,12 @@ async function boot() {
     takeEndsAt = performance.now() + seconds * 1000;
     // Размер, формат и битрейт видно до дубля, а не после: мутный файл переснимают, а не чинят.
     const format = take.mimeType.includes('mp4') ? 'mp4' : 'webm';
+    const wanted = TAKE_HEIGHTS[view.quality];
+    const short = wanted && take.height < wanted
+      ? `, окно мало: ждали ${wanted} по высоте`
+      : '';
     panel.note(
-      `Пишу ${seconds} с: ${take.width}×${take.height}, ${format}, ${megabits(take.videoBitsPerSecond)}`,
+      `Пишу ${seconds} с: ${take.width}×${take.height}, ${format}, ${megabits(take.videoBitsPerSecond)}${short}`,
     );
   }
 
@@ -341,6 +377,10 @@ async function boot() {
       panel.note(`Готово: ${name}, ${megabytes(blob.size)}${lost}`);
     } catch (error) {
       panel.note(`Запись сорвалась: ${error.message}`);
+    } finally {
+      // Холст дубля экрану велик: на нём кадры в секунду стоят вчетверо дороже.
+      canvasDensity = 0;
+      layout();
     }
     panel.setRecording(false);
   }
@@ -405,10 +445,10 @@ async function boot() {
     const { height } = frameSize(FRAMINGS[view.framing]);
     const target = view.print ? PHOTO.printHeight : PHOTO.height;
     const wanted = target / height;
-    layout(Math.min(wanted, PHOTO.maxDensity));
+    layout(Math.min(wanted, MAX_DENSITY));
     renderScene(0, elapsed);
     const shot = stage.renderer.domElement.height;
-    const short = wanted > PHOTO.maxDensity ? `, окно мало: ждали ${target}, разверни и сними ещё` : '';
+    const short = wanted > MAX_DENSITY ? `, окно мало: ждали ${target}, разверни и сними ещё` : '';
     saveFrameImage(`${fileStem()}-${shot}p.png`, () => layout(), short);
   }
 

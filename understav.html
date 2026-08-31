@@ -127,6 +127,11 @@
         />
       </label>
       <div class="deck__row">
+        <button type="button" data-js-quality="screen">Как на экране</button>
+        <button type="button" data-js-quality="fhd">1080p</button>
+        <button type="button" data-js-quality="uhd">4K</button>
+      </div>
+      <div class="deck__row">
         <button type="button" data-js-shoot>Снять</button>
         <button type="button" data-js-capture>Кадр</button>
         <button type="button" data-js-photo>Фото</button>
@@ -135,6 +140,13 @@
         <input type="checkbox" data-js-print checked />
         <span>Под печать: без зерна и разрушения, фото крупнее</span>
       </label>
+      <p class="deck__hint">
+        Разрешение дубля это плотность холста на время записи: окно остаётся тем же, а в файл
+        уходит кадр во столько раз крупнее. 4K это 2160 точек по высоте, и стоит он кадрами в
+        секунду: сцена рисуется вчетверо крупнее, зато файл не тянут вверх при монтаже. Метка
+        времени у кадра настоящая, поэтому дубль идёт с той же скоростью, даже если кадров
+        вышло меньше.
+      </p>
       <p class="deck__hint">
         Кадр это снимок экрана как есть. Фото уплотняет холст и снимает тот же кадр крупно:
         2160 точек по высоте, а под печать 3508 — это триста точек на дюйм по длинной
