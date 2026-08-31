@@ -78,7 +78,13 @@
       </div>
       <label class="deck__slider">
         <span>Угол объектива: <b data-js-fov-value></b>°</span>
-        <input type="range" data-js-fov min="16" max="80" step="1" />
+        <input
+          type="range"
+          min="16"
+          max="80"
+          step="1"
+          data-js-fov
+        />
       </label>
       <p class="deck__hint">
         Узкий угол сплющивает неф и ставит афишу плитой в кадр, широкий раздвигает стены и
@@ -126,7 +132,7 @@
         <button type="button" data-js-photo>Фото</button>
       </div>
       <label class="deck__toggle">
-        <input type="checkbox" data-js-print />
+        <input type="checkbox" data-js-print checked />
         <span>Под печать: без зерна и разрушения, фото крупнее</span>
       </label>
       <p class="deck__hint">

@@ -36,16 +36,20 @@ const PHOTO = { height: 2160, printHeight: 3508, maxDensity: 4 };
  *
  * Разрушение, зерно и хроматика рассчитаны на светящийся экран и движение. На неподвижном
  * снимке они читаются грязью, а сжатие в мессенджере доедает остальное. Виньетка уходит
- * почти в ноль: на экране она собирает кадр, на светлом фоне листа съедает углы.
+ * в ноль: на экране она собирает кадр, на светлом фоне листа съедает углы. Расфокус уходит
+ * следом, потому что на листе решает резкость, а не глубина; свечение и тень в стыках
+ * остаются, но тише экранных: бумага не светится и добирает контраст сама.
  */
 const PRINT_KNOBS = {
+  ao: 0.7,
+  dof: 0,
   mosh: 0,
   ghost: 0,
   chroma: 0,
   melt: 0,
   grain: 0,
   bloom: 0.35,
-  vignette: 0.12,
+  vignette: 0,
 };
 
 const STATS_WINDOW_SECONDS = 3;
@@ -71,8 +75,11 @@ const SCENE_MODULES = [
   { name: 'createEffects', file: 'effects.js', load: () => import('./effects.js') },
 ];
 
+// Страница открывается печатным видом: афишу отсюда уносят картинкой, а не смотрят как
+// заставку, и первый же кадр обязан быть тем, что уйдёт в файл. Экранный вид со всей грязью
+// движения остаётся под тем же переключателем в одном щелчке.
 const view = {
-  mode: 'still', framing: 'full', countdown: false, poster: true, print: false,
+  mode: 'still', framing: 'full', countdown: false, poster: true, print: true,
   flat: false, fov: null,
 };
 
@@ -172,22 +179,9 @@ async function boot() {
       capture: () => {
         wantsStillFrame = true;
       },
-      // Печатный вид меняет только ручки постобработки, поэтому экранные значения он
-      // забирает себе и возвращает при выключении: иначе выход из режима сбрасывал бы
-      // подобранные руками эффекты на дефолтные.
       setPrint: (active) => {
-        view.print = active;
-        if (active) {
-          screenKnobs = Object.fromEntries(
-            Object.entries(effects.controls).map(([name, knob]) => [name, knob.get()]),
-          );
-          applyKnobs(PRINT_KNOBS);
-          panel.note('Печатный вид: разрушение выключено');
-          return;
-        }
-        applyKnobs(screenKnobs ?? {});
-        screenKnobs = null;
-        panel.note('Экранный вид');
+        usePrint(active);
+        panel.note(active ? 'Печатный вид: разрушение выключено' : 'Экранный вид');
       },
       // Снимок меняет размер холста, а дорожка записи смены размера не переживает.
       photo: () => {
@@ -203,6 +197,7 @@ async function boot() {
 
   panel.showSeed(seed);
   panel.showDays(daysLeft);
+  usePrint(view.print);
 
   window.addEventListener('resize', layout);
   window.addEventListener('keydown', (domEvent) => {
@@ -369,6 +364,26 @@ async function boot() {
   function applyKnobs(values) {
     for (const [name, value] of Object.entries(values)) effects.controls[name]?.set(value);
     panel.showKnobs();
+  }
+
+  /**
+   * Печатный вид меняет только ручки постобработки.
+   *
+   * Экранные значения режим забирает себе и возвращает при выключении: иначе выход из него
+   * сбрасывал бы подобранные руками эффекты на дефолтные. На старте страница входит сюда
+   * сама, и забранным оказывается ровно то, с чем ручки родились, то есть экранный вид.
+   */
+  function usePrint(active) {
+    view.print = active;
+    if (active) {
+      screenKnobs = Object.fromEntries(
+        Object.entries(effects.controls).map(([name, knob]) => [name, knob.get()]),
+      );
+      applyKnobs(PRINT_KNOBS);
+      return;
+    }
+    applyKnobs(screenKnobs ?? {});
+    screenKnobs = null;
   }
 
   /**

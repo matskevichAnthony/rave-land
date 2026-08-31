@@ -14,7 +14,7 @@ const HALF = 0.5;
 const MAX_PIXEL_RATIO = 1.5;
 const EXPOSURE = 1.15;
 
-const CAMERA = { fov: 42, near: 0.2, far: 160, position: [0, 6.4, 15], target: [0, 6, -3] };
+const CAMERA = { fov: 44, near: 0.2, far: 160, position: [0, 6.4, 15], target: [0, 6, -3] };
 const FOG_DENSITY = 0.015;
 
 const KEY = { intensity: 3.6, breath: 0.09 };
